@@ -628,7 +628,7 @@ test("canceling a submitted login cannot authenticate later", async ({
   await expect(page.getByText("Signed in", { exact: true })).toBeVisible();
 });
 
-test("session creation performs its scoped login and reuses the creation key", async ({
+test("a newly created session opens its conversation before asking for scoped login", async ({
   page,
 }) => {
   await open(page, "session-creation-requires-login");
@@ -653,21 +653,25 @@ test("session creation performs its scoped login and reuses the creation key", a
     .getByRole("textbox", { name: "Title", exact: true })
     .fill("Authenticated preview");
   await form.getByRole("button", { name: "Confirm", exact: true }).click();
+  const message = page.getByRole("textbox", { name: "Message", exact: true });
+  await expect(form).toHaveCount(0);
+  await expect(message).toBeVisible();
   await expect(loginPanel(page)).toBeVisible();
-  await expect(
-    form.getByRole("textbox", { name: "Title", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    form.getByRole("group", { name: "Session details", exact: true }),
-  ).toHaveJSProperty("disabled", true);
   await expect(
     loginPanel(page).getByLabel("Authentication code"),
   ).toBeEnabled();
+  await loginPanel(page)
+    .getByRole("button", { name: "Cancel", exact: true })
+    .click();
+  await expect(loginPanel(page)).toHaveCount(0);
+  await message.fill("Continue after setup.");
+  const send = page.getByRole("button", { name: "Send", exact: true });
+  await expect(send).toBeDisabled();
+  await page.getByRole("button", { name: "Session menu", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Start", exact: true }).click();
   await finishLogin(page);
-  await expect(form).toHaveCount(0);
-  await expect(
-    page.getByRole("textbox", { name: "Message", exact: true }),
-  ).toBeVisible();
+  await expect(send).toBeEnabled();
+  await expect(message).toHaveValue("Continue after setup.");
   await expect(
     page.getByRole("button", { name: "Log in again", exact: true }),
   ).toHaveCount(0);

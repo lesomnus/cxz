@@ -11,16 +11,10 @@ import {
   ValueMenu,
 } from "@lesomnus/nox";
 import { useNavigate } from "@tanstack/react-router";
-import { requiredSessionLogin } from "#src/features/accounts/login-required.ts";
 import type { Project } from "#gen/cxz/project_pb";
-import type { Session } from "#gen/cxz/session_pb";
-import { Connection, ref } from "#src/shared/api/connection.ts";
+import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import { listAccounts } from "#src/features/accounts/account-data.ts";
-import {
-  LoginPanel,
-  type LoginTarget,
-} from "#src/features/accounts/login-panel.tsx";
 import { AnchoredDialog } from "#src/shared/components/anchored-dialog.tsx";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { useDialogClose } from "#src/shared/components/dialog-close.ts";
@@ -59,17 +53,14 @@ export function SessionCreate({
   const [alias, setAlias] = useState("");
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
-  const [created, setCreated] = useState<Session>();
   const [error, setError] = useState("");
-  const [login, setLogin] = useState<LoginTarget>();
   const creation = useRef({ signature: "", id: "" });
   const selected = accounts.data?.find((a) => a.alias === alias);
   useEffect(() => {
     if (!project && defaultProject) setProject(projectId(defaultProject));
   }, [defaultProject, project]);
-  async function createSession(afterLogin = false) {
-    if (!selected || !project || pending.current || (login && !afterLogin))
-      return;
+  async function createSession() {
+    if (!selected || !project || pending.current || !dialogClose.open) return;
     pending.current = true;
     const controller = new AbortController();
     request.current = controller;
@@ -81,53 +72,31 @@ export function SessionCreate({
     setError("");
     try {
       const account = { key: { case: "alias" as const, value: alias } };
-      const binding = created
-        ? undefined
-        : await c.bindings.add(
-            { project: projectRef(project), account },
-            { signal: controller.signal, timeoutMs: 10000 },
-          );
-      const session =
-        created ??
-        (await c.sessions.add(
-          {
-            project: projectRef(project),
-            account,
-            authBinding: {
-              key: { case: "bindingId", value: binding!.bindingId },
-            },
-            name: title,
-            clientId,
-          },
-          { signal: controller.signal, timeoutMs: 10000 },
-        ));
-      if (controller.signal.aborted) return;
-      setCreated(session);
-      c.store.apply("cxz.Session", [{ id: session.id, value: session }]);
-      const started = await c.sessions.start(
+      const ref = projectRef(project);
+      const options = { signal: controller.signal, timeoutMs: 10000 };
+      const binding = await c.bindings.add({ project: ref, account }, options);
+      const session = await c.sessions.add(
         {
-          ref: ref(session.runtimeId),
-          runId: session.status?.runId ?? "",
-          clientId: crypto.randomUUID(),
+          project: ref,
+          account,
+          authBinding: {
+            key: { case: "bindingId", value: binding.bindingId },
+          },
+          name: title,
+          clientId,
         },
-        { signal: controller.signal, timeoutMs: 120000 },
+        options,
       );
       if (controller.signal.aborted) return;
-      c.store.apply("cxz.Session", [{ id: started.id, value: started }]);
+      c.store.apply("cxz.Session", [{ id: session.id, value: session }]);
       dialogClose.complete(() => {
+        c.pendingSessionStarts.add(session.runtimeId);
         close();
-        void navigate({ ...sessionLocation(started) });
+        void navigate(sessionLocation(session));
       });
     } catch (error) {
       if (controller.signal.aborted) return;
-      // Missing login is the only failed creation we retry, with the SAME key.
-      if (
-        !afterLogin &&
-        selected.agent === "claude" &&
-        requiredSessionLogin(error, alias, clientId)
-      )
-        setLogin({ account: alias, project, key: clientId });
-      else setError(String(error));
+      setError(String(error));
     } finally {
       pending.current = false;
       if (!controller.signal.aborted) setBusy(false);
@@ -162,7 +131,7 @@ export function SessionCreate({
                 type="submit"
                 form={formId}
                 loading={busy}
-                disabled={busy || !project || !selected || !!login}
+                disabled={busy || !project || !selected}
               >
                 Confirm
               </Button>
@@ -180,7 +149,7 @@ export function SessionCreate({
             <Form
               as="fieldset"
               columns={1}
-              disabled={busy || !!login || !!created}
+              disabled={busy}
               aria-label="Session details"
             >
               {fixedProject === undefined && (
@@ -195,7 +164,7 @@ export function SessionCreate({
                       searchText: p.alias,
                     }))}
                     choose={setProject}
-                    disabled={busy || !!login || !!created}
+                    disabled={busy}
                   />
                 </FormField>
               )}
@@ -215,7 +184,7 @@ export function SessionCreate({
                     })),
                   ]}
                   choose={setAlias}
-                  disabled={busy || !!login || !!created}
+                  disabled={busy}
                 />
               </FormField>
               <FormField label="Title" htmlFor={`${formId}-title`}>
@@ -224,23 +193,12 @@ export function SessionCreate({
                   autoFocus
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  disabled={busy || !!login || !!created}
+                  disabled={busy}
                 />
               </FormField>
             </Form>
             {(error || accounts.error) && (
               <ErrorNotice error={error || accounts.error} />
-            )}
-            {login && (
-              <LoginPanel
-                c={c}
-                target={login}
-                complete={() => {
-                  setLogin(undefined);
-                  void createSession(true);
-                }}
-                cancel={() => setLogin(undefined)}
-              />
             )}
           </div>
         </Card>

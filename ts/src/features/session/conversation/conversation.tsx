@@ -39,6 +39,7 @@ import {
   manageSession,
   prepareSessionLogin,
   sessionLoginSnapshot,
+  type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
 import { performSessionControl } from "#src/features/session/model/session-control-batch.ts";
 import { useNavigate, useRouter } from "@tanstack/react-router";
@@ -49,6 +50,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -772,6 +774,51 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       ),
     });
   }
+  function manage(operation: SessionOperation, run: string) {
+    return action(
+      async (session) => {
+        const sessionRef = create(SessionRefSchema, ref(id));
+        try {
+          const updated = await manageSession(
+            c.sessions,
+            sessionRef,
+            operation,
+            run,
+          );
+          c.store.apply("cxz.Session", [{ id: updated.id, value: updated }]);
+        } catch (error) {
+          if (
+            !mounted.current ||
+            operation === "stop" ||
+            session.agent !== "claude" ||
+            !(error instanceof ConnectError) ||
+            error.code !== Code.FailedPrecondition
+          )
+            throw error;
+          const bound = await sessionLoginSnapshot(c.sessions, sessionRef, run);
+          if (
+            !requiredSessionLogin(
+              error,
+              bound.account?.alias ?? "",
+              bound.clientId,
+            )
+          )
+            throw error;
+          await openSessionLogin(run);
+        }
+      },
+      operation === "resume" && !run ? String : undefined,
+    );
+  }
+  const startCreatedSession = useEffectEvent(() => {
+    const status = s?.status;
+    if (!status || busy || !c.pendingSessionStarts.delete(id)) return;
+    if (status.state === "created" && !status.runId) void manage("resume", "");
+  });
+  useEffect(() => {
+    startCreatedSession();
+  }, [busy, c, id, s]);
+
   const needsLogin =
     s?.agent === "claude" &&
     authenticationRequired(metadata, s.status?.runId ?? "");
@@ -1304,43 +1351,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                   await navigate(resourceLocation("sessions"));
               });
             }}
-            manage={(operation, run) =>
-              action(async (session) => {
-                try {
-                  const updated = await manageSession(
-                    c.sessions,
-                    create(SessionRefSchema, ref(id)),
-                    operation,
-                    run,
-                  );
-                  c.store.apply("cxz.Session", [
-                    { id: updated.id, value: updated },
-                  ]);
-                } catch (error) {
-                  if (
-                    operation === "stop" ||
-                    session.agent !== "claude" ||
-                    !(error instanceof ConnectError) ||
-                    error.code !== Code.FailedPrecondition
-                  )
-                    throw error;
-                  const bound = await sessionLoginSnapshot(
-                    c.sessions,
-                    create(SessionRefSchema, ref(id)),
-                    run,
-                  );
-                  if (
-                    !requiredSessionLogin(
-                      error,
-                      bound.account?.alias ?? "",
-                      bound.clientId,
-                    )
-                  )
-                    throw error;
-                  await openSessionLogin(run);
-                }
-              })
-            }
+            manage={manage}
           />
         )}
       >
