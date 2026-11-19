@@ -21,7 +21,7 @@ function stream(rows) {
     Buffer.from([2, 0, 0, 0, 2, 123, 125]),
   ]);
 }
-function loginDetail() {
+function loginDetail(sessionKey = "original-creation") {
   const w = new BinaryWriter()
     .tag(1, WireType.LengthDelimited)
     .string("PROJECT_LOGIN_REQUIRED")
@@ -29,7 +29,7 @@ function loginDetail() {
     .string("cxz.auth");
   for (const [key, value] of [
     ["account", "work1"],
-    ["session_key", "original-creation"],
+    ["session_key", sessionKey],
   ])
     w.tag(3, WireType.LengthDelimited).bytes(
       new BinaryWriter()
@@ -44,7 +44,15 @@ function loginDetail() {
     value: Buffer.from(w.finish()).toString("base64"),
   };
 }
-async function fixture(page, { state = "idle", authFailure = true } = {}) {
+async function fixture(
+  page,
+  {
+    state = "idle",
+    authFailure = true,
+    projectInInventory = true,
+    forkError,
+  } = {},
+) {
   const id = (v) => Buffer.from(v.padEnd(16, "0")).toString("base64");
   const project = {
     id: projectFixture().id,
@@ -137,6 +145,11 @@ async function fixture(page, { state = "idle", authFailure = true } = {}) {
         contentType: "application/connect+json",
         body: stream(rows),
       });
+    if (!projectInInventory) {
+      if (path === "/cxz.ProjectService/List") return send({ items: [] });
+      if (path === "/cxz.ProjectService/Watch")
+        return frames([{ snapshotComplete: true }]);
+    }
     for (const [service, value] of [
       ["Project", project],
       ["Account", account],
@@ -177,6 +190,24 @@ async function fixture(page, { state = "idle", authFailure = true } = {}) {
       state = "idle";
       return send(session());
     }
+    if (path === "/cxz.SessionService/Fork") {
+      if (forkError) return route.fulfill({ status: 400, json: forkError });
+      if (!authenticated)
+        return route.fulfill({
+          status: 400,
+          json: {
+            code: "failed_precondition",
+            message: "account work1 needs login; run cxz account login work1",
+            details: [loginDetail(q.clientId)],
+          },
+        });
+      return send({
+        ...session(),
+        id: id("child"),
+        runtimeId: "child",
+        alias: "forked-seal",
+      });
+    }
     return send({});
   });
   await page.routeWebSocket("**/login/session?**", (socket) => {
@@ -193,11 +224,12 @@ async function fixture(page, { state = "idle", authFailure = true } = {}) {
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
-  await page.goto("/");
-  await page
-    .getByRole("link", { name: /Claude session seal/ })
-    .first()
-    .click();
+  await page.goto(projectInInventory ? "/" : "/c/_/session/seal");
+  if (projectInInventory)
+    await page
+      .getByRole("link", { name: /Claude session seal/ })
+      .first()
+      .click();
   return {
     requests,
     sockets,
@@ -257,6 +289,48 @@ test("Resume's structured credential failure opens Claude login automatically", 
     .poll(() => f.requests.filter((r) => r.path.endsWith("/Resume")).length)
     .toBe(2);
   await expect(panel).toBeHidden();
+});
+
+test("Fork opens Claude login with incomplete cached resources and retries with the original key", async ({
+  page,
+}) => {
+  const f = await fixture(page, {
+    authFailure: false,
+    projectInInventory: false,
+  });
+  await page.getByRole("button", { name: "Session menu" }).click();
+  await page.getByRole("menuitem", { name: "Fork", exact: true }).click();
+  const panel = page.getByRole("region", { name: "Provider login" });
+  await expect(panel).toBeVisible();
+  const forks = () => f.requests.filter((r) => r.path.endsWith("/Fork"));
+  expect(forks()).toHaveLength(1);
+  await expect.poll(() => f.sockets.length).toBe(1);
+  expect(f.sockets[0].url.searchParams.get("account")).toBe("work1");
+  expect(f.sockets[0].url.searchParams.get("project")).toBe(
+    projectFixture().uuid,
+  );
+  expect(f.sockets[0].url.searchParams.get("key")).toBe(forks()[0].q.clientId);
+  f.complete();
+  await expect.poll(() => forks().length).toBe(2);
+  expect(forks()[1].q).toEqual(forks()[0].q);
+  expect(f.requests.some((r) => r.path.endsWith("/Stop"))).toBe(false);
+});
+
+test("Fork reports the server's rejection in the conversation", async ({
+  page,
+}) => {
+  await fixture(page, {
+    authFailure: false,
+    forkError: { code: "failed_precondition", message: "stale run_id" },
+  });
+  await page.getByRole("button", { name: "Session menu" }).click();
+  await page.getByRole("menuitem", { name: "Fork", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "stale run_id" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/check the session list before retrying/i),
+  ).toHaveCount(0);
 });
 
 test("canceling or failing OAuth never resumes; login can be retried", async ({

@@ -39,6 +39,20 @@ describe("session login retry", () => {
       requiredSessionLogin(missing("work", "other"), "work", "creation"),
     ).toBeUndefined();
   });
+  it("resolves a missing account alias only from an explicitly matching key", () => {
+    expect(requiredSessionLogin(missing(), undefined, "creation")).toEqual({
+      account: "work",
+      key: "creation",
+    });
+    for (const error of [
+      missing("work", ""),
+      missing("work", "other"),
+      missing(""),
+    ])
+      expect(
+        requiredSessionLogin(error, undefined, "creation"),
+      ).toBeUndefined();
+  });
   it("does not retry a generic auth failure or malformed detail", () => {
     expect(
       requiredSessionLogin(

@@ -983,4 +983,7 @@ export const messages = {
     "서버의 보조 AI를 설정합니다. 변경사항은 settings.json과 별도로 이 서버에 저장됩니다.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "연결이 끊긴 경우 작업 결과가 불확실할 수 있습니다. 다시 시도하기 전에 대화 내용을 확인하세요.",
+  "Could not confirm the fork. {error} Check the session list before retrying.":
+    "Fork 결과를 확인하지 못했습니다. {error} 다시 시도하기 전에 세션 목록을 확인하세요.",
+  "Fork failed. {error}": "Fork에 실패했습니다. {error}",
 } satisfies LanguagePack;

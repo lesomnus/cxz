@@ -984,5 +984,8 @@ export const messages = {
     "Configure server-side helpers. Changes are saved to this server, separately from settings.json.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "The result may be unknown after a disconnect; inspect the conversation before retrying.",
+  "Could not confirm the fork. {error} Check the session list before retrying.":
+    "Could not confirm the fork. {error} Check the session list before retrying.",
+  "Fork failed. {error}": "Fork failed. {error}",
 } as const;
 export type Message = keyof typeof messages;
