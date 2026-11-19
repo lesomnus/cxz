@@ -50,6 +50,20 @@ type Event struct {
 	Payload   json.RawMessage   `json:"payload,omitempty"`
 	Raw       []byte            `json:"raw,omitempty"` // Base64 preserves the exact vendor bytes.
 	Response  *ResponseMetadata `json:"response,omitempty"`
+	// Agent is the subagent whose work this is, absent when the session did it
+	// itself. A subagent's tool calls and replies arrive on the session's own
+	// stream and are recorded there, so without this nothing in a record says
+	// which of several concurrent subagents a line came from -- or that it came
+	// from one at all. See cxz#368.
+	Agent *EventAgent `json:"agent,omitempty"`
+}
+
+// EventAgent identifies one subagent run. ID is the id of the tool call that
+// started it, which is how an event is tied back to the `Agent` call above it
+// and how two subagents running in the same turn stay apart.
+type EventAgent struct {
+	ID   string `json:"id"`
+	Type string `json:"type,omitempty"`
 }
 
 // ResponseMetadata is immutable context for this response, not the session's
