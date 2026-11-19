@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/configeditor"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/networkservices"
@@ -46,7 +47,7 @@ func InstallWeb(ctx context.Context, root string, cfg webconfig.Config, out io.W
 	if !manager.State.Running {
 		return fmt.Errorf("start the Manager with cxz install first")
 	}
-	if err = replaceWeb(ctx, v, cfg, out); err != nil {
+	if err = replaceWeb(ctx, root, v, cfg, out); err != nil {
 		return err
 	}
 	return core.WriteJSON(filepath.Join(root, "web-installation.json"), cfg)
@@ -91,7 +92,7 @@ func RefreshWebLocked(ctx context.Context, root string, out io.Writer) error {
 	if old.Config.Image == v.Image {
 		return nil
 	}
-	if err = replaceWeb(ctx, v, cfg, out); err != nil {
+	if err = replaceWeb(ctx, root, v, cfg, out); err != nil {
 		return fmt.Errorf("Manager updated but web update failed; retry cxz web up: %w", err)
 	}
 	return nil
@@ -111,7 +112,7 @@ func findWeb(ctx context.Context, v transport.Installation) (dockerx.Container, 
 	return cs[0], true, nil
 }
 
-func webArgs(v transport.Installation, cfg webconfig.Config) ([]string, error) {
+func webArgs(v transport.Installation, cfg webconfig.Config, configEditorDir string) ([]string, error) {
 	host, port, err := net.SplitHostPort(cfg.Listen)
 	if err != nil {
 		return nil, fmt.Errorf("web listen: %w", err)
@@ -143,6 +144,10 @@ func webArgs(v transport.Installation, cfg webconfig.Config) ([]string, error) {
 	for _, pair := range mounts {
 		args = append(args, "--mount", "type=bind,source="+pair[0]+",target=/web/"+pair[1]+",readonly")
 	}
+	if configEditorDir != "" {
+		args = append(args, "--mount", "type=bind,source="+configEditorDir+",target=/web/configuration-editor,readonly",
+			"-e", configeditor.SocketEnv+"=/web/configuration-editor/host.sock")
+	}
 	args = append(args, v.Image, "--state", "/var/lib/cxz", "-x", "_web-serve", "--listen", "0.0.0.0:7350", "--origin", cfg.Origin, "--access-token-file", "/web/token")
 	if cfg.Certificate != "" {
 		args = append(args, "--tls-cert", "/web/certificate.pem", "--tls-key", "/web/key.pem")
@@ -150,11 +155,15 @@ func webArgs(v transport.Installation, cfg webconfig.Config) ([]string, error) {
 	return args, nil
 }
 
-func replaceWeb(ctx context.Context, v transport.Installation, cfg webconfig.Config, out io.Writer) error {
+func replaceWeb(ctx context.Context, root string, v transport.Installation, cfg webconfig.Config, out io.Writer) error {
 	if _, err := cfg.Runtime(); err != nil {
 		return err
 	}
-	args, err := webArgs(v, cfg)
+	dir, err := configeditor.PrepareSocketDir(root)
+	if err != nil {
+		return err
+	}
+	args, err := webArgs(v, cfg, dir)
 	if err != nil {
 		return err
 	}

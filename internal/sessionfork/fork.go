@@ -55,11 +55,8 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 	target := source
 	target.ID, target.CreateID, target.CreatedAt, target.Supervisor = request.ID, request.ClientID, time.Now().UnixMilli(), ""
 	target.Fork = &core.ForkOrigin{SessionID: source.ID, RunID: snapshot.RunID, VendorID: snapshot.VendorID, ThroughSeq: snapshot.LastSeq}
-	backend, err := accounts.ResolveBinding(target.Kind, target.AuthBackend, target.AuthProjectID(), target.Account, target.AuthBinding)
+	_, err = accounts.ResolveBinding(target.Kind, target.AuthBackend, target.AuthProjectID(), target.Account, target.AuthBinding)
 	if err != nil {
-		return result, err
-	}
-	if err = backend.Check(accounts.AuthRoot(root, target), target.Account); err != nil {
 		return result, err
 	}
 	dir := core.Dir(root, target.ID)
@@ -201,7 +198,7 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 		return result, err
 	}
 	if err = store.SetState(ctx, core.Snapshot{
-		State: "stopped", RunID: snapshot.RunID, VendorID: "", LastSeq: last,
+		State: "stopped", LastSeq: last,
 		PermissionMode: snapshot.PermissionMode,
 	}); err != nil {
 		store.Close()

@@ -230,6 +230,7 @@ export function ComponentPreview({
   const pastes = useRef<Map<string, ComposerPaste>>(previewPastes());
   const startedAt = useRef(Date.now() - 14_000);
   const [stopped, setStopped] = useState(sessionStopped);
+  const [waitingForStart, setWaitingForStart] = useState(false);
   const [generation, setGeneration] = useState(1);
   const active = working && !stopped;
   const [identity, setIdentity] = useState({
@@ -279,7 +280,7 @@ export function ComponentPreview({
   Object.assign(session, identity);
   session.agent = agent;
   session.status!.state = stopped ? "stopped" : active ? "running" : "idle";
-  session.status!.runId = `storybook-run-${generation}`;
+  session.status!.runId = waitingForStart ? "" : `storybook-run-${generation}`;
   return (
     <PreviewFrame>
       <PreviewTranscript
@@ -310,7 +311,7 @@ export function ComponentPreview({
         lookupPaths={lookupPaths}
         workspace="/workspace"
         onSubmit={(e) => e.preventDefault()}
-        canSend={!!uploadMode && !!value.trim() && !sending}
+        canSend={!!uploadMode && !!value.trim() && !sending && !waitingForStart}
         upload={uploadMode ? previewUpload : undefined}
         secretFiles={secretFiles}
         downloadAttachment={downloadAttachment}
@@ -341,11 +342,13 @@ export function ComponentPreview({
               };
               identityRef.current = next;
               setIdentity(next);
-              setStopped(false);
+              setWaitingForStart(true);
+              setStopped(true);
               setGeneration((value) => value + 1);
             }}
             upload={uploadMode ? pick : undefined}
             manage={async (operation) => {
+              setWaitingForStart(false);
               setStopped(operation === "stop");
               if (operation !== "stop") setGeneration((value) => value + 1);
               return true;

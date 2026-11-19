@@ -21,7 +21,7 @@ import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import {
   ResourceDashboard,
   ResourceDashboardColumn,
-  ResourceSessionSection,
+  ResourceTableSection,
 } from "#src/shared/components/resource-layout.tsx";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
@@ -187,7 +187,10 @@ export function AccountDetails({
             />
           </ResourceFieldsGroup>
         </Section>
-        <ResourceSessionSection aria-label="Sessions using this account">
+        <ResourceTableSection
+          aria-label="Sessions using this account"
+          fillHeight
+        >
           <SessionTable
             c={c}
             sessions={sessions}
@@ -201,7 +204,7 @@ export function AccountDetails({
             horizontalScrollbar
             fillHeight
           />
-        </ResourceSessionSection>
+        </ResourceTableSection>
       </ResourceDashboardColumn>
       <ResourceDashboardColumn kind="activity">
         <SectionGroup

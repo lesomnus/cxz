@@ -18,9 +18,11 @@ authentication store, search index, or memory library.
   forking and Claude uses native session forking, with separate private provider
   histories. The project workspace files remain shared. Pending questions and
   queued input must be resolved first, and running turns cannot be forked.
-  Session-local OAuth opens the existing login flow for the new session before
-  retrying the same fork request. Fork never copies refresh tokens; brokered
-  Codex reuses its central account binding without an extra login.
+  Fork saves the copy as a stopped session and opens its conversation.
+  Choose **Start** in the copied session's menu to run its agent. If the
+  account uses session-local OAuth, Start opens the provider login flow for
+  the copied session. Canceling login leaves the stopped copy available.
+  Brokered Codex uses its central account binding when the copy starts.
   The Manager and project runtime both need the updated Fork API; reloading Vite
   alone does not install the backend change. The WASM sandbox simulates forks.
 - **Accounts**: register isolated Codex or Claude authentication profiles and log

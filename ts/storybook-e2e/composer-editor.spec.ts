@@ -315,6 +315,49 @@ test("a pasted chip and the following Korean paragraph keep the same native line
   expect(rows.mirrored).toEqual(rows.native);
 });
 
+test("fenced code keeps its syntax colors while Korean text is composing", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-playground--interactive&viewMode=story",
+  );
+  const input = page.getByRole("textbox", { name: "Message", exact: true });
+  const editor = page.locator(".composer-editor");
+  const prefix = '```\ndef greet(name):\n    return "';
+  const suffix = '" + name\n```';
+  await input.fill(prefix + suffix);
+  const keyword = editor
+    .locator(".editor-code-line .hljs-keyword")
+    .filter({ hasText: "return" });
+  const string = editor.locator(".editor-code-line .hljs-string");
+  await expect(keyword).toBeVisible();
+  const color = await keyword.evaluate((node) => getComputedStyle(node).color);
+  await input.evaluate(
+    (node: HTMLTextAreaElement, offset) =>
+      node.setSelectionRange(offset, offset),
+    prefix.length,
+  );
+  const cdp = await page.context().newCDPSession(page);
+  for (const text of ["ㅎ", "하", "한"]) {
+    await cdp.send("Input.imeSetComposition", {
+      text,
+      selectionStart: text.length,
+      selectionEnd: text.length,
+    });
+    await expect(editor).toHaveAttribute("data-composing", "true");
+    await expect(input).toHaveValue(prefix + text + suffix);
+    await expect(input).toHaveCSS("color", "rgba(0, 0, 0, 0)");
+    await expect(keyword).toBeVisible();
+    await expect(keyword).toHaveCSS("color", color);
+    await expect(string).toBeVisible();
+    await expect(string).toHaveText(`"${text}"`);
+  }
+  await cdp.send("Input.insertText", { text: "한" });
+  await expect(editor).toHaveAttribute("data-composing", "false");
+  await expect(input).toHaveValue(prefix + "한" + suffix);
+  await expect(keyword).toHaveCSS("color", color);
+});
+
 test("chips retain their colors and code controls remain visible throughout Korean composition", async ({
   page,
 }) => {

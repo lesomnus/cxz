@@ -22,6 +22,16 @@ submit a new request. The action becomes Stop while streaming. Result links open
 session at the matching message sequence. Pagination reuses the submitted query,
 filters and server cursor.
 
+When opening Search, **Recent searches** shows completed searches from the last
+seven days for this authenticated connection. The browser stores the query,
+project, match settings, date bounds, submission time, and loaded result count
+in localStorage. A plus sign indicates more pages were available. Selecting a
+query restores its filters and runs it again against the current index. **Clear
+history** removes the current connection's list. Snippets and other result
+contents are not saved. Up to 50 distinct searches are kept per connection.
+Expired entries are removed while the page is open and when the browser next
+connects.
+
 ## Server path
 
 `server/lifecycle/session.go` translates the resource RPC into the installation's

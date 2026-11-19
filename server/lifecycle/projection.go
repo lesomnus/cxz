@@ -18,6 +18,9 @@ func event(e *api.Event) *resource.SessionEvent {
 	if r := e.Response; r != nil {
 		v.SetResponse(resource.ResponseMetadata_builder{Model: r.Model, Effort: r.Effort, ModelSource: r.ModelSource, EffortSource: r.EffortSource, TurnId: r.TurnId, Phase: r.Phase, CompletionJson: r.CompletionJson}.Build())
 	}
+	if a := e.Agent; a != nil {
+		v.SetAgent(resource.EventAgent_builder{Id: a.Id, Type: a.Type}.Build())
+	}
 	return v
 }
 func sessionStatus(v *api.Session) *resource.SessionStatus {

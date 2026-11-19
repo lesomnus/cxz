@@ -3,6 +3,7 @@ package sessionfork_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,8 +11,8 @@ import (
 
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/sessionfork"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/supervisor"
 )
 
@@ -31,15 +32,6 @@ func fixture(t *testing.T, agent string) (string, core.Session, []core.Event) {
 	profile := accounts.SessionRoot(root, source.CreateID)
 	if err := accounts.Install(profile, source.Account, agent, credential); err != nil {
 		t.Fatal(err)
-	}
-	for _, key := range []string{"child", "trimmed-child"} {
-		separate := []byte(`{"claudeAiOauth":{"accessToken":"independent-child"}}`)
-		if agent == "codex" {
-			separate = []byte(`{"tokens":{"access_token":"independent-child"}}`)
-		}
-		if err := accounts.Install(accounts.SessionRoot(root, key), source.Account, agent, separate); err != nil {
-			t.Fatal(err)
-		}
 	}
 	native := filepath.Join(accounts.Config(profile, source.Account), folder, "workspace", name)
 	if err := os.MkdirAll(filepath.Dir(native), 0700); err != nil {
@@ -111,8 +103,9 @@ func TestForkPreservesConversationButSeparatesRuntimeAndNativeFiles(t *testing.T
 			if err != nil || string(parentNative) != "original native context\n" {
 				t.Fatal("child overwrote parent native context", err)
 			}
-			if _, err := accounts.LaunchSession(root, child, nil); err != nil {
-				t.Fatal("same account not available to child", err)
+			var login *accounts.LoginRequired
+			if _, err := accounts.Credential(accounts.SessionRoot(root, child.CreateID), child.Account, child.Kind); !errors.As(err, &login) {
+				t.Fatal("fork must leave the child credential unset", err)
 			}
 		})
 	}

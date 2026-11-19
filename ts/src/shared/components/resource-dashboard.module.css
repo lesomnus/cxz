@@ -45,12 +45,3 @@
   height: var(--resource-usage-height);
   align-content: start;
 }
-.sessions.sessions {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: 100%;
-  padding-top: var(--ui-section-group-gap);
-  padding-inline: 0;
-  overflow: visible;
-}

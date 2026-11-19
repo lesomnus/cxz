@@ -305,6 +305,12 @@ export const messages = {
   Project: "Project",
   Icon: "Icon",
   None: "None",
+  subagent: "subagent",
+  "Subagent {name}": "Subagent {name}",
+  "{count} message": "{count} message",
+  "{count} messages": "{count} messages",
+  "{count} step": "{count} step",
+  "{count} steps": "{count} steps",
   "Project icon preview": "Project icon preview",
   Workspace: "Workspace",
   "Runtime ID": "Runtime ID",
@@ -615,6 +621,18 @@ export const messages = {
   "Session list": "Session list",
   Sessions: "Sessions",
   Search: "Search",
+  "Recent searches": "Recent searches",
+  "Repeat this search": "Repeat this search",
+  Filters: "Filters",
+  Results: "Results",
+  Substring: "Substring",
+  "Regular expression": "Regular expression",
+  "Fuzzy search": "Fuzzy search",
+  "Case insensitive": "Case insensitive",
+  "No date filters": "No date filters",
+  "From {date} (UTC)": "From {date} (UTC)",
+  "Before {date} (UTC)": "Before {date} (UTC)",
+  "Partial results": "Partial results",
   "Sessions view": "Sessions view",
   Settings: "Settings",
   "Settings file editor": "Settings file editor",
@@ -788,6 +806,28 @@ export const messages = {
     "Upload interrupted. Remove this chip and select the file again.",
   Name: "Name",
   Connections: "Connections",
+  "Installation files": "Installation files",
+  "Compose override": "Compose override",
+  "Default devcontainer template": "Default devcontainer template",
+  "Installation file editing requires a host connection.":
+    "Installation file editing requires a host connection.",
+  "This gateway does not support installation file editing.":
+    "This gateway does not support installation file editing.",
+  "Editing a copy of the built-in template.":
+    "Editing a copy of the built-in template.",
+  "Enter a new relative file path.": "Enter a new relative file path.",
+  "New file path": "New file path",
+  "Add file": "Add file",
+  "The built-in template will be restored when you apply changes.":
+    "The built-in template will be restored when you apply changes.",
+  "Files saved on the host. Manager publication failed.":
+    "Files saved on the host. Manager publication failed.",
+  "This binary file will be preserved when you apply changes.":
+    "This binary file will be preserved when you apply changes.",
+  "Changes take effect when project containers are created or recreated.":
+    "Changes take effect when project containers are created or recreated.",
+  "Restore built-in template": "Restore built-in template",
+  "Apply changes": "Apply changes",
   "A connection reaches one installation and every project on it.":
     "A connection reaches one installation and every project on it.",
   Target: "Target",
@@ -950,5 +990,8 @@ export const messages = {
     "Configure server-side helpers. Changes are saved to this server, separately from settings.json.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "The result may be unknown after a disconnect; inspect the conversation before retrying.",
+  "Could not confirm the fork. {error} Check the session list before retrying.":
+    "Could not confirm the fork. {error} Check the session list before retrying.",
+  "Fork failed. {error}": "Fork failed. {error}",
 } as const;
 export type Message = keyof typeof messages;

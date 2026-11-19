@@ -51,11 +51,11 @@ func (x *Sessions) Fork(_ context.Context, r *resource.SessionControl) (*resourc
 	child.value.SetClientId(r.GetClientId())
 	child.value.SetDateCreated(timestamppb.Now())
 	child.value.SetDateUpdated(timestamppb.Now())
-	child.value.SetStatus(resource.SessionStatus_builder{State: "idle", RunId: id + "-run-1", VendorId: id + "-vendor", LastSeq: state.GetLastSeq(), PermissionMode: state.GetPermissionMode()}.Build())
+	child.value.SetStatus(resource.SessionStatus_builder{LastSeq: state.GetLastSeq(), PermissionMode: state.GetPermissionMode()}.Build())
 	for _, event := range source.events {
 		child.events = append(child.events, proto.Clone(event).(*resource.SessionEvent))
 	}
 	s.sessions = append(s.sessions, child)
-	s.state(child, "idle")
+	s.state(child, "stopped")
 	return proto.Clone(child.value).(*resource.Session), nil
 }

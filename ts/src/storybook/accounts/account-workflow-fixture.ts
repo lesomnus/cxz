@@ -32,6 +32,10 @@ export type AccountScenario =
   | "expired";
 export type LoginOutcome = "success" | "fail-once" | "disconnect-once";
 
+const previewAuthorizationUrl =
+  "https://example.invalid/oauth/authorize?client_id=storybook&state=" +
+  "storybook".repeat(44);
+
 export class PreviewLoginSocket implements LoginSocket {
   onopen: LoginSocket["onopen"] = null;
   onmessage: LoginSocket["onmessage"] = null;
@@ -43,11 +47,15 @@ export class PreviewLoginSocket implements LoginSocket {
   constructor(
     outcome: LoginOutcome,
     private complete: () => void,
+    authorizationUrl?: string,
   ) {
     this.later(() => {
       this.onopen?.(new Event("open"));
       this.frame({
         output:
+          (authorizationUrl
+            ? `If the browser didn't open, visit: ${authorizationUrl}\n\n`
+            : "") +
           "This is a simulated provider login.\n\nEnter **demo-code** below to complete it. No real credentials are used.\n",
       });
       if (outcome === "fail-once")
@@ -471,14 +479,19 @@ export function accountWorkflowFixture(
   const connect: LoginSocketFactory = (url) => {
     calls.push(`login:${url.pathname}`);
     const attemptOutcome = ++loginAttempts === 1 ? outcome : "success";
-    const socket = new PreviewLoginSocket(attemptOutcome, () => {
-      const alias = url.searchParams.get("account")!;
-      if (url.pathname === "/login/session") {
-        authenticatedSessions.add(url.searchParams.get("key")!);
-        needsLogin = false;
-      } else signedIn.add(alias);
-      notify();
-    });
+    const sessionLogin = url.pathname === "/login/session";
+    const socket = new PreviewLoginSocket(
+      attemptOutcome,
+      () => {
+        const alias = url.searchParams.get("account")!;
+        if (sessionLogin) {
+          authenticatedSessions.add(url.searchParams.get("key")!);
+          needsLogin = false;
+        } else signedIn.add(alias);
+        notify();
+      },
+      sessionLogin ? previewAuthorizationUrl : undefined,
+    );
     sockets.add(socket);
     return socket;
   };

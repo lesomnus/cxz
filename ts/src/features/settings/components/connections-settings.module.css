@@ -1,0 +1,19 @@
+.error {
+  margin-inline: var(--ui-section-padding);
+}
+
+.nameColumn {
+  width: 25%;
+}
+
+.transportColumn {
+  width: 22%;
+}
+
+.actionsColumn {
+  width: calc(var(--resource-table-control-size) + var(--ui-control-inset));
+}
+
+.target {
+  display: block;
+}

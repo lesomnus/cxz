@@ -1,0 +1,57 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space);
+  padding: var(--ui-control-inset) var(--ui-control-inline-inset);
+}
+
+.header h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 500;
+}
+
+.table {
+  overflow-wrap: anywhere;
+}
+
+.queryColumn {
+  width: 31%;
+}
+
+.resultsColumn {
+  width: 12%;
+}
+
+.timeColumn {
+  width: 16%;
+}
+
+.table .queryCell {
+  padding: var(--ui-control-inset);
+}
+
+.query.query {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: start;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.filters small,
+.results small {
+  display: block;
+  color: var(--ui-muted);
+}
+
+.table .filters {
+  padding-block: var(--ui-control-inline-inset);
+}
+
+.results,
+.time {
+  font-variant-numeric: tabular-nums;
+}

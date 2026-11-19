@@ -5,7 +5,6 @@ package memorymcp
 import (
 	"context"
 	"encoding/json"
-	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"os"
 	"path/filepath"
@@ -14,7 +13,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/lesomnus/cxz/internal/conversation"
 	"github.com/lesomnus/cxz/internal/core"
-	"github.com/lesomnus/cxz/internal/journal"
+	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -39,14 +39,21 @@ func TestConversationMCPMetadataThenFile(t *testing.T) {
 	if err := os.MkdirAll(core.Dir(root, b.ID), 0700); err != nil {
 		t.Fatal(err)
 	}
-	core.WriteJSON(filepath.Join(core.Dir(root, b.ID), "session.json"), b)
-	log, err := journal.Open(filepath.Join(core.Dir(root, b.ID), "events.jsonl"))
+	dir := core.Dir(root, b.ID)
+	if err := core.WriteJSON(filepath.Join(dir, "session.json"), b); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sessionstore.Open(t.Context(), sessionstore.Path(dir), b.ID, true)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = log.Append(core.Event{SessionID: b.ID, Kind: "assistant", Text: "distinctive response"})
-	log.Close()
-	if err != nil {
+	defer db.Close()
+	if err := db.Append(t.Context(), []core.Event{
+		{SessionID: b.ID, Seq: 1, Kind: "assistant", Text: "distinctive response"},
+		{SessionID: b.ID, Seq: 2, Kind: "input", Text: "continue"},
+		{SessionID: b.ID, Seq: 3, Kind: "tool_result", Text: "tool output"},
+		{SessionID: b.ID, Seq: 4, Kind: "assistant", Text: "latest answer"},
+	}); err != nil {
 		t.Fatal(err)
 	}
 	id := uuid.New()
@@ -88,12 +95,16 @@ func TestConversationMCPMetadataThenFile(t *testing.T) {
 		return reply
 	}
 	found := call("session_lookup", map[string]any{"session": "seal"})
-	if found.ID != id.String() || found.State != "stopped" {
+	if found.ID != id.String() || found.State != "stopped" || found.FirstSeq != 1 || found.SnapshotSeq != 4 {
 		t.Fatal(found)
 	}
 	hits := call("conversation_search", map[string]any{"session": found.ID, "query": "distinctive"})
 	if len(hits.Hits) != 1 || len(hits.Bodies) != 0 {
 		t.Fatal(hits)
+	}
+	recent := call("conversation_read", map[string]any{"session": found.ID, "tail": 2})
+	if len(recent.Bodies) != 2 || recent.Bodies[0].Text != "continue" || recent.Bodies[1].Text != "latest answer" {
+		t.Fatal(recent)
 	}
 	file := call("conversation_read", map[string]any{"session": found.ID, "seqs": []uint64{1}, "snapshot_seq": hits.SnapshotSeq, "output": "file"})
 	if file.Path == "" || len(file.Bodies) != 0 {

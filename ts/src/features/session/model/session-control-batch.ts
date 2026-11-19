@@ -32,9 +32,10 @@ export function controlTarget(s: Session): SessionTarget {
 }
 export function canControl(s: Session, kind: SessionControlKind) {
   if (kind === "erase") return true;
-  if (!s.status?.runId) return false;
+  if (!s.status) return false;
   const stopped = resumableStates.has(s.status.state);
-  return kind === "resume" ? stopped : kind === "stop" ? !stopped : true;
+  if (kind === "resume") return stopped;
+  return !!s.status.runId && (kind === "restart" || !stopped);
 }
 
 async function assertTarget(

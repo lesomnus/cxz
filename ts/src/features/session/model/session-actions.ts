@@ -5,7 +5,7 @@ import { t } from "#src/shared/i18n/i18n.ts";
 export type SessionOperation = "stop" | "resume" | "restart";
 type LifecycleClient = Pick<
   Client<typeof SessionService>,
-  "get" | "stop" | "resume"
+  "get" | "stop" | "start" | "resume"
 >;
 export const resumableStates = new Set([
   "created",
@@ -46,7 +46,9 @@ export async function manageSession(
     current = await get();
     assertRun(current.status?.runId);
   }
-  return client.resume(control(), options);
+  return expectedRun
+    ? client.resume(control(), options)
+    : client.start(control(), options);
 }
 
 // Only an explicit login action may stop an idle run. A replacement run must

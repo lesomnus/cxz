@@ -288,6 +288,48 @@ test("all categories coexist, save without moving panels, and retain deep links"
   await expect(
     topics(page).getByRole("button", { name: "Connections", exact: true }),
   ).toHaveAttribute("aria-current", "location");
+  const table = page.getByRole("table", { name: "Connections", exact: true });
+  await expect(
+    table.getByRole("rowheader", { name: /This server/ }),
+  ).toBeVisible();
+  const insets = await table.evaluate((element) => {
+    const bounds = element.getBoundingClientRect();
+    const section = element.closest('[data-section-layout="section"]')!;
+    const outer = section.getBoundingClientRect();
+    return {
+      left: bounds.left - outer.left,
+      right: outer.right - bounds.right,
+    };
+  });
+  expect(insets.left).toBeCloseTo(0, 1);
+  expect(insets.right).toBeCloseTo(0, 1);
+  const action = table.getByRole("button", {
+    name: "Controls for This server",
+  });
+  const actionLayout = await action.evaluate((element) => {
+    const row = element.closest("tr")!;
+    const rowRect = row.getBoundingClientRect();
+    const buttonRect = element.getBoundingClientRect();
+    const tokens = getComputedStyle(row);
+    const inset = parseFloat(tokens.getPropertyValue("--ui-control-inset"));
+    return {
+      size: buttonRect.width,
+      height: buttonRect.height,
+      end: rowRect.right - buttonRect.right,
+      centerOffset:
+        buttonRect.top +
+        buttonRect.height / 2 -
+        (rowRect.top + rowRect.height / 2),
+      expectedSize:
+        parseFloat(tokens.getPropertyValue("--resource-table-control-size")) -
+        2 * inset,
+      expectedEnd: 2 * inset,
+    };
+  });
+  expect(actionLayout.size).toBeCloseTo(actionLayout.expectedSize, 1);
+  expect(actionLayout.height).toBeCloseTo(actionLayout.size, 1);
+  expect(actionLayout.end).toBeCloseTo(actionLayout.expectedEnd, 1);
+  expect(actionLayout.centerOffset).toBeCloseTo(0, 1);
 });
 
 test("Logs remain a separate page accessible from Profile", async ({

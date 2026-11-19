@@ -2,13 +2,13 @@ package lifecycle
 
 import (
 	"context"
-	"github.com/lesomnus/cxz/internal/projectid"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
 	"google.golang.org/grpc/codes"
@@ -29,7 +29,8 @@ func (f *forkFixture) ForkSession(_ context.Context, r *api.SessionForkInput) (*
 	child := proto.Clone(f.sessions[0]).(*api.Session)
 	child.Id = "child"
 	child.CreateId = r.ClientId
-	child.RunId = "child-run"
+	child.State = "stopped"
+	child.RunId = ""
 	f.sessions = append(f.sessions, child)
 	return child, nil
 }
@@ -59,5 +60,8 @@ func TestForkResolvesSourceAndPublishesChildWithSameResourceEdges(t *testing.T) 
 	child, err = stack.Session().Get(t.Context(), resource.SessionGetRequest_builder{Ref: sessionRef("child"), Select: resource.SessionSelect_builder{All: ptr(true), Project: resource.ProjectSelect_builder{All: ptr(true)}.Build(), Account: resource.AccountSelect_builder{All: ptr(true)}.Build(), AuthBinding: resource.AuthBindingSelect_builder{All: ptr(true)}.Build()}.Build()}.Build())
 	if err != nil || projectid.String(child.GetProject().GetId()) != projectid.String(source.GetProject().GetId()) || child.GetAccount().GetAlias() != source.GetAccount().GetAlias() || child.GetAuthBinding().GetBindingId() != source.GetAuthBinding().GetBindingId() {
 		t.Fatal("fork lost resource edges", child, err)
+	}
+	if child.GetStatus().GetState() != "stopped" || child.GetStatus().GetRunId() != "" {
+		t.Fatal("fork did not publish a stopped session", child)
 	}
 }

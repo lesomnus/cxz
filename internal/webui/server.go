@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lesomnus/cxz/internal/configeditor"
 	"github.com/lesomnus/cxz/resource"
 
 	pdweb "github.com/lesomnus/payday/web"
@@ -26,7 +27,10 @@ import (
 const cookieName = "__Host-cxz"
 const lifetime = 12 * time.Hour
 
-type Config struct{ Listen, Origin, Certificate, Key, Token string }
+type Config struct {
+	Listen, Origin, Certificate, Key, Token string
+	ConfigurationEditor                     http.Handler
+}
 
 // Loopback reports a host the browser can only reach on this machine. It is the
 // one place plaintext is allowed: Chrome and Firefox already treat
@@ -103,6 +107,13 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Han
 	mux.Handle("/login/", &loginProxy{client: resource.NewProjectServiceClient(conn)})
 	mux.Handle("/attachments/", &attachmentRoute{raw: rpc})
 	mux.Handle("/rpc-stream/", &rpcStreamProxy{rpc: rpc})
+	configuration := c.ConfigurationEditor
+	if configuration == nil {
+		configuration = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			http.Error(w, "Start cxz web config-editor on the installation host.", http.StatusServiceUnavailable)
+		})
+	}
+	mux.Handle(configeditor.Prefix, configuration)
 	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if pdweb.Rpc(r) {
@@ -160,7 +171,7 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || strings.HasPrefix(r.URL.Path, "/login/") || strings.HasPrefix(r.URL.Path, "/attachments/") || strings.HasPrefix(r.URL.Path, "/rpc-stream/") || r.URL.Path == "/auth/status" {
+		if pdweb.Rpc(r) || strings.HasPrefix(r.URL.Path, "/cxz.") || strings.HasPrefix(r.URL.Path, "/editor/") || strings.HasPrefix(r.URL.Path, "/terminal/") || strings.HasPrefix(r.URL.Path, "/login/") || strings.HasPrefix(r.URL.Path, "/attachments/") || strings.HasPrefix(r.URL.Path, "/rpc-stream/") || strings.HasPrefix(r.URL.Path, configeditor.Prefix) || r.URL.Path == "/auth/status" {
 			c, err := r.Cookie(cookieName)
 			if err != nil {
 				http.Error(w, "sign in required", http.StatusUnauthorized)

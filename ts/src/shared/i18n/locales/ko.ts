@@ -304,6 +304,12 @@ export const messages = {
   Project: "프로젝트",
   Icon: "아이콘",
   None: "없음",
+  subagent: "서브에이전트",
+  "Subagent {name}": "{name} 서브에이전트",
+  "{count} message": "메시지 {count}개",
+  "{count} messages": "메시지 {count}개",
+  "{count} step": "단계 {count}개",
+  "{count} steps": "단계 {count}개",
   "Project icon preview": "프로젝트 아이콘 미리보기",
   Workspace: "워크스페이스",
   "Runtime ID": "런타임 ID",
@@ -615,6 +621,18 @@ export const messages = {
   "Session list": "세션 목록",
   Sessions: "세션",
   Search: "검색",
+  "Recent searches": "최근 검색",
+  "Repeat this search": "다시 검색",
+  Filters: "필터",
+  Results: "결과",
+  Substring: "부분 일치",
+  "Regular expression": "정규식",
+  "Fuzzy search": "유사 검색",
+  "Case insensitive": "대소문자 무시",
+  "No date filters": "기간 필터 없음",
+  "From {date} (UTC)": "{date}부터 (UTC)",
+  "Before {date} (UTC)": "{date} 이전 (UTC)",
+  "Partial results": "일부 결과",
   "Sessions view": "세션 보기",
   Settings: "설정",
   "Settings file editor": "설정 파일 에디터",
@@ -788,6 +806,28 @@ export const messages = {
     "업로드가 중단됐습니다. 이 칩을 제거하고 파일을 다시 선택하세요.",
   Name: "이름",
   Connections: "연결",
+  "Installation files": "설치 설정 파일",
+  "Compose override": "Compose 오버라이드",
+  "Default devcontainer template": "기본 devcontainer 템플릿",
+  "Installation file editing requires a host connection.":
+    "설치 파일을 편집하려면 호스트에 연결해야 합니다.",
+  "This gateway does not support installation file editing.":
+    "이 게이트웨이는 설치 파일 편집을 지원하지 않습니다.",
+  "Editing a copy of the built-in template.":
+    "내장 템플릿의 복사본을 편집합니다.",
+  "Enter a new relative file path.": "새 파일의 상대 경로를 입력하세요.",
+  "New file path": "새 파일 경로",
+  "Add file": "파일 추가",
+  "The built-in template will be restored when you apply changes.":
+    "변경을 적용하면 내장 템플릿으로 복원됩니다.",
+  "Files saved on the host. Manager publication failed.":
+    "호스트에 저장했지만 Manager에 반영하지 못했습니다.",
+  "This binary file will be preserved when you apply changes.":
+    "변경을 적용해도 이 바이너리 파일은 보존됩니다.",
+  "Changes take effect when project containers are created or recreated.":
+    "변경 사항은 프로젝트 컨테이너를 생성하거나 재생성할 때 적용됩니다.",
+  "Restore built-in template": "내장 템플릿 복원",
+  "Apply changes": "변경 적용",
   "A connection reaches one installation and every project on it.":
     "연결 하나는 설치본 하나와 그 안의 모든 프로젝트에 닿습니다.",
   Target: "대상",
@@ -949,4 +989,7 @@ export const messages = {
     "서버의 보조 AI를 설정합니다. 변경사항은 settings.json과 별도로 이 서버에 저장됩니다.",
   "The result may be unknown after a disconnect; inspect the conversation before retrying.":
     "연결이 끊긴 경우 작업 결과가 불확실할 수 있습니다. 다시 시도하기 전에 대화 내용을 확인하세요.",
+  "Could not confirm the fork. {error} Check the session list before retrying.":
+    "Fork 결과를 확인하지 못했습니다. {error} 다시 시도하기 전에 세션 목록을 확인하세요.",
+  "Fork failed. {error}": "Fork에 실패했습니다. {error}",
 } satisfies LanguagePack;

@@ -164,10 +164,10 @@ export function LoginPanel({
   };
   const instructions = (
     <>
-      <div className={styles.status}>
+      <div className={`${styles.status} ${loginStyles.output}`}>
         <Markdown text={output.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "")} />
       </div>
-      {error && <ErrorNotice error={error} />}
+      {error && <ErrorNotice className={loginStyles.output} error={error} />}
     </>
   );
   const codeField = (

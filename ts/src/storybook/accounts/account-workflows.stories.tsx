@@ -117,7 +117,7 @@ export const ExpiredSession: Story = {
     docs: {
       description: {
         story:
-          "A conversation initially contains an authentication failure and recovery notice. Log in again opens the usual card above the composer; completing login resumes the session. Cancel or a failed login keeps the failed session intact. Use the loginOutcome control to inspect recovery failures.",
+          "Log in again opens the Claude login card above the composer. It shows a long sample authorization URL that wraps inside the card. Enter demo-code to resume the session. Use the loginOutcome control to inspect recovery failures.",
       },
     },
   },

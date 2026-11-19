@@ -662,7 +662,11 @@ export function SettingsPage({
               </header>
               <AuxiliarySettings c={c} sessions={sessions} />
             </section>
-            <ConnectionsSettings connections={connections} />
+            <ConnectionsSettings
+              key={c.clientId}
+              c={c}
+              connections={connections}
+            />
           </SettingsContent>
         </PanelScroll>
         <aside

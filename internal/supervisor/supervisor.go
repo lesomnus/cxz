@@ -82,6 +82,11 @@ type Supervisor struct {
 	settingPending   string
 	responseContext  core.ResponseMetadata
 	responseTracking responseTracking
+	// subagent is whose work the envelope being handled right now is. Claude
+	// reports it as `parent_tool_use_id` on every line a subagent produces;
+	// everything derived from that line is recorded as theirs. Set and cleared
+	// inside consume, which holds the lock for its whole run.
+	subagent *core.EventAgent
 	// latest is the meaning of each polled state as it was last recorded, so a
 	// poll that answers what the conversation already says records nothing.
 	// See latest.go.
@@ -405,6 +410,10 @@ func (s *Supervisor) event(kind, text, id string, payload any, raw []byte, respo
 		b, _ = json.Marshal(payload)
 	}
 	e := core.Event{SessionID: s.session.ID, RunID: s.snap.RunID, Kind: kind, Text: text, RequestID: id, Payload: b, Raw: raw}
+	if s.subagent != nil {
+		agent := *s.subagent
+		e.Agent = &agent
+	}
 	if (kind == "assistant" || kind == "turn_end") && len(response) > 0 {
 		metadata := response[0]
 		e.Response = &metadata
@@ -570,6 +579,7 @@ func (s *Supervisor) consume(raw []byte) {
 		SessionID       string         `json:"session_id"`
 		RequestID       string         `json:"request_id"`
 		ParentToolUseID *string        `json:"parent_tool_use_id"`
+		SubagentType    string         `json:"subagent_type"`
 		Request         map[string]any `json:"request"`
 		Response        struct {
 			RequestID string          `json:"request_id"`
@@ -588,6 +598,12 @@ func (s *Supervisor) consume(raw []byte) {
 	if json.Unmarshal(raw, &v) != nil {
 		s.event("diagnostic", "invalid agent JSON", "", nil, nil)
 		return
+	}
+	// Whose line this is, for everything recorded while it is handled. The raw
+	// event above keeps the field in its own body either way.
+	if v.ParentToolUseID != nil && *v.ParentToolUseID != "" {
+		s.subagent = &core.EventAgent{ID: *v.ParentToolUseID, Type: v.SubagentType}
+		defer func() { s.subagent = nil }()
 	}
 	if v.SessionID != "" && v.SessionID != s.snap.VendorID {
 		if s.session.Fork != nil && v.SessionID == s.session.Fork.VendorID {
@@ -704,7 +720,7 @@ func (s *Supervisor) consume(raw []byte) {
 			case "text":
 				if v.Type == "assistant" {
 					metadata := s.responseContext
-					if v.ParentToolUseID != nil {
+					if s.subagent != nil {
 						metadata = core.ResponseMetadata{Phase: "subagent"}
 					}
 					if v.Message.Model != "" {

@@ -31,6 +31,11 @@ const connections = {
         isDefault: true,
         readOnly: true,
       }),
+      create(ConnectionSchema, {
+        name: "Staging",
+        target: "https://staging.cxz.example",
+        transport: "connect",
+      }),
     ],
   }),
 };

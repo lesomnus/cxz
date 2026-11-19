@@ -16,6 +16,7 @@ import {
   loadToolRecords,
   questionEvent,
   mixedConversationEvents,
+  subagentEvents,
 } from "#src/storybook/fixtures.ts";
 
 const meta = {
@@ -413,5 +414,20 @@ export const CodePaletteComparison: Story = {
       storyEvent(1, "input", codeComparison),
       responseEvent(2, "codex", codeComparison),
     ],
+  },
+};
+
+// Three subagents in one turn. Folded, the conversation keeps one row each in
+// the order they were started; opening one puts its own replies back in their
+// own order, out of the interleaving the stream delivered them in.
+export const SubagentGroups: Story = {
+  args: { events: subagentEvents() },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A subagent's replies and tool calls arrive on the session's own stream. Each row folds one subagent's work; the session's own reply stays in the conversation.",
+      },
+    },
   },
 };

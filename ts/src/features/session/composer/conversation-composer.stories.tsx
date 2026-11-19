@@ -279,7 +279,7 @@ export const ForkConversation: Story = {
     docs: {
       description: {
         story:
-          "Open Session menu → Fork to simulate a new session identity and alias while preserving the conversation, model and effort. This preview stays local; the connected app uses Session.Fork and navigates to the new session. Active turns and pending questions or queued input disable Fork.",
+          "Open Session menu → Fork to copy the conversation, model and effort to a new stopped session. Open the new session’s menu and choose Start to continue. Active turns, pending questions and queued input disable Fork.",
       },
     },
   },

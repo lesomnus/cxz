@@ -1,27 +1,34 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useEffect, useMemo, useState } from "react";
 import { t } from "#src/shared/i18n/i18n.ts";
-import type { Connection } from "#gen/cxz/connection_pb";
-import { Section, TableScrollArea } from "@lesomnus/nox";
+import type { Connection as ConnectionEntry } from "#gen/cxz/connection_pb";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@lesomnus/nox";
+import type { Connection } from "#src/shared/api/connection.ts";
 import { client } from "#src/shared/api/connections.ts";
+import { InstallationFileMenu } from "./installation-files";
+import { ResourceTableSection } from "#src/shared/components/resource-layout.tsx";
+import resourceTableStyles from "#src/shared/components/resource-table.module.css";
+import styles from "./connections-settings.module.css";
 
-// What this browser is attached to. One connection reaches an installation
-// whole -- every project and session on it -- so this answers "whose projects
-// am I looking at", which until now nothing did.
-//
-// Read-only for the moment, and for a direct connection that is the whole
-// truth: the origin the page came from cannot be edited or forgotten, and it
-// may well be the only entry. See docs/plans/web-connections.md.
 export type SettingsConnections = {
-  list: (request: object) => Promise<{ items: Connection[] }>;
+  list: (request: object) => Promise<{ items: ConnectionEntry[] }>;
 };
 
 export function ConnectionsSettings({
+  c,
   connections,
 }: {
+  c: Connection;
   connections?: SettingsConnections;
 }) {
-  const [items, setItems] = useState<Connection[]>([]);
+  const [items, setItems] = useState<ConnectionEntry[]>([]);
   const [error, setError] = useState("");
   // The client is made once per mount rather than per render. As a default
   // parameter it was made again on every render, and the effect that reads it
@@ -29,7 +36,11 @@ export function ConnectionsSettings({
   // another client, which re-ran the effect: 3,400 lists a second until the tab
   // stopped responding. A caller that passes one in already has a stable one.
   // See cxz#230.
-  const api = useMemo(() => connections ?? client(), [connections]);
+  const origin = c.baseUrl.replace(/\/$/, "");
+  const api = useMemo(
+    () => connections ?? client(origin),
+    [connections, origin],
+  );
   useEffect(() => {
     let live = true;
     api
@@ -61,40 +72,78 @@ export function ConnectionsSettings({
           </small>
         </div>
       </header>
-      {error ? <ErrorNotice error={error} /> : null}
-      <div className="settings-editor-groups">
-        <Section className="settings-group">
-          <TableScrollArea
-            scrollbarLabel={t("Connections")}
-            style={{ height: "auto" }}
-          >
-            <table className="connection-list">
-              <thead>
-                <tr>
-                  <th scope="col">{t("Name")}</th>
-                  <th scope="col">{t("Target")}</th>
-                  <th scope="col">{t("Transport")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((c) => (
-                  <tr key={c.target} data-read-only={c.readOnly}>
-                    <th scope="row">
-                      {c.name}
-                      {c.isDefault ? ` · ${t("default")}` : ""}
-                    </th>
-                    <td>{c.target}</td>
-                    <td>
-                      {c.transport}
-                      {c.readOnly ? ` · ${t("served this page")}` : ""}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableScrollArea>
-        </Section>
-      </div>
+      <ResourceTableSection>
+        {error && <ErrorNotice className={styles.error} error={error} />}
+        <Table
+          className={`connection-list ${resourceTableStyles.panelTable} ${resourceTableStyles.layout}`}
+          aria-label={t("Connections")}
+          stickyHeader={false}
+        >
+          <colgroup>
+            <col className={styles.nameColumn} />
+            <col />
+            <col className={styles.transportColumn} />
+            <col className={styles.actionsColumn} />
+          </colgroup>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("Name")}</TableHead>
+              <TableHead>{t("Target")}</TableHead>
+              <TableHead>{t("Transport")}</TableHead>
+              <TableHead aria-label={t("Actions")} />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.target} data-read-only={item.readOnly}>
+                <TableHead scope="row">
+                  <span
+                    className={resourceTableStyles.identity}
+                    title={item.name}
+                  >
+                    <span className={resourceTableStyles.identityTitle}>
+                      {item.name}
+                    </span>
+                    {item.isDefault && (
+                      <span className={resourceTableStyles.identityDetail}>
+                        {t("default")}
+                      </span>
+                    )}
+                  </span>
+                </TableHead>
+                <TableCell>
+                  <span
+                    className={`${resourceTableStyles.identityTitle} ${styles.target}`}
+                    title={item.target}
+                  >
+                    {item.target}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className={resourceTableStyles.identity}>
+                    <span>{item.transport}</span>
+                    {item.readOnly && (
+                      <span
+                        className={resourceTableStyles.identityDetail}
+                        title={t("served this page")}
+                      >
+                        {t("served this page")}
+                      </span>
+                    )}
+                  </span>
+                </TableCell>
+                <TableCell className={resourceTableStyles.rowActionCell}>
+                  <InstallationFileMenu
+                    c={c}
+                    name={item.name || item.target}
+                    active={item.target.replace(/\/$/, "") === origin}
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ResourceTableSection>
     </section>
   );
 }

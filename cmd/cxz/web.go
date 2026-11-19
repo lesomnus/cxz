@@ -83,6 +83,7 @@ func webCommand() *xli.Command {
 		})},
 		{Name: "status", Brief: "Report the gateway container, its origin and whether it is current", Flags: flg.Flags{stringFlag("config", "Web JSON settings (default: STATE/web.json)", ""), &flg.String{Name: "format", Brief: "Output format: table or json", Default: remoteDefault("table")}}, Handler: onRun(webStatus)},
 		{Name: "serve", Brief: "Run the gateway in this terminal; for developing cxz itself", Flags: webServeFlags(), Handler: onRun(serveWeb(false))},
+		{Name: "config-editor", Brief: "Serve the web configuration editor on this installation host", Handler: onRun(serveConfigurationEditor)},
 	}
 	return group
 }
@@ -188,6 +189,7 @@ func serveWeb(published bool) func(context.Context, *xli.Command) error {
 		if err != nil {
 			return err
 		}
+		config.ConfigurationEditor = configurationHandler(stateFrom(ctx), published)
 		if !published && config.Certificate == "" {
 			host, _, err := net.SplitHostPort(config.Listen)
 			if err != nil {

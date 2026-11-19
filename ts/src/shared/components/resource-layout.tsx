@@ -7,6 +7,7 @@ import {
 import type { ComponentProps, ComponentPropsWithRef } from "react";
 import pageStyles from "./resource-page.module.css";
 import dashboardStyles from "./resource-dashboard.module.css";
+import tableStyles from "./resource-table.module.css";
 
 /** Own page layout and surface; nested scroll areas inherit the page background. */
 export function ResourcePage({
@@ -81,14 +82,16 @@ export function ResourceDashboardColumn({
   );
 }
 
-export function ResourceSessionSection({
+export function ResourceTableSection({
   className = "",
+  fillHeight = false,
   ...props
-}: ComponentPropsWithRef<"section">) {
+}: ComponentPropsWithRef<"section"> & { fillHeight?: boolean }) {
   return (
     <Section
       {...props}
-      className={`${dashboardStyles.sessions} ${className}`}
+      className={`${tableStyles.section} ${className}`}
+      data-fill-height={fillHeight || undefined}
     />
   );
 }

@@ -13,6 +13,7 @@ function client() {
   return {
     get: vi.fn().mockResolvedValue(session()),
     stop: vi.fn().mockResolvedValue(session("run-1", "stopped")),
+    start: vi.fn().mockResolvedValue(session("first-run")),
     resume: vi.fn().mockResolvedValue(session("run-2")),
   };
 }
@@ -40,6 +41,18 @@ describe("session lifecycle controls", () => {
     await manageSession(api, ref, "restart", "run-1");
     expect(api.stop).not.toHaveBeenCalled();
     expect(api.resume).toHaveBeenCalledOnce();
+  });
+  it("starts a stopped fork with no run after checking its current state", async () => {
+    const api = client();
+    api.get.mockResolvedValue(session("", "stopped"));
+    await expect(manageSession(api, ref, "resume", "")).resolves.toMatchObject({
+      status: { runId: "first-run" },
+    });
+    expect(api.start).toHaveBeenCalledWith(
+      expect.objectContaining({ ref, runId: "" }),
+      expect.anything(),
+    );
+    expect(api.resume).not.toHaveBeenCalled();
   });
   it("does not resume if Stop fails", async () => {
     const api = client();

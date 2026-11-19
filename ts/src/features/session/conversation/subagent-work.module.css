@@ -1,0 +1,65 @@
+/* A folded subagent sits in the conversation at the width the messages beside
+   it have, and reads as one thing rather than as a reply. */
+.group {
+  width: min(var(--conversation-width), calc(100% - 32px));
+  margin: 4px auto;
+  border-radius: calc(2 * var(--space));
+  background: var(--shade-24);
+}
+
+.group[data-expanded] {
+  background: var(--shade-22);
+}
+
+.header.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space);
+  width: 100%;
+  padding: calc(1.5 * var(--space)) calc(2 * var(--space));
+  border-radius: calc(2 * var(--space));
+  color: var(--shade-160);
+  font-family: var(--ui-font-mono);
+  font-size: 11px;
+  text-align: start;
+}
+
+.caret {
+  flex: none;
+  width: 10px;
+  color: var(--shade-120);
+}
+
+.name {
+  overflow: hidden;
+  color: var(--shade-200);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counts {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.duration {
+  flex: none;
+  color: var(--shade-120);
+}
+
+/* Its own events, at their own width: the group already provides the inset, so
+   a reply inside it is not inset twice. */
+.body {
+  display: grid;
+  gap: var(--space);
+  padding: 0 calc(2 * var(--space)) calc(1.5 * var(--space));
+}
+
+.body .row > :global(.error),
+.body .row > * {
+  width: 100%;
+  margin-inline: 0;
+}

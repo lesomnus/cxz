@@ -1,5 +1,6 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { isAPIError } from "#src/shared/errors/client-errors.ts";
+import { diagnosticText } from "#src/shared/logs/log-entry.ts";
 import {
   sessionLocation,
   resourceLocation,
@@ -115,6 +116,30 @@ import { pasteRanges } from "#src/features/session/composer/composer-pastes.ts";
 import { SessionSearch } from "./session-search";
 
 type ConversationProps = { c: Connection; id: string; projects: Project[] };
+type ForkRequest = { source: string; run: string; clientId: string };
+
+function forkFailure(error: unknown) {
+  const failure = ConnectError.from(error);
+  const detail =
+    diagnosticText(failure.rawMessage).trim() || Code[failure.code];
+  if (
+    [
+      Code.Canceled,
+      Code.Unknown,
+      Code.DeadlineExceeded,
+      Code.Internal,
+      Code.Unavailable,
+      Code.DataLoss,
+    ].includes(failure.code)
+  )
+    return t(
+      "Could not confirm the fork. {error} Check the session list before retrying.",
+      {
+        error: detail,
+      },
+    );
+  return t("Fork failed. {error}", { error: detail });
+}
 
 export function Conversation(props: ConversationProps) {
   useLocale();
@@ -660,7 +685,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       await apply(kind, value);
     });
   }
-  async function action(fn: (s: Session) => Promise<unknown>) {
+  async function action(
+    fn: (s: Session) => Promise<unknown>,
+    describeFailure?: (error: unknown) => string,
+  ) {
     if (lock.current || !s) return false;
     lock.current = true;
     setBusy(true);
@@ -670,14 +698,15 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       return true;
     } catch (e) {
       setError(
-        isAPIError(e, c.errors)
-          ? t(
-              "The result may be unknown after a disconnect; inspect the conversation before retrying.",
-            )
-          : t(
-              "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
-              { error: String(e) },
-            ),
+        describeFailure?.(e) ??
+          (isAPIError(e, c.errors)
+            ? t(
+                "The result may be unknown after a disconnect; inspect the conversation before retrying.",
+              )
+            : t(
+                "{error}. The result may be unknown after a disconnect; inspect the conversation before retrying.",
+                { error: String(e) },
+              )),
       );
       return false;
     } finally {
@@ -746,55 +775,28 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const needsLogin =
     s?.agent === "claude" &&
     authenticationRequired(metadata, s.status?.runId ?? "");
-  const forkRequest = useRef<
-    { source: string; run: string; clientId: string } | undefined
-  >(undefined);
-  async function forkConversation(afterLogin = false) {
+  const forkRequest = useRef<ForkRequest | undefined>(undefined);
+  async function forkConversation() {
     return action(async (session) => {
       const run = session.status?.runId ?? "";
-      if (forkRequest.current?.source !== id || forkRequest.current.run !== run)
-        forkRequest.current = {
-          source: id,
-          run,
-          clientId: crypto.randomUUID(),
-        };
-      const clientId = forkRequest.current.clientId;
-      try {
-        const child = await c.sessions.fork(
-          { ref: ref(id), runId: run, clientId },
-          { timeoutMs: 120000 },
-        );
-        c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
-        await navigate({
-          ...sessionLocation(child),
-        });
-        forkRequest.current = undefined;
-      } catch (error) {
-        const account = session.account?.alias ?? "";
-        if (
-          afterLogin ||
-          session.agent !== "claude" ||
-          !account ||
-          !projectId ||
-          !requiredSessionLogin(error, account, clientId)
-        )
-          throw error;
-        openCard({
-          title: "Session login",
-          content: (close) => (
-            <LoginPanel
-              c={c}
-              target={{ account, project: projectId, key: clientId }}
-              complete={() => {
-                close();
-                void forkConversation(true);
-              }}
-              cancel={close}
-            />
-          ),
-        });
-      }
-    });
+      const previous = forkRequest.current;
+      const attempt =
+        previous?.source === id && previous.run === run
+          ? previous
+          : { source: id, run, clientId: crypto.randomUUID() };
+      forkRequest.current = attempt;
+      const child = await c.sessions.fork(
+        {
+          ref: ref(attempt.source),
+          runId: attempt.run,
+          clientId: attempt.clientId,
+        },
+        { timeoutMs: 120000 },
+      );
+      c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
+      await navigate(sessionLocation(child));
+      forkRequest.current = undefined;
+    }, forkFailure);
   }
   function control(s: Session) {
     return {
@@ -868,7 +870,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   }
   async function send(e: React.FormEvent) {
     e.preventDefault();
-    if (!draft.trim()) return;
+    if (!draft.trim() || !s?.status?.runId) return;
     if (!attachmentsReady(draft, c.pastes)) {
       setError(t("Wait for uploads to finish, or remove the failed chip."));
       return;
@@ -1191,7 +1193,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         commands={sessionCommands(s?.agent ?? "", catalog)}
         lookupPaths={projectId ? lookupPaths : undefined}
         workspace={sessionProject?.status?.remoteWorkspace}
-        canSend={!busy && !!s && !!draft.trim()}
+        canSend={!busy && !!s?.status?.runId && !!draft.trim()}
         queued={
           <QueuedMessage
             text={queued}

@@ -26,6 +26,9 @@ func TestForkCopiesSettingsAndHistoryButKeepsIndependentSessions(t *testing.T) {
 			if child.GetRuntimeId() == source.value.GetRuntimeId() || child.GetAlias() == source.value.GetAlias() || child.GetAgent() != source.value.GetAgent() || child.GetName() != source.value.GetName() || child.GetModel() != source.value.GetModel() || !proto.Equal(child.GetProject(), source.value.GetProject()) {
 				t.Fatal("wrong fork identity/settings", child)
 			}
+			if child.GetStatus().GetState() != "stopped" || child.GetStatus().GetRunId() != "" || child.GetStatus().GetVendorId() != "" {
+				t.Fatal("fork started a run", child)
+			}
 			again, err := x.Fork(t.Context(), request)
 			if err != nil || again.GetRuntimeId() != child.GetRuntimeId() {
 				t.Fatal("duplicate fork", again, err)
@@ -33,6 +36,10 @@ func TestForkCopiesSettingsAndHistoryButKeepsIndependentSessions(t *testing.T) {
 			st, _ := s.find(ref(child.GetRuntimeId()))
 			if len(st.events) != len(source.events)+1 || !proto.Equal(st.events[1], source.events[1]) || st.effort != source.effort {
 				t.Fatal("history or effort missing")
+			}
+			started, err := x.Start(t.Context(), resource.SessionControl_builder{Ref: ref(child.GetRuntimeId())}.Build())
+			if err != nil || started.GetStatus().GetRunId() == "" || started.GetStatus().GetVendorId() == "" || started.GetStatus().GetState() != "idle" {
+				t.Fatal("could not start the copied session", started, err)
 			}
 			st.events[1].SetText("child-only")
 			if source.events[1].GetText() == "child-only" || !proto.Equal(source.value, original) {

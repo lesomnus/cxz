@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/session.proto.
  */
 export const file_cxz_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IpYFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIlCgdhY2NvdW50GBIgASgLMgwuY3h6LkFjY291bnRCBvKCFgJAARIuCgxhdXRoX2JpbmRpbmcYEyABKAsyEC5jeHouQXV0aEJpbmRpbmdCBvKCFgJAATpyyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWRAgIMjwKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCQoHcHJvamVjdBoJCgdhY2NvdW50IDIoyAE6ACoASgQIERASUgZsaXN0ZWQioAEKDVNlc3Npb25TdGF0dXMSDQoFc3RhdGUYASABKAkSDgoGcnVuX2lkGAIgASgJEhEKCXZlbmRvcl9pZBgDIAEoCRIQCghsYXN0X3NlcRgEIAEoBBIiCgdwZW5kaW5nGAUgAygLMhEuY3h6LlNlc3Npb25FdmVudBIXCg9wZXJtaXNzaW9uX21vZGUYBiABKAkSDgoGcXVldWVkGAcgASgJIuEBCgxTZXNzaW9uRXZlbnQSDgoGcnVuX2lkGAEgASgJEgsKA3NlcRgCIAEoBBIPCgd0aW1lX21zGAMgASgDEgwKBGtpbmQYBCABKAkSDAoEdGV4dBgFIAEoCRISCgpyZXF1ZXN0X2lkGAYgASgJEg8KB3BheWxvYWQYByABKAwSJwoIcmVzcG9uc2UYCCABKAsyFS5jeHouUmVzcG9uc2VNZXRhZGF0YRImCgx0b29sX3N1bW1hcnkYCSABKAsyEC5jeHouVG9vbFN1bW1hcnkSEQoJaGVhcnRiZWF0GAogASgIIr0BCgtUb29sU3VtbWFyeRIMCgRuYW1lGAEgASgJEg0KBXNoZWxsGAIgASgJEg8KB2NvbW1hbmQYAyABKAkSDQoFc3RhdGUYBCABKAkSIwoFZmlsZXMYBSADKAsyFC5jeHouVG9vbEZpbGVTdW1tYXJ5EhUKDW9taXR0ZWRfZmlsZXMYBiABKA0SDAoEa2luZBgHIAEoCRITCgtkZXNjcmlwdGlvbhgIIAEoCRISCgptY3Bfc2VydmVyGAkgASgJIpUBCg9Ub29sRmlsZVN1bW1hcnkSDAoEcGF0aBgBIAEoCRIRCgltb3ZlX3BhdGgYAiABKAkSDgoGYWN0aW9uGAMgASgJEg0KBWFkZGVkGAQgASgNEg8KB3JlbW92ZWQYBSABKA0SDQoFbGluZXMYBiABKA0SDwoHbWVhc3VyZRgHIAEoCRIRCglwZXJfbWF0Y2gYCCABKAgilwEKEFJlc3BvbnNlTWV0YWRhdGESDQoFbW9kZWwYASABKAkSDgoGZWZmb3J0GAIgASgJEhQKDG1vZGVsX3NvdXJjZRgDIAEoCRIVCg1lZmZvcnRfc291cmNlGAQgASgJEg8KB3R1cm5faWQYBSABKAkSDQoFcGhhc2UYBiABKAkSFwoPY29tcGxldGlvbl9qc29uGAcgASgMQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFjeHovc2Vzc2lvbi5wcm90bxIDY3h6IpYFCgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIXCgVhbGlhcxgEIAEoCUII6oIWBDABOAESDAoEbmFtZRgFIAEoCRIMCgRkZXNjGAYgASgJEiUKB3Byb2plY3QYCCABKAsyDC5jeHouUHJvamVjdEIG8oIWAkABEhUKBWFnZW50GAkgASgJQgbqghYCQAESFQoFbW9kZWwYCiABKAlCBuqCFgJAARIcCgpydW50aW1lX2lkGAsgASgJQgjqghYEMAFAARIbCgljbGllbnRfaWQYDCABKAlCCOqCFgQwAUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIiCgZzdGF0dXMYECABKAsyEi5jeHouU2Vzc2lvblN0YXR1cxIlCgdhY2NvdW50GBIgASgLMgwuY3h6LkFjY291bnRCBvKCFgJAARIuCgxhdXRoX2JpbmRpbmcYEyABKAsyEC5jeHouQXV0aEJpbmRpbmdCBvKCFgJAATpyyvwVJhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWRAgIMjwKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYaCQoHcHJvamVjdBoJCgdhY2NvdW50IDIoyAE6ACoASgQIERASUgZsaXN0ZWQioAEKDVNlc3Npb25TdGF0dXMSDQoFc3RhdGUYASABKAkSDgoGcnVuX2lkGAIgASgJEhEKCXZlbmRvcl9pZBgDIAEoCRIQCghsYXN0X3NlcRgEIAEoBBIiCgdwZW5kaW5nGAUgAygLMhEuY3h6LlNlc3Npb25FdmVudBIXCg9wZXJtaXNzaW9uX21vZGUYBiABKAkSDgoGcXVldWVkGAcgASgJIoECCgxTZXNzaW9uRXZlbnQSDgoGcnVuX2lkGAEgASgJEgsKA3NlcRgCIAEoBBIPCgd0aW1lX21zGAMgASgDEgwKBGtpbmQYBCABKAkSDAoEdGV4dBgFIAEoCRISCgpyZXF1ZXN0X2lkGAYgASgJEg8KB3BheWxvYWQYByABKAwSJwoIcmVzcG9uc2UYCCABKAsyFS5jeHouUmVzcG9uc2VNZXRhZGF0YRImCgx0b29sX3N1bW1hcnkYCSABKAsyEC5jeHouVG9vbFN1bW1hcnkSEQoJaGVhcnRiZWF0GAogASgIEh4KBWFnZW50GAsgASgLMg8uY3h6LkV2ZW50QWdlbnQiJgoKRXZlbnRBZ2VudBIKCgJpZBgBIAEoCRIMCgR0eXBlGAIgASgJIr0BCgtUb29sU3VtbWFyeRIMCgRuYW1lGAEgASgJEg0KBXNoZWxsGAIgASgJEg8KB2NvbW1hbmQYAyABKAkSDQoFc3RhdGUYBCABKAkSIwoFZmlsZXMYBSADKAsyFC5jeHouVG9vbEZpbGVTdW1tYXJ5EhUKDW9taXR0ZWRfZmlsZXMYBiABKA0SDAoEa2luZBgHIAEoCRITCgtkZXNjcmlwdGlvbhgIIAEoCRISCgptY3Bfc2VydmVyGAkgASgJIpUBCg9Ub29sRmlsZVN1bW1hcnkSDAoEcGF0aBgBIAEoCRIRCgltb3ZlX3BhdGgYAiABKAkSDgoGYWN0aW9uGAMgASgJEg0KBWFkZGVkGAQgASgNEg8KB3JlbW92ZWQYBSABKA0SDQoFbGluZXMYBiABKA0SDwoHbWVhc3VyZRgHIAEoCRIRCglwZXJfbWF0Y2gYCCABKAgilwEKEFJlc3BvbnNlTWV0YWRhdGESDQoFbW9kZWwYASABKAkSDgoGZWZmb3J0GAIgASgJEhQKDG1vZGVsX3NvdXJjZRgDIAEoCRIVCg1lZmZvcnRfc291cmNlGAQgASgJEg8KB3R1cm5faWQYBSABKAkSDQoFcGhhc2UYBiABKAkSFwoPY29tcGxldGlvbl9qc29uGAcgASgMQidaIGdpdGh1Yi5jb20vbGVzb21udXMvY3h6L3Jlc291cmNlkgMCCAJiCGVkaXRpb25zcOgH", [file_cxz_project, file_cxz_account, file_cxz_auth_binding, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * The durable conversation identity. Runtime/run IDs and journal cursors are
@@ -227,6 +227,21 @@ export type SessionEvent = Message<"cxz.SessionEvent"> & {
    * @generated from field: bool heartbeat = 10;
    */
   heartbeat: boolean;
+
+  /**
+   * The subagent whose work this is, absent when the session did it itself.
+   *
+   * A subagent's replies and tool calls arrive on the session's own stream and
+   * are recorded there, so without this nothing says which of several
+   * concurrent subagents a record came from -- or that it came from one at
+   * all. The session's own records carry no agent rather than an empty one,
+   * because an empty one is a claim that some subagent did it. Records made
+   * before this field existed carry nothing and are not the session's by
+   * default: they are unattributed. See cxz#368.
+   *
+   * @generated from field: cxz.EventAgent agent = 11;
+   */
+  agent?: EventAgent | undefined;
 };
 
 /**
@@ -235,6 +250,35 @@ export type SessionEvent = Message<"cxz.SessionEvent"> & {
  */
 export const SessionEventSchema: GenMessage<SessionEvent> = /*@__PURE__*/
   messageDesc(file_cxz_session, 2);
+
+/**
+ * id is the id of the `Agent` call that started this subagent. It is the id
+ * rather than a flag because a flag cannot say *which* subagent: several share
+ * the session's run, and the call that started each one is what tells them
+ * apart and what ties the work back to the call a reader can see.
+ *
+ * @generated from message cxz.EventAgent
+ */
+export type EventAgent = Message<"cxz.EventAgent"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * What kind of subagent the provider said it was, when it said anything.
+   *
+   * @generated from field: string type = 2;
+   */
+  type: string;
+};
+
+/**
+ * Describes the message cxz.EventAgent.
+ * Use `create(EventAgentSchema)` to create a new message.
+ */
+export const EventAgentSchema: GenMessage<EventAgent> = /*@__PURE__*/
+  messageDesc(file_cxz_session, 3);
 
 /**
  * @generated from message cxz.ToolSummary
@@ -302,7 +346,7 @@ export type ToolSummary = Message<"cxz.ToolSummary"> & {
  * Use `create(ToolSummarySchema)` to create a new message.
  */
 export const ToolSummarySchema: GenMessage<ToolSummary> = /*@__PURE__*/
-  messageDesc(file_cxz_session, 3);
+  messageDesc(file_cxz_session, 4);
 
 /**
  * Counts describe recorded diff hunks or submitted content/replacement spans.
@@ -357,7 +401,7 @@ export type ToolFileSummary = Message<"cxz.ToolFileSummary"> & {
  * Use `create(ToolFileSummarySchema)` to create a new message.
  */
 export const ToolFileSummarySchema: GenMessage<ToolFileSummary> = /*@__PURE__*/
-  messageDesc(file_cxz_session, 4);
+  messageDesc(file_cxz_session, 5);
 
 /**
  * Frozen response context; sources are response, settings or requested.
@@ -409,5 +453,5 @@ export type ResponseMetadata = Message<"cxz.ResponseMetadata"> & {
  * Use `create(ResponseMetadataSchema)` to create a new message.
  */
 export const ResponseMetadataSchema: GenMessage<ResponseMetadata> = /*@__PURE__*/
-  messageDesc(file_cxz_session, 5);
+  messageDesc(file_cxz_session, 6);
 
