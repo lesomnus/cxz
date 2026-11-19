@@ -39,6 +39,7 @@ for (const width of [1200, 390])
       name: "Close errors",
       exact: true,
     });
+    await expect(close).toHaveCSS("min-height", "24px");
     expect((await header.boundingBox())!.height).toBe(
       (await close.boundingBox())!.height + 2 * inset,
     );
@@ -50,6 +51,10 @@ for (const width of [1200, 390])
     const closeBox = (await close.boundingBox())!;
     expect(closeBox.width).toBe(48);
     expect(closeBox.height).toBe(24);
+    const pageLink = header.getByRole("link", { name: "Open errors page" });
+    const linkBox = (await pageLink.boundingBox())!;
+    expect(closeBox.height).toBe(linkBox.height);
+    expect(closeBox.y).toBeCloseTo(linkBox.y, 1);
     const outerRadius = await dialog
       .locator(".floating-card")
       .evaluate((element) =>
