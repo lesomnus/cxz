@@ -722,11 +722,9 @@ test("file changes show per-file actions and deltas without fetching details", a
     await expect(row).toBeVisible();
   await expect(page.locator(".tool-activity")).toHaveCount(1);
   expect(details).toBe(0);
-  await expect(
-    dialog.getByRole("region", { name: "Task details" }),
-  ).toHaveCount(0);
-  await task.click();
   const card = dialog.getByRole("region", { name: "Task details" });
+  await expect(card).toBeEmpty();
+  await task.click();
   await expect(card).toBeVisible();
   await card.getByRole("tab", { name: "Result", exact: true }).click();
   await expect(card.locator(".view-lines")).toContainText(
@@ -766,7 +764,9 @@ test("file changes show per-file actions and deltas without fetching details", a
     )
     .toBeGreaterThan(0);
   expect(
-    await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
+    await dialog
+      .locator('[data-menu-scroll-area] [data-scroll-area="viewport"]')
+      .evaluate((el) => el.scrollTop),
   ).toBe(0);
   expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
   await card.getByRole("tab", { name: "Approval", exact: true }).click();
@@ -779,8 +779,8 @@ test("file changes show per-file actions and deltas without fetching details", a
     "json",
   );
   await task.click();
-  await expect(card).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Close task dialog" }).click();
+  await expect(card).toBeEmpty();
+  await page.keyboard.press("Escape");
   expect(details).toBe(1);
 });
 
@@ -891,7 +891,9 @@ test.describe("task detail editor", () => {
         .evaluate((el) => parseFloat(el.style.top));
     await expect.poll(readingPosition).toBeGreaterThan(0);
     expect(
-      await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
+      await dialog
+        .locator('[data-menu-scroll-area] [data-scroll-area="viewport"]')
+        .evaluate((el) => el.scrollTop),
     ).toBe(0);
     expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
     await card.getByRole("tab", { name: "Input", exact: true }).click();

@@ -194,7 +194,6 @@ export const messages = {
   "View details": "자세히 보기",
   "Tasks between responses": "대화 응답 사이의 작업",
   Tasks: "작업",
-  "Close task dialog": "작업 다이얼로그 닫기",
   Error: "오류",
   "Request failed": "요청에 실패했습니다",
   "No automatic retry": "자동 재시도 없음",

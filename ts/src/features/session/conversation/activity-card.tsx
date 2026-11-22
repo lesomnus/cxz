@@ -10,7 +10,7 @@ import {
   type ComponentProps,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "@lesomnus/nox";
+import { Button, MenuItem } from "@lesomnus/nox";
 import { EventTimePopover } from "./event-time-popover";
 import { useAnchoredCard } from "#src/features/session/cards/floating-card.tsx";
 import styles from "./activity-card.module.css";
@@ -53,21 +53,19 @@ function WorkActivityCard({
   const id = useId();
   const expanded = dialog.selected === seq.toString();
   return (
-    <div className={workStyles.task}>
-      <Button
-        type="button"
-        data-seq={seq.toString()}
-        data-state={state}
-        className={className}
-        aria-label={title}
-        aria-expanded={expanded}
-        aria-controls={expanded ? dialog.controls : undefined}
-        onClick={() => dialog.select(expanded ? undefined : seq.toString())}
-      >
-        <span className="activity-card-content">{children}</span>
-        <EventTimePopover timeMs={timeMs} id={`${id}-time`} />
-      </Button>
-    </div>
+    <MenuItem
+      type="button"
+      data-seq={seq.toString()}
+      data-state={state}
+      className={`${workStyles.task} ${className}`}
+      aria-label={title}
+      aria-expanded={expanded}
+      aria-controls={dialog.controls}
+      onClick={() => dialog.select(expanded ? undefined : seq.toString())}
+    >
+      <span className="activity-card-content">{children}</span>
+      <EventTimePopover timeMs={timeMs} id={`${id}-time`} />
+    </MenuItem>
   );
 }
 

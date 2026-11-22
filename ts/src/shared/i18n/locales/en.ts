@@ -198,7 +198,6 @@ export const messages = {
   "View details": "View details",
   "Tasks between responses": "Tasks between responses",
   Tasks: "Tasks",
-  "Close task dialog": "Close task dialog",
   Error: "Error",
   "Request failed": "Request failed",
   "No automatic retry": "No automatic retry",

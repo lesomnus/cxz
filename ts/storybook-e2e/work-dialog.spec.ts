@@ -177,7 +177,9 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
         .map((animation) => animation.finished),
     );
   });
-  const bounds = (await dialog.locator(".floating-card").boundingBox())!;
+  const bounds = (await dialog
+    .locator("[data-work-dialog-surface]")
+    .boundingBox())!;
   const area = (await page.locator(".conversation").boundingBox())!;
   const panel = (await page
     .getByRole("complementary", { name: "Sessions panel", exact: true })
@@ -197,9 +199,32 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
       height: node.scrollHeight,
     })),
   ).toEqual(before);
+  await expect(dialog.locator('[data-menu-fixed="header"]')).toHaveCount(0);
+  const list = dialog.locator('[data-scroll-area="viewport"]').first();
+  const details = dialog.getByRole("region", { name: "Task details" });
+  const layout = async () => ({
+    list: await list.boundingBox(),
+    details: await details.boundingBox(),
+  });
+  const initialLayout = await layout();
+  expect(initialLayout.details!.height).toBeGreaterThan(0);
+  await expect(details).toBeEmpty();
+  const task = dialog.locator(".tool-activity").first();
+  await expect(task).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await task.hover();
+  await expect(task).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await task.click();
+  await expect(task).toHaveAttribute("aria-expanded", "true");
+  await expect(details.getByRole("tabpanel")).toBeVisible();
+  await details.hover();
+  await expect(task).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(await layout()).toEqual(initialLayout);
+  await task.click();
+  await expect(details).toBeEmpty();
+  expect(await layout()).toEqual(initialLayout);
   await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .click();
+    .locator('[data-drawer="backdrop"]')
+    .click({ position: { x: 2, y: 2 } });
   await expect(dialog).toHaveCount(0);
   await expect(
     summaries
@@ -211,9 +236,7 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
     .getByRole("button", { name: "View details", exact: true })
     .click();
   await expect(dialog.locator(".tool-activity")).toHaveCount(1);
-  await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .press("Escape");
+  await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   expect(errors).toEqual([]);
 });
@@ -248,9 +271,7 @@ test("long task lists remain virtualized and scroll independently", async ({
   expect(
     await page.locator(".transcript").evaluate((node) => node.scrollTop),
   ).toBe(before);
-  await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .click();
+  await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 390, height: 620 });
   await page.getByRole("button", { name: "View details", exact: true }).click();
   await dialog.evaluate(async (node) => {
@@ -260,7 +281,9 @@ test("long task lists remain virtualized and scroll independently", async ({
         .map((animation) => animation.finished),
     );
   });
-  const bounds = (await dialog.locator(".floating-card").boundingBox())!;
+  const bounds = (await dialog
+    .locator("[data-work-dialog-surface]")
+    .boundingBox())!;
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
 });
@@ -357,9 +380,7 @@ test("work batches split at assistant replies with counts left and elapsed time 
     exact: true,
   });
   await expect(dialog.locator(".tool-activity")).toHaveCount(1);
-  await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .click();
+  await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await summaries
     .nth(1)
