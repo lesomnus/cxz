@@ -239,10 +239,15 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   await expect(task).toHaveAttribute("aria-expanded", "true");
   await expect(details.getByRole("tabpanel")).toBeVisible();
   await details.hover();
-  await expect(task).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  const selectedBackground = await task.evaluate((node) =>
+    getComputedStyle(node).getPropertyValue("--selected").trim(),
+  );
+  await expect(task).toHaveCSS("--button-background", selectedBackground);
   expect(await layout()).toEqual(initialLayout);
   await task.click();
   await expect(details).toBeEmpty();
+  await details.hover();
+  await expect(task).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   expect(await layout()).toEqual(initialLayout);
   await dialog
     .locator('[data-drawer="backdrop"]')

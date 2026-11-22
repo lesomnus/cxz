@@ -93,6 +93,10 @@
   height: 100%;
   max-height: none;
 }
+.task[aria-expanded="true"] {
+  --button-background: var(--selected);
+  --button-hover-background: var(--selected-hover);
+}
 .taskLabel {
   display: flex;
   flex: 1;
