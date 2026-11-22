@@ -250,6 +250,7 @@ export function WorkDialog({
   return (
     <Drawer
       id="work-dialog"
+      className={styles.drawer}
       open={!closing}
       onClose={close}
       onClosed={onClosed}

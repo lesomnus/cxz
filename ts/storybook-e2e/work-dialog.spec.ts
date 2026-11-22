@@ -241,6 +241,66 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   expect(errors).toEqual([]);
 });
 
+test("the work drawer visibly blurs the transcript behind it", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--contained&viewMode=story",
+  );
+  // Crisp stripes behind the modal reveal whether the composed pixels are blurred.
+  await page.addStyleTag({
+    content: `body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      pointer-events: none;
+      background: repeating-linear-gradient(90deg, white 0 8px, black 8px 16px);
+    }`,
+  });
+  await page
+    .getByRole("button", { name: "View details", exact: true })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
+  await dialog.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
+  const details = dialog.getByRole("region", { name: "Task details" });
+  const box = (await details.boundingBox())!;
+  const stripeContrast = async () => {
+    const screenshot = await page.screenshot({
+      clip: {
+        x: Math.round(box.x + box.width / 2 - 48),
+        y: Math.round(box.y + box.height / 2),
+        width: 96,
+        height: 2,
+      },
+    });
+    return page.evaluate(async (png) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${png}`;
+      await image.decode();
+      const context = document.createElement("canvas").getContext("2d")!;
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, 1).data;
+      const red = [...pixels].filter((_, index) => index % 4 === 0);
+      return Math.max(...red) - Math.min(...red);
+    }, screenshot.toString("base64"));
+  };
+  const blurred = await stripeContrast();
+  await dialog.locator("[data-work-dialog-surface]").evaluate((node) => {
+    node.style.backdropFilter = "none";
+  });
+  const sharp = await stripeContrast();
+  expect(sharp).toBeGreaterThan(75);
+  expect(blurred).toBeLessThan(sharp / 3);
+});
+
 test("long task lists remain virtualized and scroll independently", async ({
   page,
 }) => {

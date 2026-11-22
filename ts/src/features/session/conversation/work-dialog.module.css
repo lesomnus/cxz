@@ -34,8 +34,32 @@
 .countSuffix {
   width: 1ch;
 }
+/* Filled opacity keyframes create a backdrop root even after the drawer stops. */
+.drawer[data-drawer="root"] [data-drawer="frame"] {
+  animation-name: slide-in;
+}
+.drawer[data-drawer="root"][data-closing="true"] [data-drawer="frame"] {
+  animation-name: slide-out;
+}
+@keyframes slide-in {
+  from {
+    transform: translate(var(--drawer-x), var(--drawer-y));
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slide-out {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translate(var(--drawer-x), var(--drawer-y));
+  }
+}
 .surface {
   --menu-inner-radius: 6px;
+  --work-drawer-background: var(--ui-shade-20);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -43,13 +67,26 @@
   border: 1px solid var(--ui-shade-58);
   border-radius: calc(var(--menu-inner-radius) + var(--ui-control-inset) + 1px);
   color: var(--ui-shade-237);
-  background: var(--ui-dropdown-background);
-  backdrop-filter: blur(var(--ui-dropdown-blur));
+  background: var(--work-drawer-background);
   box-shadow: 0 6px 24px #0005;
 }
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .surface {
+    --work-drawer-background: color-mix(
+      in srgb,
+      var(--ui-shade-0) 40%,
+      var(--ui-dropdown-background)
+    );
+    -webkit-backdrop-filter: blur(var(--ui-dropdown-blur));
+    backdrop-filter: blur(var(--ui-dropdown-blur));
+  }
+}
 .frame,
-.body,
+.body {
+  flex: 1;
+}
 .list.list {
+  --ui-scroll-area-background: var(--work-drawer-background);
   flex: 1;
 }
 .list.list .viewport {
