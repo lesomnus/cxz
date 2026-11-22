@@ -191,6 +191,7 @@ export const messages = {
   "{count} active background job": "{count} active background job",
   "{count} active background jobs": "{count} active background jobs",
   "Task details": "Task details",
+  "Resize task details": "Resize task details",
   "{count} tasks performed": "{count} tasks performed",
   "{count} task performed": "{count} task performed",
   "{count}+ tasks performed": "{count}+ tasks performed",

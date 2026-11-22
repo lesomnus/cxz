@@ -23,6 +23,7 @@ import {
   MenuFrame,
   MenuItem,
   MenuScrollArea,
+  ResizeHandle,
   type ButtonProps,
 } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
@@ -231,6 +232,26 @@ export function WorkDialog({
   useLocale();
   const pane = useRef<HTMLDivElement>(null);
   const follow = useRef(false);
+  const [available, setAvailable] = useState(0);
+  const [resizedHeight, setResizedHeight] = useState<number>();
+  const observeSurface = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const handleHeight = parseFloat(
+        getComputedStyle(node).getPropertyValue("--ui-resize-handle-size"),
+      );
+      setAvailable(Math.max(0, entry.contentRect.height - handleHeight));
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  const minList = Math.min(120, available / 3);
+  const maxList = available - Math.min(144, available / 3);
+  const defaultDetails = Math.min(340, available * 0.45);
+  const listHeight = Math.min(
+    maxList,
+    Math.max(minList, available - (resizedHeight ?? defaultDetails)),
+  );
   const [selectedTask, selectTask] = useState<SessionEvent>();
   const selectedEvent =
     selectedTask &&
@@ -255,10 +276,15 @@ export function WorkDialog({
       onClose={close}
       onClosed={onClosed}
       container={container}
+      width={560}
       restoreFocus={false}
       aria-label={t("Tasks between responses")}
     >
-      <div className={styles.surface} data-work-dialog-surface="">
+      <div
+        ref={observeSurface}
+        className={styles.surface}
+        data-work-dialog-surface=""
+      >
         <MenuFrame
           className={styles.frame}
           bodyProps={{ className: styles.body }}
@@ -306,11 +332,23 @@ export function WorkDialog({
             </MenuScrollArea>
           </ActivityWorkContext>
         </MenuFrame>
+        <ResizeHandle
+          axis="vertical"
+          label={t("Resize task details")}
+          value={listHeight}
+          min={minList}
+          max={maxList}
+          onChange={(height) => setResizedHeight(available - height)}
+          onReset={() => setResizedHeight(undefined)}
+        />
         <div
           id={controls}
           className={styles.details}
           role="region"
           aria-label={t("Task details")}
+          style={
+            available > 0 ? { flexBasis: available - listHeight } : undefined
+          }
         >
           {selectedTask && selectedEvent && (
             <ActivityWorkContext

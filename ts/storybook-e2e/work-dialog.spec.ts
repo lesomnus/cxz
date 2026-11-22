@@ -187,6 +187,7 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   const files = (await page
     .getByRole("complementary", { name: "File explorer", exact: true })
     .boundingBox())!;
+  expect(bounds.width).toBe(560);
   expect(bounds.x).toBeGreaterThanOrEqual(panel.x + panel.width);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(files.x);
   expect(area.x + area.width - bounds.x - bounds.width).toBeGreaterThan(0);
@@ -389,6 +390,49 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
   await expect(
     dialog.getByRole("button", { name: "Load earlier tasks", exact: true }),
   ).toHaveCount(0);
+});
+
+test("the work drawer divider resizes details without resetting the active tab", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--paged-turn&viewMode=story",
+  );
+  await page.getByRole("button", { name: "View details", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
+  await dialog.getByRole("button", { name: "Bash · Details" }).click();
+  const output = dialog.getByRole("tab", { name: "Output", exact: true });
+  await output.click();
+  await expect(dialog.getByRole("tabpanel")).toContainText("main");
+
+  const divider = dialog.getByRole("separator", {
+    name: "Resize task details",
+  });
+  const details = dialog.getByRole("region", { name: "Task details" });
+  const list = dialog.locator(
+    '[data-menu-scroll-area] [data-scroll-area="viewport"]',
+  );
+  const initialDetails = (await details.boundingBox())!.height;
+  const initialList = (await list.boundingBox())!.height;
+  const { x, y, width, height } = (await divider.boundingBox())!;
+  await page.mouse.move(x + width / 2, y + height / 2);
+  await page.mouse.down();
+  await page.mouse.move(x + width / 2, y + height / 2 - 96, { steps: 8 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await details.boundingBox())!.height)
+    .toBeCloseTo(initialDetails + 96);
+  expect((await list.boundingBox())!.height).toBeCloseTo(initialList - 96);
+  await expect(output).toHaveAttribute("aria-selected", "true");
+
+  await divider.press("ArrowDown");
+  await expect
+    .poll(async () => (await details.boundingBox())!.height)
+    .toBeCloseTo(initialDetails + 80);
+  await divider.dblclick();
+  await expect
+    .poll(async () => (await details.boundingBox())!.height)
+    .toBeCloseTo(initialDetails);
 });
 
 test("work batches split at assistant replies with counts left and elapsed time right", async ({

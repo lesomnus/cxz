@@ -187,6 +187,7 @@ export const messages = {
   "{count} active background job": "활성 백그라운드 작업 {count}개",
   "{count} active background jobs": "활성 백그라운드 작업 {count}개",
   "Task details": "작업 상세",
+  "Resize task details": "작업 상세 영역 크기 조절",
   "{count} tasks performed": "{count}개의 작업이 진행됨",
   "{count} task performed": "{count}개의 작업이 진행됨",
   "{count}+ tasks performed": "{count}개 이상의 작업이 진행됨",
