@@ -1,9 +1,10 @@
+import { useContext } from "react";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import type { SnapshotSource } from "#src/features/session/model/event-source.ts";
 import type { LoadEventDetails } from "#src/features/session/model/session-history.ts";
 import { DetailTabs, type DetailSection } from "./detail-tabs";
 import { useEventDetails } from "./event-details";
-import { ActivityCard } from "./activity-card";
+import { ActivityCard, ActivityWorkContext } from "./activity-card";
 import { detail, payload } from "#src/features/session/model/journal.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -33,6 +34,7 @@ export function ToolActivityView({
 }) {
   const activity = source();
   useLocale();
+  const workDialog = useContext(ActivityWorkContext);
   const label = toolLabel(activity, agent);
   const state = toolState(activity, agent);
   const { files, omitted } = toolFiles(activity);
@@ -64,11 +66,13 @@ export function ToolActivityView({
       {symbol}
     </span>
   );
+  const inlineStatus = workDialog ? null : status;
   return (
     <ActivityCard
       seq={seq}
       timeMs={timeMs}
       state={state}
+      status={status}
       className="tool-activity"
       title={`${label.name} · ${t("Details")}`}
       details={() => (
@@ -79,7 +83,7 @@ export function ToolActivityView({
         <span className="tool-file-list">
           {files.map((file, index) => (
             <span className="tool-file-row" key={index}>
-              {status}
+              {inlineStatus}
               <span className="tool-file-summary">
                 {fileAction(file)}{" "}
                 <span className="tool-file-path">
@@ -108,7 +112,7 @@ export function ToolActivityView({
         </span>
       ) : (
         <>
-          {status}
+          {inlineStatus}
           <span className="tool-summary">
             <span>{heading}</span>
             {label.shell && (

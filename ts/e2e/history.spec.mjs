@@ -713,10 +713,11 @@ test("file changes show per-file actions and deltas without fetching details", a
   });
   const task = dialog.locator('.tool-activity[data-seq="2"]');
   await expect(task).toHaveAttribute("data-state", "completed");
+  await expect(task.getByRole("img", { name: "Completed" })).toHaveCount(1);
   await expect(task.locator(".tool-file-row")).toHaveText([
-    "✓Edit /workspace/ts/src/app.tsx · +25 -11",
-    "✓Write /workspace/ts/src/send-motion.ts · Δ?",
-    "✓Edit /workspace/ts/src/style.css · +32 -0",
+    "Edit /workspace/ts/src/app.tsx · +25 -11",
+    "Write /workspace/ts/src/send-motion.ts · Δ?",
+    "Edit /workspace/ts/src/style.css · +32 -0",
   ]);
   for (const row of await task.locator(".tool-file-row").all())
     await expect(row).toBeVisible();

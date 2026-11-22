@@ -88,6 +88,27 @@ test("all work kinds live in the task dialog while important errors remain reada
   await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
   await expect(dialog).toContainText("Agent update applied");
   await expect(dialog).toContainText("Provider background work");
+  const tool = dialog.getByRole("button", {
+    name: "Bash · Details",
+    exact: true,
+  });
+  const timestamp = tool.locator("time[datetime]");
+  const status = tool.getByRole("img", { name: "Completed" });
+  await expect(timestamp).toBeVisible();
+  await expect(status).toBeVisible();
+  await tool.hover();
+  await expect(dialog.locator(".event-time-tooltip")).toHaveCount(0);
+  await expect(status).toHaveCSS(
+    "font-size",
+    await timestamp.evaluate((node) => getComputedStyle(node).fontSize),
+  );
+  const statusBox = (await status.boundingBox())!;
+  const timeBox = (await timestamp.boundingBox())!;
+  const summaryBox = (await tool
+    .locator(".activity-card-content")
+    .boundingBox())!;
+  expect(statusBox.x + statusBox.width).toBeLessThanOrEqual(timeBox.x);
+  expect(timeBox.y + timeBox.height).toBeLessThanOrEqual(summaryBox.y);
   const work = dialog.locator('button[data-seq="7"]');
   await work.hover();
   await expect(work.locator(":scope > .button-content")).toHaveCSS(

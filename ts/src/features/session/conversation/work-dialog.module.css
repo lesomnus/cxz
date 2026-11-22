@@ -93,10 +93,25 @@
   height: 100%;
   max-height: none;
 }
-.task:hover :global(.event-time-tooltip) {
-  opacity: 1;
-  visibility: visible;
-  transition: none;
+.taskLabel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ui-space);
+  min-width: 0;
+}
+.taskMeta {
+  --ui-text-value: var(--ui-shade-140);
+  --ui-text-separator: var(--ui-shade-115);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space);
+  color: var(--ui-text-value);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+.taskMeta :global(.tool-state) {
+  color: inherit;
 }
 .task :global(.activity-card-content) {
   min-width: 0;
