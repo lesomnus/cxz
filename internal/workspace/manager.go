@@ -56,8 +56,13 @@ type Manager struct {
 	opsMu           sync.Mutex
 	writeMu         sync.Mutex
 	ops             map[string]*sync.Mutex
-	mu              sync.Mutex
-	DB              *sql.DB
+	mu              sync.Mutex // serializes session sweeps
+	// slowSince is when each project's runtime first missed the sweep deadline
+	// while still running; protected by mu. See Sessions.
+	slowSince map[string]time.Time
+	// sweepClient replaces client in tests of the sweep.
+	sweepClient func(context.Context, *Project) (*grpc.ClientConn, api.SessionsClient, error)
+	DB          *sql.DB
 	// Conversations is the installation's searchable record of what was said.
 	// The manager is where every project's events are consolidated, so it is
 	// where they are extracted; a nil index simply means nothing is indexed.
@@ -302,69 +307,6 @@ func (m *Manager) ClientForProject(ctx context.Context, id string) (*grpc.Client
 	}
 	conn, _, err := m.client(ctx, p)
 	return conn, err
-}
-func (m *Manager) Sessions(ctx context.Context) (*api.SessionList, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	all, e := m.all(ctx)
-	if e != nil {
-		return nil, e
-	}
-	out := &api.SessionList{}
-	for _, p := range all {
-		lock := m.projectLock(p.ID)
-		if !lock.TryLock() {
-			out.Sessions = append(out.Sessions, p.Sessions...)
-			continue
-		}
-		latest, err := m.resolve(ctx, p.ID)
-		if err != nil {
-			lock.Unlock()
-			return nil, err
-		}
-		p = latest
-		c, client, e := m.client(ctx, p)
-		var list *api.SessionList
-		if e == nil {
-			q, cancel := context.WithTimeout(ctx, 2*time.Second)
-			list, e = client.List(q, &api.Empty{})
-			cancel()
-			c.Close()
-		}
-		if e == nil {
-			for _, s := range list.Sessions {
-				s.ProjectId = p.ID
-			}
-			before, _ := json.Marshal(p.Sessions)
-			after, _ := json.Marshal(list.Sessions)
-			p.Sessions = list.Sessions
-			// The answer is also the proof that whatever the last attempt
-			// recorded as broken is not broken now.
-			if p.settle() || string(before) != string(after) {
-				if e = m.save(ctx, p); e != nil {
-					lock.Unlock()
-					return nil, e
-				}
-			}
-		} else {
-			for _, s := range p.Sessions {
-				if s.State != "stopped" && s.State != "failed" {
-					s.State = "interrupted"
-				}
-				s.Pending = nil
-			}
-		}
-		out.Sessions = append(out.Sessions, p.Sessions...)
-		lock.Unlock()
-	}
-	if c, err := m.auxiliaryController(); err == nil {
-		for _, v := range out.Sessions {
-			if title, e := c.Title(v.Id); e == nil && title.Text != "" {
-				v.Title = title.Text
-			}
-		}
-	}
-	return out, nil
 }
 func (m *Manager) Get(ctx context.Context, id string) (*api.Session, error) {
 	list, e := m.Sessions(ctx)
