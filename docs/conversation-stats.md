@@ -34,19 +34,19 @@ Response:
   potentially lost history. A cumulative counter reset starts at its new value.
   Zero cost with zero reported turns means unknown, not free. No model price
   table or unreported cost estimate is invented.
-- Per-session canonical UUID and coverage. The history path also supplies
-  current alias and snapshot/first/last seq. `complete` describes backend
-  coverage as detailed below; it does not assert complete provider token
-  reporting or account billing.
+- Per-session canonical UUID and coverage. `complete` is always false: see
+  below. It never asserts complete provider token reporting or account billing.
 
 ## Managed analytics
 
-An installed Manager with telemetry enabled queries its private ClickHouse
-store. See [managed telemetry](managed-telemetry.md) for the data path, settings,
+Every installed Manager collects usage into its private ClickHouse store, and
+statistics are answered from it alone. See [managed telemetry](managed-telemetry.md) for the data path, settings,
 security, deployment and retention.
 
 - Metrics survive display-history pruning and are retained for the configured
   rolling period (90 days by default). Existing history is not backfilled.
+- Each point carries the session's account when it was produced. A session
+  whose account is switched keeps its earlier usage under the earlier account.
 - Stream metadata is summed at durable turn/state boundaries; its events/bytes
   are attributed to the flush day. Native metrics use their export timestamp.
 - Native cumulative counters include the baseline before the requested range;
@@ -56,29 +56,23 @@ security, deployment and retention.
   and parent project/session.
 - Collection is best effort: old running agents, native export delay, bounded
   queues and retention can leave gaps. `complete` is always false. Session
-  coverage carries canonical UUIDs; retained-history aliases and sequence fences
-  are unavailable in this path. A native token/cost series can establish that at
+  coverage carries canonical UUIDs; aliases and sequence fences are not part of
+  the reply. A native token/cost series can establish that at
   least one turn reported a value when a Supervisor reporting counter is missing;
   reporting counts are therefore partial, not a billing reconciliation.
 - Erased sessions are excluded even if an old queued batch arrives later.
   Stopping a session preserves usage until erasure or TTL.
 - Queries are bounded to 15 seconds, 256 MiB query memory and 8 MiB of results.
-  Database failures propagate instead of silently replacing analytics with a
-  smaller history-derived total. Narrow scope/time when a query exceeds limits.
+  Database failures propagate as errors. Narrow scope/time when a query exceeds limits.
 
-## Retained-history fallback
+## When telemetry is unavailable
 
-Telemetry-disabled installations, standalone runtimes and source binaries
-without the packaged Collector retain the bounded history-scan path. Statistics
-cover available retained history; they are not a permanent lifetime ledger.
-Session snapshots fence each scan. All sequences through each snapshot tail are
-required for `complete=true`, which still does not prove provider token or
-billing completeness. Deleted sessions are excluded.
+There is one source of usage: the managed telemetry store. Conversation history
+is never scanned to recompute it, so two paths cannot disagree about what a
+session or account spent.
 
-In-progress usage is counted when a turn ends, on that turn's UTC completion
-day. Events/bytes use their own event day. Stream chunks count as events rather
-than unique model replies. Older retained events establish cost baselines and
-detect gaps. Scans are limited to 1000 sessions, 100000 events and 64 MiB of
-text/payload; exceeding a bound returns ResourceExhausted. Narrower dates do not
-reduce baseline scan work. Runtime errors/cancellation propagate. No existing
-conversation DB reset is needed for either path.
+A Manager without the store -- a source binary or `cxz manager serve` without the
+packaged Collector, one still bringing the store up after starting, or one whose
+store setup failed -- answers `Unavailable` for every scope. Usage produced
+while the store could not accept it is missing, not reconstructed later. Scope
+and argument validation (`InvalidArgument`, `NotFound`) still happen first.

@@ -4,12 +4,14 @@ package telemetryconfig
 import "fmt"
 
 type Config struct {
+	// Enabled is accepted so that existing settings still load, and ignored:
+	// usage telemetry is always collected. It is the only usage statistics
+	// path, so there is nothing for an installation to fall back to.
 	Enabled       *bool `json:"enabled,omitempty"`
 	RetentionDays int   `json:"retention_days,omitempty"`
 	QueueMiB      int   `json:"queue_mib,omitempty"`
 }
 
-func (c Config) Active() bool { return c.Enabled == nil || *c.Enabled }
 func (c Config) Days() int {
 	if c.RetentionDays == 0 {
 		return 90

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/lesomnus/cxz/resource"
 	"github.com/lesomnus/payday/config"
 	"google.golang.org/grpc"
@@ -20,7 +21,6 @@ import (
 
 type statsFixture struct {
 	*fixture
-	events         []*api.Event
 	analytics      bool
 	analyticsError error
 	scope, id      string
@@ -44,18 +44,10 @@ func (f *statsFixture) ResourceSnapshot(context.Context) (*api.ProjectList, *api
 	return &api.ProjectList{Projects: []*api.Project{f.p, p}}, &api.SessionList{Sessions: []*api.Session{f.s, other}}, nil
 }
 
-func (f *statsFixture) History(_ context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
+// Statistics never read conversation history; counting the calls proves it.
+func (f *statsFixture) History(context.Context, *api.WatchRequest) (*api.EventBatch, error) {
 	f.historyCalls++
-	b := &api.EventBatch{}
-	for _, e := range f.events {
-		if e.Seq > r.AfterSeq {
-			b.Events = append(b.Events, e)
-			if len(b.Events) == 2 {
-				break
-			}
-		}
-	}
-	return b, nil
+	return &api.EventBatch{}, nil
 }
 
 func TestConversationStatsRPC(t *testing.T) {
@@ -66,12 +58,7 @@ func TestConversationStatsRPC(t *testing.T) {
 	}
 	defer db.Close()
 	day := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
-	f := &statsFixture{fixture: &fixture{p: &api.Project{Id: "project", Workspace: "/workspace", Name: "project", State: "running"}, s: &api.Session{Id: "0123456789abcdef01234567", ProjectId: "project", Agent: "codex", CreateId: "create", RunId: "run", State: "idle", LastSeq: 4}}, events: []*api.Event{
-		{Seq: 1, Kind: "turn_end", RunId: "run", TimeMs: day - 1, Payload: []byte(`{"total_cost_usd":2}`)},
-		{Seq: 2, Kind: "input", RunId: "run", TimeMs: day, Text: "한글"},
-		{Seq: 3, Kind: "usage", RunId: "run", TimeMs: day, Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"inputTokens":100,"cachedInputTokens":40,"outputTokens":10}}}`)},
-		{Seq: 4, Kind: "turn_end", RunId: "run", TimeMs: day, Payload: []byte(`{"total_cost_usd":3}`)},
-	}}
+	f := &statsFixture{fixture: &fixture{p: &api.Project{Id: "project", Workspace: "/workspace", Name: "project", State: "running"}, s: &api.Session{Id: "0123456789abcdef01234567", ProjectId: "project", Agent: "codex", CreateId: "create", RunId: "run", State: "idle", LastSeq: 4}}}
 	f.s.Account = "work"
 	f.s.AuthBackend = accounts.ProjectLocalOAuth
 	f.s.AuthBinding = accounts.BindingID(f.p.Id, f.s.Account, f.s.AuthBackend)
@@ -90,34 +77,43 @@ func TestConversationStatsRPC(t *testing.T) {
 	}
 	defer conn.Close()
 	c := resource.NewSessionServiceClient(conn)
-	for _, scope := range []string{"all", "project", "session", "account"} {
+	request := func(scope string) *resource.ConversationStatsRequest {
 		r := resource.ConversationStatsRequest_builder{FromMs: ptr(day), ToMs: ptr(day + 86400000)}.Build()
-		if scope == "project" {
+		switch scope {
+		case "project":
 			r.SetProject(projectRef("project"))
-		}
-		if scope == "session" {
+		case "session":
 			r.SetSession(sessionRef(f.s.Id))
-		}
-		if scope == "account" {
+		case "account":
 			r.SetAccount(accountRef("work"))
 		}
-		got, err := c.ConversationStats(ctx, r)
-		if err != nil {
-			t.Fatal(scope, err)
-		}
-		wantSessions := 1
-		if scope == "all" {
-			wantSessions = 2
-		}
-		v := got.GetTotal()
-		if !got.GetComplete() || len(got.GetSessions()) != wantSessions || len(got.GetDays()) != 1 || v.GetEvents() != 3 || v.GetConversationBytes() != 6 || v.GetInputTokens() != 60 || v.GetCacheReadTokens() != 40 || v.GetOutputTokens() != 10 || v.GetReportedCostUsd() != 1 || v.GetTokenReportedTurns() != 1 {
-			t.Fatalf("%s: %v", scope, got)
+		return r
+	}
+	// Without the telemetry store there is no usage, rather than a second answer.
+	for _, scope := range []string{"all", "project", "session", "account"} {
+		if _, err := c.ConversationStats(ctx, request(scope)); status.Code(err) != codes.Unavailable {
+			t.Fatal(scope, "answered without telemetry", err)
 		}
 	}
-
-	personal, err := c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("personal"), FromMs: ptr(day), ToMs: ptr(day + 86400000)}.Build())
-	if err != nil || len(personal.GetSessions()) != 1 || personal.GetTotal().GetEvents() != 0 {
-		t.Fatal("account scope included another account", personal, err)
+	f.analytics = true
+	ids := map[string]string{"all": "", "project": hex.EncodeToString(projectid.Bytes("project")), "session": hex.EncodeToString(resourceID(8, f.s.Id)), "account": hex.EncodeToString(resourceID(9, "work"))}
+	for _, scope := range []string{"all", "project", "session", "account"} {
+		got, err := c.ConversationStats(ctx, request(scope))
+		want := scope
+		if scope == "all" {
+			want = ""
+		}
+		if err != nil || got.GetTotal().GetInputTokens() != 321 || got.GetComplete() || f.scope != want || f.id != ids[scope] {
+			t.Fatal(scope, got, err, f.scope, f.id)
+		}
+	}
+	f.analyticsError = status.Error(codes.Unavailable, "telemetry database unavailable")
+	if _, err = c.ConversationStats(ctx, request("account")); status.Code(err) != codes.Unavailable {
+		t.Fatal("telemetry failure was not reported", err)
+	}
+	f.analyticsError = nil
+	if f.historyCalls != 0 {
+		t.Fatal("statistics read conversation history", f.historyCalls)
 	}
 	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("missing")}.Build())
 	if status.Code(err) != codes.NotFound {
@@ -127,19 +123,6 @@ func TestConversationStatsRPC(t *testing.T) {
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatal(err)
 	}
-	f.analytics = true
-	f.historyCalls = 0
-	analyticsStats, err := c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("work"), FromMs: ptr(day), ToMs: ptr(day + 86400000)}.Build())
-	if err != nil || analyticsStats.GetTotal().GetInputTokens() != 321 || analyticsStats.GetComplete() || f.scope != "account" || f.id != hex.EncodeToString(resourceID(9, "work")) || f.historyCalls != 0 {
-		t.Fatal("analytics did not bypass retained history", analyticsStats, err, f.scope, f.id, f.historyCalls)
-	}
-	f.analyticsError = status.Error(codes.Unavailable, "telemetry database unavailable")
-	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Account: accountRef("work")}.Build())
-	if status.Code(err) != codes.Unavailable || f.historyCalls != 0 {
-		t.Fatal("analytics failure silently fell back to history", err, f.historyCalls)
-	}
-	f.analytics = false
-
 	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{Project: projectRef("project"), Session: sessionRef(f.s.Id)}.Build())
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatal(err)
@@ -148,30 +131,8 @@ func TestConversationStatsRPC(t *testing.T) {
 	if status.Code(err) != codes.NotFound {
 		t.Fatal(err)
 	}
-	// A pruned/offline cache must never be presented as full lifetime coverage.
-	f.events = f.events[2:]
-	got, err := c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{FromMs: ptr(day), ToMs: ptr(day + 86400000)}.Build())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.GetComplete() || got.GetTotal().GetCostReportedTurns() != 0 {
-		t.Fatal(got)
-	}
 	_, err = c.ConversationStats(ctx, resource.ConversationStatsRequest_builder{FromMs: ptr(day), ToMs: ptr(day)}.Build())
 	if status.Code(err) != codes.InvalidArgument {
 		t.Fatal(err)
-	}
-}
-
-func TestStatsUsageMissingAndRunIsolation(t *testing.T) {
-	s := statsUsage{}
-	s.event(&api.Event{Kind: "usage", RunId: "old", Text: "thread/tokenUsage/updated", Payload: []byte(`{"tokenUsage":{"last":{"inputTokens":500}}}`)})
-	got := s.event(&api.Event{Kind: "turn_end", RunId: "new"})
-	if got.GetTokenReportedTurns() != 0 || got.GetCostReportedTurns() != 0 {
-		t.Fatal(got)
-	}
-	got = s.event(&api.Event{Kind: "turn_end", RunId: "new", Payload: []byte(`{"usage":{"input_tokens":20,"output_tokens":3,"cache_read_input_tokens":50,"cache_creation_input_tokens":10},"costUSD":0}`)})
-	if got.GetInputTokens() != 20 || got.GetCacheReadTokens() != 50 || got.GetCostReportedTurns() != 1 || got.GetReportedCostUsd() != 0 {
-		t.Fatal(got)
 	}
 }

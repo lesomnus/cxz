@@ -31,6 +31,8 @@ import {
   saveContainerDownload,
 } from "#src/features/session/composer/composer-download.ts";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
+import { SessionAccountDialog } from "#src/features/session/components/session-account-dialog.tsx";
+import { accountRef } from "#src/features/accounts/account-data.ts";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { Button } from "@lesomnus/nox";
 import { Code, ConnectError } from "@connectrpc/connect";
@@ -38,6 +40,7 @@ import { authenticationRequired } from "#src/features/session/model/session-auth
 import {
   manageSession,
   prepareSessionLogin,
+  resumableStates,
   sessionLoginSnapshot,
   type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
@@ -205,6 +208,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const [busy, setBusy] = useState(false);
   const [terminalVisible, setTerminalVisible] = useState(false);
   const [terminalActivated, setTerminalActivated] = useState(false);
+  const [accountDialog, setAccountDialog] = useState(false);
   const terminalVisibleRef = useRef(false);
   function showTerminal(show: boolean) {
     terminalVisibleRef.current = show;
@@ -845,6 +849,27 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       forkRequest.current = undefined;
     }, forkFailure);
   }
+  // Stopping is part of the switch: a running agent keeps the old account's
+  // configuration as its home, so the server refuses to move it underneath.
+  async function switchAccount(alias: string) {
+    return action(async (session) => {
+      const sessionRef = create(SessionRefSchema, ref(id));
+      if (!resumableStates.has(session.status?.state ?? "")) {
+        const stopped = await manageSession(
+          c.sessions,
+          sessionRef,
+          "stop",
+          session.status?.runId ?? "",
+        );
+        c.store.apply("cxz.Session", [{ id: stopped.id, value: stopped }]);
+      }
+      const updated = await c.sessions.switchAccount(
+        { ref: sessionRef, account: accountRef(alias) },
+        { timeoutMs: 60000 },
+      );
+      c.store.apply("cxz.Session", [{ id: updated.id, value: updated }]);
+    });
+  }
   function control(s: Session) {
     return {
       ref: ref(id),
@@ -1324,6 +1349,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 icon: <Icon name="auxiliary" />,
                 run: () => localOpen("aux"),
               },
+              {
+                label: t("Change account"),
+                icon: <Icon name="accounts" />,
+                disabled:
+                  busy ||
+                  !s?.account ||
+                  !!s.status?.pending.length ||
+                  !!s.status?.queued,
+                run: () => setAccountDialog(true),
+              },
               ...(s?.agent === "claude"
                 ? [
                     {
@@ -1364,6 +1399,14 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         />
         <UsageInfo info={info} agent={s?.agent ?? ""} />
       </ConversationComposer>
+      {accountDialog && s && (
+        <SessionAccountDialog
+          c={c}
+          session={s}
+          switchAccount={switchAccount}
+          close={() => setAccountDialog(false)}
+        />
+      )}
       {terminalActivated && !!s?.project?.id.length && (
         <WorkspaceTerminal
           c={c}

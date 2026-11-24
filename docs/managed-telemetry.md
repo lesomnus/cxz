@@ -2,9 +2,13 @@
 
 An installed Manager manages one OpenTelemetry Collector and one ClickHouse
 server. Both run in separate, installation-owned containers. Updating or
-restarting either service does not stop project runtimes or agents. A local
-source runtime without the packaged Collector keeps the existing history-based
-statistics path.
+restarting either service does not stop project runtimes or agents.
+
+Telemetry is part of every installation and cannot be turned off. It is the only
+source of usage statistics: a Manager without it -- a local source runtime
+without the packaged Collector, or an installation whose store is not running --
+reports usage as unavailable rather than recomputing it from conversation
+history. See [conversation statistics](conversation-stats.md#when-telemetry-is-unavailable).
 
 The server image includes `cxz-otelcol`, built with OCB 0.164.0, core 0.164.0 /
 stable modules 1.70.0, and contrib 0.164.1. The distribution includes only the
@@ -72,7 +76,6 @@ On the Linux installation host, edit `settings.jsonc`:
 
 ```jsonc
 "telemetry": {
-  "enabled": true,
   "retention_days": 90,
   "queue_mib": 64
 }
@@ -82,8 +85,10 @@ These are the defaults; zero selects the default duration/queue size. Retention
 accepts 1–3660 days and the queue 1–1024 MiB. Apply changes with
 `cxz install --recreate`. Automatic Manager updates preserve the environment
 configuration. A manual installation/recreation reads the host settings again.
-Disabling stops the owned telemetry containers and keeps their data volume.
-Re-enabling reuses it. A server/runtime update is required; updating web assets
+`telemetry.enabled` is still accepted, so existing settings load, but it has no
+effect: an installation that had disabled telemetry starts its containers again
+and reuses the data volume it kept. A server/runtime update is required;
+updating web assets
 alone does not install telemetry.
 
 The Manager brings up the stack in the background and retries failed setup.

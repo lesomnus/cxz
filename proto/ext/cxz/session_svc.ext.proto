@@ -23,6 +23,10 @@ service SessionService {
   // Branch a settled conversation, retaining its project, account and settings.
   // client_id makes retries return the same child rather than creating another.
   rpc Fork(SessionControl) returns (Session);
+  // Rebind a stopped session to another account of the same agent. The
+  // conversation, its provider history and its settings stay with the session;
+  // the new account may need its own login before the session runs again.
+  rpc SwitchAccount(SessionSwitchAccountRequest) returns (Session);
   rpc Stop(SessionControl) returns (Session);
   rpc Interrupt(SessionControl) returns (SessionReceipt);
   rpc CopyAgentData(SessionCopyAgentDataRequest) returns (SessionReceipt);
@@ -163,6 +167,7 @@ message SessionSearchReply {
   SessionSearchSummary summary = 3;
 }
 message SessionControl { SessionRef ref = 1; string run_id = 2; string client_id = 3; }
+message SessionSwitchAccountRequest { SessionRef ref = 1; AccountRef account = 2; }
 // cancel takes back the message waiting to be sent, instead of sending text.
 message SessionSendRequest { SessionRef ref = 1; string run_id = 2; string client_id = 3; string text = 4; bool cancel = 5; }
 message SessionAttachRequest { SessionRef ref = 1; string run_id = 2; bytes content = 3; }

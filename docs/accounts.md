@@ -59,7 +59,8 @@ API keys are not supported.
 
 `Account.auth_backend` chooses the strategy — how login happens, what its scope is,
 and who refreshes it. `Session.auth_binding` records the concrete association a
-session actually uses, fixed at creation.
+session actually uses. It is set at creation and changes only together with
+the account, when the session's account is switched.
 
 Existing accounts keep the backend they were registered with; changing the default
 does not migrate them.
@@ -67,8 +68,32 @@ does not migrate them.
 ## Account and agent are fixed
 
 The account determines the agent, so an explicit `--agent` that disagrees is
-rejected. Both are fixed for the life of a session; resume and container recreation
-preserve them.
+rejected. The agent is fixed for the life of a session; resume and container
+recreation preserve both.
+
+### Changing a session's account
+
+`SessionService.SwitchAccount(ref, account)` rebinds a stopped session to another
+account **of the same agent**. In the web UI it is **Change account** in the
+session menu; a running session is stopped first, after confirmation.
+
+The conversation stays with the session: its journal, settings and provider
+history. Inside the session's own profile, the provider history folder —
+`projects/` for Claude, `sessions/` for Codex, the same folder a fork copies — moves
+from the old account's configuration directory to the new one, so the agent
+resumes the same native conversation. Logins never move: a Claude session asks
+for the new account's login on its next start, exactly as a new fork does. Other
+per-account files stay behind in the old account's directory.
+
+The switch is refused while the session runs, has pending questions or queued
+input, or when the new account's directory already holds provider history for
+this session. Retrying an interrupted switch completes it. The session's
+`account` and `auth_binding` edges change together and only through this call;
+`Patch` and `Apply` still cannot change them. Usage is recorded with the account
+the session had when it was produced: turns before the switch stay with the old
+account and later ones count toward the new one.
+
+Forking into another account is a fork followed by a switch of the child.
 
 Scripts must pass `--account` when creating a session. Interactive `session new`
 and the TUI's `n` offer a picker instead.
@@ -100,9 +125,9 @@ startup. Reusing an old alias for a new account gives it a separate profile and
 UUID. This editing support requires the updated Manager; no database reset,
 session restart or project recreation is needed.
 
-Usage covers retained
-conversation records for the account's listed sessions; it does not represent
-provider billing or remaining quota.
+Usage is the account's share of [managed telemetry](managed-telemetry.md): what
+its sessions reported while they used it. It does not represent provider billing
+or remaining quota, and it is unavailable while the telemetry store is not.
 
 `AccountService.Status(AccountRef)` describes local authentication readiness:
 saved credentials present, login required, authentication busy, or a

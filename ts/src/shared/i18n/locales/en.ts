@@ -993,5 +993,17 @@ export const messages = {
   "Could not confirm the fork. {error} Check the session list before retrying.":
     "Could not confirm the fork. {error} Check the session list before retrying.",
   "Fork failed. {error}": "Fork failed. {error}",
+  "Change account": "Change account",
+  Change: "Change",
+  "Stop and change": "Stop and change",
+  "Choose an account": "Choose an account",
+  "Could not change the account. Check session status before retrying.":
+    "Could not change the account. Check session status before retrying.",
+  "The conversation, its history and its settings stay with this session. The new account may ask you to log in before the session runs again.":
+    "The conversation, its history and its settings stay with this session. The new account may ask you to log in before the session runs again.",
+  "The session is stopped first. Active work stops.":
+    "The session is stopped first. Active work stops.",
+  "No other account is registered for this agent.":
+    "No other account is registered for this agent.",
 } as const;
 export type Message = keyof typeof messages;

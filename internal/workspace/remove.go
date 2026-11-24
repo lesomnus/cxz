@@ -128,12 +128,12 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 	for session := range ids {
 		m.removedSessions[session] = true
 	}
-	if m.telemetry != nil {
+	if store := m.telemetryClient(); store != nil {
 		var eraseIDs []string
 		for session := range ids {
 			eraseIDs = append(eraseIDs, hex.EncodeToString(resourceid.Bytes(8, session)))
 		}
-		if err := m.telemetry.EraseMany(ctx, eraseIDs); err != nil {
+		if err := store.EraseMany(ctx, eraseIDs); err != nil {
 			return err
 		}
 		if err := m.eraseTelemetry(ctx, id, ""); err != nil {

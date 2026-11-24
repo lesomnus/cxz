@@ -24,6 +24,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -40,7 +41,9 @@ type Project struct {
 }
 type Runtime struct{ ProjectID, LegacyProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
-	telemetry       *telemetrystore.Client
+	// Set once the telemetry store is reachable, possibly after startup; read
+	// through telemetryClient from request handlers.
+	telemetry       atomic.Pointer[telemetrystore.Client]
 	telemetryAux    map[string]map[string]telemetryauth.Session // protected by writeMu
 	removedSessions map[string]bool                             // protected by writeMu; rejects late frames after removal
 	auxStop         context.CancelFunc

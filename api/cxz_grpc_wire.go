@@ -30,6 +30,7 @@ const (
 	Sessions_FileMappings_FullMethodName           = "/cxz.runtime.Sessions/FileMappings"
 	Sessions_Create_FullMethodName                 = "/cxz.runtime.Sessions/Create"
 	Sessions_ForkSession_FullMethodName            = "/cxz.runtime.Sessions/ForkSession"
+	Sessions_SwitchSessionAccount_FullMethodName   = "/cxz.runtime.Sessions/SwitchSessionAccount"
 	Sessions_List_FullMethodName                   = "/cxz.runtime.Sessions/List"
 	Sessions_Get_FullMethodName                    = "/cxz.runtime.Sessions/Get"
 	Sessions_CopyMemory_FullMethodName             = "/cxz.runtime.Sessions/CopyMemory"
@@ -107,6 +108,7 @@ type SessionsClient interface {
 	FileMappings(ctx context.Context, in *FileMappingsInput, opts ...grpc.CallOption) (*Receipt, error)
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*Session, error)
 	ForkSession(ctx context.Context, in *SessionForkInput, opts ...grpc.CallOption) (*Session, error)
+	SwitchSessionAccount(ctx context.Context, in *SessionAccountInput, opts ...grpc.CallOption) (*Session, error)
 	List(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*SessionList, error)
 	Get(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*Session, error)
 	CopyMemory(ctx context.Context, in *CopyMemoryRequest, opts ...grpc.CallOption) (*Receipt, error)
@@ -281,6 +283,16 @@ func (c *sessionsClient) ForkSession(ctx context.Context, in *SessionForkInput, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
 	err := c.cc.Invoke(ctx, Sessions_ForkSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionsClient) SwitchSessionAccount(ctx context.Context, in *SessionAccountInput, opts ...grpc.CallOption) (*Session, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Session)
+	err := c.cc.Invoke(ctx, Sessions_SwitchSessionAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -938,6 +950,7 @@ type SessionsServer interface {
 	FileMappings(context.Context, *FileMappingsInput) (*Receipt, error)
 	Create(context.Context, *CreateRequest) (*Session, error)
 	ForkSession(context.Context, *SessionForkInput) (*Session, error)
+	SwitchSessionAccount(context.Context, *SessionAccountInput) (*Session, error)
 	List(context.Context, *Empty) (*SessionList, error)
 	Get(context.Context, *SessionRef) (*Session, error)
 	CopyMemory(context.Context, *CopyMemoryRequest) (*Receipt, error)
@@ -1040,6 +1053,9 @@ func (UnimplementedSessionsServer) Create(context.Context, *CreateRequest) (*Ses
 }
 func (UnimplementedSessionsServer) ForkSession(context.Context, *SessionForkInput) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method ForkSession not implemented")
+}
+func (UnimplementedSessionsServer) SwitchSessionAccount(context.Context, *SessionAccountInput) (*Session, error) {
+	return nil, status.Error(codes.Unimplemented, "method SwitchSessionAccount not implemented")
 }
 func (UnimplementedSessionsServer) List(context.Context, *Empty) (*SessionList, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -1436,6 +1452,24 @@ func _Sessions_ForkSession_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionsServer).ForkSession(ctx, req.(*SessionForkInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_SwitchSessionAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionAccountInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).SwitchSessionAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_SwitchSessionAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).SwitchSessionAccount(ctx, req.(*SessionAccountInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2542,6 +2576,10 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ForkSession",
 			Handler:    _Sessions_ForkSession_Handler,
+		},
+		{
+			MethodName: "SwitchSessionAccount",
+			Handler:    _Sessions_SwitchSessionAccount_Handler,
 		},
 		{
 			MethodName: "List",
