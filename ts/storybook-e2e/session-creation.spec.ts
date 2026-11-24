@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 for (const width of [1280, 390]) {
-  test(`Sessions creation opens a modal, waits and selects the new conversation at ${width}px`, async ({
+  test(`Sessions creation opens the stored conversation and starts it at ${width}px`, async ({
     page,
   }) => {
     const errors: string[] = [];
@@ -144,14 +144,15 @@ for (const width of [1280, 390]) {
         modal.getByRole("button", { name: "Cancel", exact: true }),
       ).toBeDisabled();
       await expect(modal).toHaveCount(0);
-      await expect(
-        page.getByText("Loading conversation…", { exact: true }),
-      ).toBeVisible();
       const message = page.getByRole("textbox", {
         name: "Message",
         exact: true,
       });
       await expect(message).toBeVisible();
+      await expect(page.locator("main.conversation")).toHaveAttribute(
+        "aria-description",
+        /^idle ·/,
+      );
       await expect(
         page.getByText("Loading conversation…", { exact: true }),
       ).toHaveCount(0);

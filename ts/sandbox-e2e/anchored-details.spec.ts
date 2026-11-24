@@ -148,23 +148,25 @@ test("grouped tool details fit short viewports and isolate editor scrolling", as
   const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
   const tool = dialog.locator(".tool-activity").last();
   await expect(tool).toHaveAttribute("data-state", "completed");
-  await expect(tool.getByRole("tooltip", { includeHidden: true })).toBeHidden();
-  await tool.hover();
-  const timestamp = tool.getByRole("tooltip", { includeHidden: true });
+  // In the drawer the time is part of the row, above its summary, rather than
+  // a tooltip that appears on hover.
+  const timestamp = tool.locator("time[datetime]");
   await expect(timestamp).toBeVisible();
-  const recorded = await timestamp.locator("time").getAttribute("datetime");
+  await tool.hover();
+  await expect(dialog.locator(".event-time-tooltip")).toHaveCount(0);
+  const recorded = await timestamp.getAttribute("datetime");
   expect(Math.abs(Date.now() - Date.parse(recorded!))).toBeLessThan(60_000);
   const timeBounds = (await timestamp.boundingBox())!;
   const toolBounds = (await tool.boundingBox())!;
+  const summaryBounds = (await tool
+    .locator(".activity-card-content")
+    .boundingBox())!;
   expect(timeBounds.x).toBeGreaterThanOrEqual(toolBounds.x);
   expect(timeBounds.x + timeBounds.width).toBeLessThanOrEqual(
     toolBounds.x + toolBounds.width,
   );
-  expect(timeBounds.y + timeBounds.height).toBeLessThanOrEqual(
-    toolBounds.y + 8,
-  );
+  expect(timeBounds.y + timeBounds.height).toBeLessThanOrEqual(summaryBounds.y);
   await page.mouse.move(0, 0);
-  await expect(timestamp).toBeHidden();
   await expect(page.locator(".conversation")).toHaveAttribute(
     "aria-description",
     /idle/,
@@ -184,13 +186,17 @@ test("grouped tool details fit short viewports and isolate editor scrolling", as
   expect((await card.boundingBox())!.height).toBeCloseTo(bounds.height, 0);
   const pane = page.locator(".transcript");
   const top = await pane.evaluate((el) => el.scrollTop);
+  // The drawer's list and details each scroll on their own.
+  const drawerScroll = () =>
+    dialog
+      .locator('[data-scroll-area="viewport"]')
+      .evaluateAll((nodes) => nodes.map((node) => node.scrollTop));
+  const drawerTop = await drawerScroll();
   const editor = card.locator(".monaco-editor");
   await editor.hover();
   await page.mouse.wheel(0, 80);
   // This fixture's result fits: wheel input still belongs to the editor.
-  expect(
-    await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
-  ).toBe(0);
+  expect(await drawerScroll()).toEqual(drawerTop);
   expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
   await page.setViewportSize({ width: 390, height: 480 });
   await expect
@@ -205,7 +211,7 @@ test("grouped tool details fit short viewports and isolate editor scrolling", as
     })
     .toBeLessThan(1);
   await tool.click();
-  await expect(card).toHaveCount(0);
+  await expect(card).toBeEmpty();
   await expect(dialog).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);

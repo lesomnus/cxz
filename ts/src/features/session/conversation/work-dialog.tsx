@@ -20,7 +20,10 @@ import {
   CompactNumber,
   ElapsedTime,
   Drawer,
-  Card,
+  MenuFrame,
+  MenuItem,
+  MenuScrollArea,
+  ResizeHandle,
   type ButtonProps,
 } from "@lesomnus/nox";
 import type { SessionEvent } from "#gen/cxz/session_pb";
@@ -30,7 +33,6 @@ import type {
   WorkTaskSource,
   WorkTaskState,
 } from "#src/features/session/model/work-tasks.ts";
-import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { CategoryIcon } from "#src/shared/components/category-icon.tsx";
 import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
@@ -230,6 +232,26 @@ export function WorkDialog({
   useLocale();
   const pane = useRef<HTMLDivElement>(null);
   const follow = useRef(false);
+  const [available, setAvailable] = useState(0);
+  const [resizedHeight, setResizedHeight] = useState<number>();
+  const observeSurface = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const handleHeight = parseFloat(
+        getComputedStyle(node).getPropertyValue("--ui-resize-handle-size"),
+      );
+      setAvailable(Math.max(0, entry.contentRect.height - handleHeight));
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  const minList = Math.min(120, available / 3);
+  const maxList = available - Math.min(144, available / 3);
+  const defaultDetails = Math.min(340, available * 0.45);
+  const listHeight = Math.min(
+    maxList,
+    Math.max(minList, available - (resizedHeight ?? defaultDetails)),
+  );
   const [selectedTask, selectTask] = useState<SessionEvent>();
   const selectedEvent =
     selectedTask &&
@@ -249,46 +271,54 @@ export function WorkDialog({
   return (
     <Drawer
       id="work-dialog"
+      className={styles.drawer}
       open={!closing}
       onClose={close}
       onClosed={onClosed}
       container={container}
+      width={560}
       restoreFocus={false}
       aria-label={t("Tasks between responses")}
     >
-      <Card
-        fill
-        bodyPadding="var(--ui-space)"
-        title={`${t("Tasks")} · ${work.events.length}`}
-        close={() => close()}
-        closeLabel={t("Close task dialog")}
-        footer={
-          !work.hasBoundary &&
-          history?.hasOlder && (
-            <Button
-              type="button"
-              disabled={loadingOlder}
-              onClick={async () => {
-                setLoadingOlder(true);
-                setHistoryError("");
-                try {
-                  await history.loadOlder();
-                } catch (error) {
-                  setHistoryError(String(error));
-                } finally {
-                  setLoadingOlder(false);
-                }
-              }}
-            >
-              {t(loadingOlder ? "Loading…" : "Load earlier tasks")}
-              {historyError && <ErrorNotice as="span" error={historyError} />}
-            </Button>
-          )
-        }
+      <div
+        ref={observeSurface}
+        className={styles.surface}
+        data-work-dialog-surface=""
       >
-        <div className={styles.layout}>
+        <MenuFrame
+          className={styles.frame}
+          bodyProps={{ className: styles.body }}
+          footer={
+            !work.hasBoundary &&
+            history?.hasOlder && (
+              <MenuItem
+                type="button"
+                disabled={loadingOlder}
+                onClick={async () => {
+                  setLoadingOlder(true);
+                  setHistoryError("");
+                  try {
+                    await history.loadOlder();
+                  } catch (error) {
+                    setHistoryError(String(error));
+                  } finally {
+                    setLoadingOlder(false);
+                  }
+                }}
+              >
+                {t(loadingOlder ? "Loading…" : "Load earlier tasks")}
+                {historyError && <ErrorNotice as="span" error={historyError} />}
+              </MenuItem>
+            )
+          }
+        >
           <ActivityWorkContext value={{ selected, select, controls }}>
-            <PanelScroll viewportRef={pane}>
+            <MenuScrollArea
+              className={styles.list}
+              viewportClassName={styles.viewport}
+              viewportRef={pane}
+              scrollbarLabel={t("Panel scroll")}
+            >
               <VirtualMessages
                 pane={pane}
                 source={eventListSource(work.events)}
@@ -299,25 +329,37 @@ export function WorkDialog({
                 onPromptChange={() => {}}
                 foldActivities={false}
               />
-            </PanelScroll>
+            </MenuScrollArea>
           </ActivityWorkContext>
-          {selectedEvent && (
-            <div
-              key={`${selectedTask!.runId}/${selectedTask!.requestId || selectedTask!.seq}`}
-              id={controls}
-              className={styles.details}
-              role="region"
-              aria-label={t("Task details")}
+        </MenuFrame>
+        <ResizeHandle
+          axis="vertical"
+          label={t("Resize task details")}
+          value={listHeight}
+          min={minList}
+          max={maxList}
+          onChange={(height) => setResizedHeight(available - height)}
+          onReset={() => setResizedHeight(undefined)}
+        />
+        <div
+          id={controls}
+          className={styles.details}
+          role="region"
+          aria-label={t("Task details")}
+          style={
+            available > 0 ? { flexBasis: available - listHeight } : undefined
+          }
+        >
+          {selectedTask && selectedEvent && (
+            <ActivityWorkContext
+              key={`${selectedTask.runId}/${selectedTask.requestId || selectedTask.seq}`}
+              value={{ selected, select, controls, detailsOnly: true }}
             >
-              <ActivityWorkContext
-                value={{ selected, select, controls, detailsOnly: true }}
-              >
-                {render(selectedEvent)}
-              </ActivityWorkContext>
-            </div>
+              {render(selectedEvent)}
+            </ActivityWorkContext>
           )}
         </div>
-      </Card>
+      </div>
     </Drawer>
   );
 }

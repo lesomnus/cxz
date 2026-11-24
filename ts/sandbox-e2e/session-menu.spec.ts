@@ -40,6 +40,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
     "Insert secret",
     "Shared memory",
     "Auxiliary AI",
+    "Change account",
     "Log in",
     "Upload files",
     "Upload folder",
@@ -50,7 +51,7 @@ test("composer session menu stays in the viewport, supports keyboard navigation 
       .getByRole("menuitem")
       .or(menu.getByRole("menuitemcheckbox"))
       .locator("svg"),
-  ).toHaveCount(11);
+  ).toHaveCount(12);
   await expect(menu.getByText("Information", { exact: true })).toHaveCount(0);
   await expect(
     menu.getByRole("menuitem", { name: "Copy session link" }),

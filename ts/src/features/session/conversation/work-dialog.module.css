@@ -34,54 +34,100 @@
 .countSuffix {
   width: 1ch;
 }
-.layout {
-  --ui-scroll-area-background: var(--ui-dialog-body-background);
+/* Filled opacity keyframes create a backdrop root even after the drawer stops. */
+.drawer[data-drawer="root"] [data-drawer="frame"] {
+  animation-name: slide-in;
+}
+.drawer[data-drawer="root"][data-closing="true"] [data-drawer="frame"] {
+  animation-name: slide-out;
+}
+@keyframes slide-in {
+  from {
+    transform: translate(var(--drawer-x), var(--drawer-y));
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes slide-out {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translate(var(--drawer-x), var(--drawer-y));
+  }
+}
+.surface {
+  --menu-inner-radius: 6px;
+  --work-drawer-background: var(--ui-shade-20);
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  height: 100%;
+  padding: var(--ui-control-inset);
+  border: 1px solid var(--ui-shade-58);
+  border-radius: calc(var(--menu-inner-radius) + var(--ui-control-inset) + 1px);
+  color: var(--ui-shade-237);
+  background: var(--work-drawer-background);
+  box-shadow: 0 6px 24px #0005;
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .surface {
+    --work-drawer-background: color-mix(
+      in srgb,
+      var(--ui-shade-0) 40%,
+      var(--ui-dropdown-background)
+    );
+    -webkit-backdrop-filter: blur(var(--ui-dropdown-blur));
+    backdrop-filter: blur(var(--ui-dropdown-blur));
+  }
+}
+.frame,
+.body {
   flex: 1;
 }
-.layout > :global(.panel-scroll-region) {
+.list.list {
+  --ui-scroll-area-background: var(--work-drawer-background);
   flex: 1;
-  min-height: 0;
 }
-.layout :global(.panel-scroll-inner) {
-  padding-left: var(--space);
+.list.list .viewport {
+  height: 100%;
+  max-height: none;
 }
-.task {
-  padding: var(--space);
+.task[aria-expanded="true"] {
+  --button-background: var(--selected);
+  --button-hover-background: var(--selected-hover);
 }
-.task > button {
-  position: relative;
-  display: block;
-  width: 100%;
-  padding: calc(2 * var(--space));
-  text-align: left;
-  color: var(--muted);
-  background: var(--shade-20);
+.taskLabel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ui-space);
+  min-width: 0;
 }
-.task > button:hover :global(.event-time-tooltip) {
-  opacity: 1;
-  visibility: visible;
-  transition: none;
+.taskMeta {
+  --ui-text-value: var(--ui-shade-140);
+  --ui-text-separator: var(--ui-shade-115);
+  display: flex;
+  align-items: baseline;
+  gap: var(--ui-space);
+  color: var(--ui-text-value);
+  font-size: 0.6875rem;
+  line-height: 1.2;
 }
-.task > button:is(:hover, :focus-visible, [aria-expanded="true"]) {
-  color: var(--shade-237);
-  background: var(--shade-32);
-}
-.task > button > :global(.button-content) {
-  justify-content: flex-start;
+.taskMeta :global(.tool-state) {
+  color: inherit;
 }
 .task :global(.activity-card-content) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .details {
+  --card-inner-radius: var(--menu-inner-radius);
   flex: 0 0 min(340px, 45%);
   min-height: 0;
   overflow: hidden;
   min-width: 0;
-  padding: var(--space);
+  padding: var(--ui-control-inset);
 }
 .details :global(.detail-tabs) {
   height: 100%;

@@ -70,6 +70,7 @@ export class Connection {
   readonly inventory: ResourceInventory;
   readonly attention;
   readonly conversations;
+  readonly pendingSessionStarts = new Set<string>();
   // Original paste bodies stay in this authenticated connection's memory, like drafts.
   readonly pastes = new Map<string, ComposerPaste>();
   readonly drafts;
@@ -219,6 +220,7 @@ export class Connection {
     });
   }
   dispose() {
+    this.pendingSessionStarts.clear();
     this.reads.clear();
     this.taskCatalog.dispose();
     this.conversations.dispose();

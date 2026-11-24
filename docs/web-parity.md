@@ -25,6 +25,13 @@ authentication store, search index, or memory library.
   Brokered Codex uses its central account binding when the copy starts.
   The Manager and project runtime both need the updated Fork API; reloading Vite
   alone does not install the backend change. The WASM sandbox simulates forks.
+  **Change account** in the composer menu rebinds the session to another account
+  of the same agent, keeping its conversation and native provider history. A
+  running session is stopped first after confirmation; the next Start asks for
+  the new account's login when it uses session-local OAuth. Fork then Change
+  account forks into another account. It needs the updated Manager and project
+  runtime; the WASM sandbox has no accounts and does not simulate it. See
+  [accounts](accounts.md#changing-a-sessions-account).
 - **Accounts**: register isolated Codex or Claude authentication profiles and log
   in to a central Codex account. Claude credentials belong to each session.
   The panel shows agent logo, display name and alias. Its add button opens a

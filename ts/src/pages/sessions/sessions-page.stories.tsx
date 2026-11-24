@@ -381,7 +381,7 @@ export const SessionCreation: Story = {
     docs: {
       description: {
         story:
-          "Start on the empty Sessions page. Click Add session in the toolbar, choose a project and Work account, enter a title and Confirm. The real SessionCreate modal first calls Add to store a session, then calls Start to launch it. It keeps its dimensions while both requests are pending, then closes and navigates to the new alias-based conversation. The session panel slides in with the new session selected; the initial transcript loads before input is ready. Back in Preview history returns to the table with the created session. Separate controls adjust Add, Start and initial history delays. This story uses the real Workspace, router, form, inventory and conversation with isolated in-memory RPC fixtures. For login during Start, see Accounts/Workflows/SessionCreationRequiresLogin.",
+          "Start on the empty Sessions page. Click Add session in the toolbar, choose a project and Work account, enter a title and Confirm. The modal keeps its dimensions while Add stores the session. It then closes and opens the new alias-based conversation, where Start launches the agent. The session panel slides in with the new session selected. Back in Preview history returns to the table with the created session. Separate controls adjust Add, Start and initial history delays. This story uses the real Workspace, router, form, inventory and conversation with isolated in-memory RPC fixtures. For login during Start, see Accounts/Workflows/SessionCreationRequiresLogin.",
       },
     },
   },

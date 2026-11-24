@@ -88,6 +88,27 @@ test("all work kinds live in the task dialog while important errors remain reada
   await expect(dialog.locator('[data-dialog-trigger="true"]')).toHaveCount(0);
   await expect(dialog).toContainText("Agent update applied");
   await expect(dialog).toContainText("Provider background work");
+  const tool = dialog.getByRole("button", {
+    name: "Bash · Details",
+    exact: true,
+  });
+  const timestamp = tool.locator("time[datetime]");
+  const status = tool.getByRole("img", { name: "Completed" });
+  await expect(timestamp).toBeVisible();
+  await expect(status).toBeVisible();
+  await tool.hover();
+  await expect(dialog.locator(".event-time-tooltip")).toHaveCount(0);
+  await expect(status).toHaveCSS(
+    "font-size",
+    await timestamp.evaluate((node) => getComputedStyle(node).fontSize),
+  );
+  const statusBox = (await status.boundingBox())!;
+  const timeBox = (await timestamp.boundingBox())!;
+  const summaryBox = (await tool
+    .locator(".activity-card-content")
+    .boundingBox())!;
+  expect(statusBox.x + statusBox.width).toBeLessThanOrEqual(timeBox.x);
+  expect(timeBox.y + timeBox.height).toBeLessThanOrEqual(summaryBox.y);
   const work = dialog.locator('button[data-seq="7"]');
   await work.hover();
   await expect(work.locator(":scope > .button-content")).toHaveCSS(
@@ -177,7 +198,9 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
         .map((animation) => animation.finished),
     );
   });
-  const bounds = (await dialog.locator(".floating-card").boundingBox())!;
+  const bounds = (await dialog
+    .locator("[data-work-dialog-surface]")
+    .boundingBox())!;
   const area = (await page.locator(".conversation").boundingBox())!;
   const panel = (await page
     .getByRole("complementary", { name: "Sessions panel", exact: true })
@@ -185,6 +208,7 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
   const files = (await page
     .getByRole("complementary", { name: "File explorer", exact: true })
     .boundingBox())!;
+  expect(bounds.width).toBe(560);
   expect(bounds.x).toBeGreaterThanOrEqual(panel.x + panel.width);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(files.x);
   expect(area.x + area.width - bounds.x - bounds.width).toBeGreaterThan(0);
@@ -197,9 +221,37 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
       height: node.scrollHeight,
     })),
   ).toEqual(before);
+  await expect(dialog.locator('[data-menu-fixed="header"]')).toHaveCount(0);
+  const list = dialog.locator('[data-scroll-area="viewport"]').first();
+  const details = dialog.getByRole("region", { name: "Task details" });
+  const layout = async () => ({
+    list: await list.boundingBox(),
+    details: await details.boundingBox(),
+  });
+  const initialLayout = await layout();
+  expect(initialLayout.details!.height).toBeGreaterThan(0);
+  await expect(details).toBeEmpty();
+  const task = dialog.locator(".tool-activity").first();
+  await expect(task).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await task.hover();
+  await expect(task).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await task.click();
+  await expect(task).toHaveAttribute("aria-expanded", "true");
+  await expect(details.getByRole("tabpanel")).toBeVisible();
+  await details.hover();
+  const selectedBackground = await task.evaluate((node) =>
+    getComputedStyle(node).getPropertyValue("--selected").trim(),
+  );
+  await expect(task).toHaveCSS("--button-background", selectedBackground);
+  expect(await layout()).toEqual(initialLayout);
+  await task.click();
+  await expect(details).toBeEmpty();
+  await details.hover();
+  await expect(task).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(await layout()).toEqual(initialLayout);
   await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .click();
+    .locator('[data-drawer="backdrop"]')
+    .click({ position: { x: 2, y: 2 } });
   await expect(dialog).toHaveCount(0);
   await expect(
     summaries
@@ -211,11 +263,69 @@ test("turn work collapses into one line and its dialog never covers adjacent pan
     .getByRole("button", { name: "View details", exact: true })
     .click();
   await expect(dialog.locator(".tool-activity")).toHaveCount(1);
-  await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .press("Escape");
+  await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test("the work drawer visibly blurs the transcript behind it", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--contained&viewMode=story",
+  );
+  // Crisp stripes behind the modal reveal whether the composed pixels are blurred.
+  await page.addStyleTag({
+    content: `body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      pointer-events: none;
+      background: repeating-linear-gradient(90deg, white 0 8px, black 8px 16px);
+    }`,
+  });
+  await page
+    .getByRole("button", { name: "View details", exact: true })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
+  await dialog.evaluate(async (node) => {
+    await Promise.all(
+      node
+        .getAnimations({ subtree: true })
+        .map((animation) => animation.finished),
+    );
+  });
+  const details = dialog.getByRole("region", { name: "Task details" });
+  const box = (await details.boundingBox())!;
+  const stripeContrast = async () => {
+    const screenshot = await page.screenshot({
+      clip: {
+        x: Math.round(box.x + box.width / 2 - 48),
+        y: Math.round(box.y + box.height / 2),
+        width: 96,
+        height: 2,
+      },
+    });
+    return page.evaluate(async (png) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${png}`;
+      await image.decode();
+      const context = document.createElement("canvas").getContext("2d")!;
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, 1).data;
+      const red = [...pixels].filter((_, index) => index % 4 === 0);
+      return Math.max(...red) - Math.min(...red);
+    }, screenshot.toString("base64"));
+  };
+  const blurred = await stripeContrast();
+  await dialog.locator("[data-work-dialog-surface]").evaluate((node) => {
+    node.style.backdropFilter = "none";
+  });
+  const sharp = await stripeContrast();
+  expect(sharp).toBeGreaterThan(75);
+  expect(blurred).toBeLessThan(sharp / 3);
 });
 
 test("long task lists remain virtualized and scroll independently", async ({
@@ -248,9 +358,7 @@ test("long task lists remain virtualized and scroll independently", async ({
   expect(
     await page.locator(".transcript").evaluate((node) => node.scrollTop),
   ).toBe(before);
-  await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .click();
+  await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 390, height: 620 });
   await page.getByRole("button", { name: "View details", exact: true }).click();
   await dialog.evaluate(async (node) => {
@@ -260,7 +368,9 @@ test("long task lists remain virtualized and scroll independently", async ({
         .map((animation) => animation.finished),
     );
   });
-  const bounds = (await dialog.locator(".floating-card").boundingBox())!;
+  const bounds = (await dialog
+    .locator("[data-work-dialog-surface]")
+    .boundingBox())!;
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
 });
@@ -306,6 +416,49 @@ test("paging earlier tasks preserves the open execution and its detail editor", 
   await expect(
     dialog.getByRole("button", { name: "Load earlier tasks", exact: true }),
   ).toHaveCount(0);
+});
+
+test("the work drawer divider resizes details without resetting the active tab", async ({
+  page,
+}) => {
+  await page.goto(
+    "/iframe.html?id=conversation-workdialog--paged-turn&viewMode=story",
+  );
+  await page.getByRole("button", { name: "View details", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Tasks between responses" });
+  await dialog.getByRole("button", { name: "Bash · Details" }).click();
+  const output = dialog.getByRole("tab", { name: "Output", exact: true });
+  await output.click();
+  await expect(dialog.getByRole("tabpanel")).toContainText("main");
+
+  const divider = dialog.getByRole("separator", {
+    name: "Resize task details",
+  });
+  const details = dialog.getByRole("region", { name: "Task details" });
+  const list = dialog.locator(
+    '[data-menu-scroll-area] [data-scroll-area="viewport"]',
+  );
+  const initialDetails = (await details.boundingBox())!.height;
+  const initialList = (await list.boundingBox())!.height;
+  const { x, y, width, height } = (await divider.boundingBox())!;
+  await page.mouse.move(x + width / 2, y + height / 2);
+  await page.mouse.down();
+  await page.mouse.move(x + width / 2, y + height / 2 - 96, { steps: 8 });
+  await page.mouse.up();
+  await expect
+    .poll(async () => (await details.boundingBox())!.height)
+    .toBeCloseTo(initialDetails + 96);
+  expect((await list.boundingBox())!.height).toBeCloseTo(initialList - 96);
+  await expect(output).toHaveAttribute("aria-selected", "true");
+
+  await divider.press("ArrowDown");
+  await expect
+    .poll(async () => (await details.boundingBox())!.height)
+    .toBeCloseTo(initialDetails + 80);
+  await divider.dblclick();
+  await expect
+    .poll(async () => (await details.boundingBox())!.height)
+    .toBeCloseTo(initialDetails);
 });
 
 test("work batches split at assistant replies with counts left and elapsed time right", async ({
@@ -357,9 +510,7 @@ test("work batches split at assistant replies with counts left and elapsed time 
     exact: true,
   });
   await expect(dialog.locator(".tool-activity")).toHaveCount(1);
-  await dialog
-    .getByRole("button", { name: "Close task dialog", exact: true })
-    .click();
+  await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await summaries
     .nth(1)

@@ -10,8 +10,10 @@ import {
   type ComponentProps,
 } from "react";
 import { createPortal } from "react-dom";
-import { Button } from "@lesomnus/nox";
+import { Button, MenuItem } from "@lesomnus/nox";
+import { DateTime } from "#src/shared/components/date-time.tsx";
 import { EventTimePopover } from "./event-time-popover";
+import { messageDate } from "./message-time";
 import { useAnchoredCard } from "#src/features/session/cards/floating-card.tsx";
 import styles from "./activity-card.module.css";
 import workStyles from "./work-dialog.module.css";
@@ -46,28 +48,36 @@ function WorkActivityCard({
   children,
   className = "",
   state,
+  status,
   dialog,
 }: ComponentProps<typeof TranscriptActivityCard> & {
   dialog: NonNullable<React.ContextType<typeof ActivityWorkContext>>;
 }) {
-  const id = useId();
+  const metadata = useId();
+  const hasTime = !!messageDate(timeMs);
   const expanded = dialog.selected === seq.toString();
   return (
-    <div className={workStyles.task}>
-      <Button
-        type="button"
-        data-seq={seq.toString()}
-        data-state={state}
-        className={className}
-        aria-label={title}
-        aria-expanded={expanded}
-        aria-controls={expanded ? dialog.controls : undefined}
-        onClick={() => dialog.select(expanded ? undefined : seq.toString())}
-      >
+    <MenuItem
+      type="button"
+      data-seq={seq.toString()}
+      data-state={state}
+      className={`${workStyles.task} ${className}`}
+      aria-label={title}
+      aria-describedby={hasTime || status ? metadata : undefined}
+      aria-expanded={expanded}
+      aria-controls={dialog.controls}
+      onClick={() => dialog.select(expanded ? undefined : seq.toString())}
+    >
+      <span className={workStyles.taskLabel}>
+        {(hasTime || status) && (
+          <span id={metadata} className={workStyles.taskMeta}>
+            {status}
+            {hasTime && <DateTime value={timeMs} />}
+          </span>
+        )}
         <span className="activity-card-content">{children}</span>
-        <EventTimePopover timeMs={timeMs} id={`${id}-time`} />
-      </Button>
-    </div>
+      </span>
+    </MenuItem>
   );
 }
 
@@ -90,6 +100,7 @@ function TranscriptActivityCard({
   details: () => ReactNode;
   className?: string;
   state?: string;
+  status?: ReactNode;
   tone?: "error";
 }) {
   const unfolded = useContext(ActivityCardUnfolded) || tone === "error";

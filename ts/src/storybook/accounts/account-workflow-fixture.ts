@@ -362,8 +362,11 @@ export function accountWorkflowFixture(
           if (
             session.agent === "claude" &&
             !authenticatedSessions.has(session.clientId)
-          )
+          ) {
+            session.status!.state = "failed";
+            notify();
             throw loginRequired(session.clientId);
+          }
           session.status!.state = "idle";
           session.status!.runId = `started-${++run}`;
           needsLogin = false;

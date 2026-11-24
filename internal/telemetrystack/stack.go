@@ -88,18 +88,12 @@ func (s Stack) Prepare() error {
 	if err = core.WriteJSON(filepath.Join(s.directory(), "preferences.json"), s.Config); err != nil {
 		return err
 	}
-	if s.Config.Active() {
-		return os.WriteFile(filepath.Join(s.tools(), "telemetry", "enabled"), []byte("1\n"), 0644)
-	}
-	return nil
+	return os.WriteFile(filepath.Join(s.tools(), "telemetry", "enabled"), []byte("1\n"), 0644)
 }
 
 func (s Stack) Ensure(ctx context.Context) error {
 	if err := s.validate(); err != nil {
 		return err
-	}
-	if !s.Config.Active() {
-		return s.Stop(ctx)
 	}
 	if err := s.Prepare(); err != nil {
 		return err

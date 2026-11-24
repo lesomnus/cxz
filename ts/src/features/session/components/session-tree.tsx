@@ -1,8 +1,12 @@
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { projectIconName } from "#src/shared/components/project-icon.ts";
 import {
   sessionLocation,
   matchesResource,
+  projectLocation,
+  resourceHandle,
 } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -39,7 +43,12 @@ export function SessionTreeGroup({
   background?: ReadonlySet<string>;
 }) {
   useLocale();
+  const navigate = useNavigate();
   const expanded = !collapsible || open;
+  const pendingToggle = useRef<number>(undefined);
+  useEffect(() => () => window.clearTimeout(pendingToggle.current), []);
+  const openProject = () =>
+    void navigate(projectLocation(resourceHandle(project)));
   return (
     <section
       className={`session-tree-group ${styles.group}`}
@@ -48,8 +57,20 @@ export function SessionTreeGroup({
       <PanelItem
         className={`tree-project ${styles.project}`}
         aria-expanded={collapsible ? open : undefined}
-        disabled={!collapsible}
-        onClick={collapsible ? toggle : undefined}
+        onClick={(event) => {
+          if (event.detail === 0) {
+            if (collapsible) toggle();
+            else openProject();
+          } else if (collapsible && event.detail === 1) {
+            // A first click can move the heading when the shortened list scrolls.
+            window.clearTimeout(pendingToggle.current);
+            pendingToggle.current = window.setTimeout(toggle, 300);
+          }
+        }}
+        onDoubleClick={() => {
+          window.clearTimeout(pendingToggle.current);
+          openProject();
+        }}
         data-unread={
           (!expanded &&
             items.some(

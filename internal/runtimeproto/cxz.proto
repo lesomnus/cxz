@@ -20,6 +20,9 @@ service Sessions {
   rpc FileMappings(FileMappingsInput) returns (Receipt);
   rpc Create(CreateRequest) returns (Session);
   rpc ForkSession(SessionForkInput) returns (Session);
+  // Rebind a stopped session to another account of the same agent, moving its
+  // provider history inside the session's own profile. Credentials stay.
+  rpc SwitchSessionAccount(SessionAccountInput) returns (Session);
   rpc List(Empty) returns (SessionList);
   rpc Get(SessionRef) returns (Session);
   rpc CopyMemory(CopyMemoryRequest) returns (Receipt);
@@ -137,6 +140,7 @@ service Sessions {
 message Empty {}
 message CreateRequest { string workspace = 1; string title = 2; string client_id = 3; string agent = 4; string model = 5; string account = 6; string auth_backend = 7; string auth_binding = 8; }
 message SessionForkInput { string session_id = 1; string run_id = 2; string client_id = 3; }
+message SessionAccountInput { string session_id = 1; string account = 2; string auth_backend = 3; string auth_binding = 4; }
 message SessionRef { string id = 1; }
 message Session {
   string id = 1; string workspace = 2; string title = 3; string state = 4;

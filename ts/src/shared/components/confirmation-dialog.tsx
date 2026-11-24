@@ -18,6 +18,7 @@ export function ConfirmationDialog({
   execute,
   close,
   failureMessage,
+  confirmDisabled = false,
 }: {
   title: string;
   children: ReactNode;
@@ -25,6 +26,7 @@ export function ConfirmationDialog({
   execute: () => Promise<boolean> | boolean;
   close: () => void;
   failureMessage?: string;
+  confirmDisabled?: boolean;
 }) {
   const { t } = useUI();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -86,7 +88,7 @@ export function ConfirmationDialog({
         <Button
           type="button"
           loading={busy}
-          disabled={busy}
+          disabled={busy || confirmDisabled}
           onClick={() => void submit()}
         >
           {confirmLabel}

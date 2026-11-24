@@ -18,7 +18,8 @@ func TestTelemetryRegistryAuxiliaryAttributionAndParentRevocation(t *testing.T) 
 		t.Fatal(err)
 	}
 	p := &Project{ID: "00112233445566778899aabbccddeeff", Token: "project-capability", Sessions: []*api.Session{{Id: "parent", Account: "main", Agent: "codex"}}}
-	m := &Manager{Root: dir, telemetry: telemetrystore.New("http://unused", "unused"), telemetryAux: map[string]map[string]telemetryauth.Session{p.ID: {"job": {Account: "helper", Agent: "claude", Scope: "auxiliary", Parent: "parent"}}}}
+	m := &Manager{Root: dir, telemetryAux: map[string]map[string]telemetryauth.Session{p.ID: {"job": {Account: "helper", Agent: "claude", Scope: "auxiliary", Parent: "parent"}}}}
+	m.telemetry.Store(telemetrystore.New("http://unused", "unused"))
 	if err := m.writeTelemetryRegistry(p); err != nil {
 		t.Fatal(err)
 	}

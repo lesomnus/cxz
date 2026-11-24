@@ -16,11 +16,14 @@ import (
 	"github.com/lesomnus/cxz/internal/telemetryauth"
 	"github.com/lesomnus/cxz/internal/telemetryconfig"
 	"github.com/lesomnus/cxz/internal/telemetrystack"
+	"github.com/lesomnus/cxz/internal/telemetrystore"
 	"github.com/lesomnus/cxz/resource"
 )
 
+func (m *Manager) telemetryClient() *telemetrystore.Client { return m.telemetry.Load() }
+
 func (m *Manager) writeTelemetryRegistry(p *Project) error {
-	if m.telemetry == nil {
+	if m.telemetryClient() == nil {
 		return nil
 	}
 	key, err := telemetryauth.ProjectKey(p.ID)
@@ -44,7 +47,7 @@ func (m *Manager) writeTelemetryRegistry(p *Project) error {
 // Auxiliary tasks use their actual configured account and a short-lived ingest
 // registration, while statistics remain attributable to the parent session.
 func (m *Manager) auxiliaryTelemetry(ctx context.Context, in auxiliary.Input) (*telemetry.Publisher, func()) {
-	if m.telemetry == nil || in.Session == "" || in.Task == "models" {
+	if m.telemetryClient() == nil || in.Session == "" || in.Task == "models" {
 		return nil, func() {}
 	}
 	p, err := m.projectOf(ctx, in.Session)
@@ -86,10 +89,11 @@ func (m *Manager) auxiliaryTelemetry(ctx context.Context, in auxiliary.Input) (*
 }
 
 func (m *Manager) TelemetryStats(ctx context.Context, scope, id string, from, to int64) (*resource.ConversationStatsReply, bool, error) {
-	if m.telemetry == nil {
+	store := m.telemetryClient()
+	if store == nil {
 		return nil, false, nil
 	}
-	reply, err := m.telemetry.Stats(ctx, scope, id, from, to)
+	reply, err := store.Stats(ctx, scope, id, from, to)
 	return reply, true, err
 }
 
@@ -110,38 +114,49 @@ func (m *Manager) StartTelemetry(ctx context.Context) {
 		}
 	}
 	stack := telemetrystack.Stack{Root: m.Root, Owner: m.Owner, StateVolume: m.StateVolume, ToolsVolume: m.ToolsVolume, Image: m.Image, Manager: m.Container, Config: config}
-	if config.Active() {
+	// Usage has no other source, so a store that could not be reached at
+	// startup is retried with the rest of the maintenance rather than given up
+	// on until the Manager restarts. The first attempt stays synchronous: its
+	// setup only writes local files.
+	connect := func() error {
+		if m.telemetryClient() != nil {
+			return nil
+		}
 		if err := stack.Prepare(); err != nil {
-			fmt.Fprintln(os.Stderr, "telemetry setup:", err)
-			return
+			return fmt.Errorf("setup: %w", err)
 		}
-		var err error
-		m.telemetry, err = stack.Client()
+		client, err := stack.Client()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "telemetry client:", err)
-			return
+			return fmt.Errorf("client: %w", err)
 		}
+		m.telemetry.Store(client)
+		// Ingestion is authorized from these registries, which are skipped
+		// while there is no client; write every project's now.
 		m.writeMu.Lock()
+		defer m.writeMu.Unlock()
 		projects, err := m.all(ctx)
-		if err == nil {
-			for _, p := range projects {
-				if e := m.writeTelemetryRegistry(p); e != nil {
-					err = e
-					break
-				}
+		if err != nil {
+			return fmt.Errorf("registry: %w", err)
+		}
+		for _, p := range projects {
+			if err = m.writeTelemetryRegistry(p); err != nil {
+				return fmt.Errorf("registry: %w", err)
 			}
 		}
-		m.writeMu.Unlock()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "telemetry registry:", err)
-		}
+		return nil
+	}
+	if err := connect(); err != nil {
+		fmt.Fprintln(os.Stderr, "telemetry", err)
 	}
 	go func() {
 		for {
 			work, cancel := context.WithTimeout(ctx, 5*time.Minute)
 			err := stack.Ensure(work)
-			if err == nil && m.telemetry != nil {
-				err = m.telemetry.CleanErased(work)
+			if err == nil {
+				err = connect()
+			}
+			if err == nil {
+				err = m.telemetryClient().CleanErased(work)
 			}
 			cancel()
 			if err != nil && ctx.Err() == nil {
@@ -163,11 +178,12 @@ func (m *Manager) StartTelemetry(ctx context.Context) {
 }
 
 func (m *Manager) eraseTelemetry(ctx context.Context, project, session string) error {
-	if m.telemetry == nil {
+	store := m.telemetryClient()
+	if store == nil {
 		return nil
 	}
 	if session != "" {
-		if err := m.telemetry.Erase(ctx, hex.EncodeToString(resourceid.Bytes(8, session))); err != nil {
+		if err := store.Erase(ctx, hex.EncodeToString(resourceid.Bytes(8, session))); err != nil {
 			return err
 		}
 	} else if project != "" {

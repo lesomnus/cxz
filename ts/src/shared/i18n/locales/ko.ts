@@ -187,6 +187,7 @@ export const messages = {
   "{count} active background job": "활성 백그라운드 작업 {count}개",
   "{count} active background jobs": "활성 백그라운드 작업 {count}개",
   "Task details": "작업 상세",
+  "Resize task details": "작업 상세 영역 크기 조절",
   "{count} tasks performed": "{count}개의 작업이 진행됨",
   "{count} task performed": "{count}개의 작업이 진행됨",
   "{count}+ tasks performed": "{count}개 이상의 작업이 진행됨",
@@ -194,7 +195,6 @@ export const messages = {
   "View details": "자세히 보기",
   "Tasks between responses": "대화 응답 사이의 작업",
   Tasks: "작업",
-  "Close task dialog": "작업 다이얼로그 닫기",
   Error: "오류",
   "Request failed": "요청에 실패했습니다",
   "No automatic retry": "자동 재시도 없음",
@@ -992,4 +992,16 @@ export const messages = {
   "Could not confirm the fork. {error} Check the session list before retrying.":
     "Fork 결과를 확인하지 못했습니다. {error} 다시 시도하기 전에 세션 목록을 확인하세요.",
   "Fork failed. {error}": "Fork에 실패했습니다. {error}",
+  "Change account": "계정 바꾸기",
+  Change: "바꾸기",
+  "Stop and change": "중지하고 바꾸기",
+  "Choose an account": "계정 선택",
+  "Could not change the account. Check session status before retrying.":
+    "계정을 바꾸지 못했습니다. 다시 시도하기 전에 세션 상태를 확인하세요.",
+  "The conversation, its history and its settings stay with this session. The new account may ask you to log in before the session runs again.":
+    "대화와 기록, 설정은 이 세션에 그대로 남습니다. 세션을 다시 실행하기 전에 새 계정으로 로그인해야 할 수 있습니다.",
+  "The session is stopped first. Active work stops.":
+    "먼저 세션을 중지합니다. 진행 중인 작업이 멈춥니다.",
+  "No other account is registered for this agent.":
+    "이 에이전트에 등록된 다른 계정이 없습니다.",
 } satisfies LanguagePack;

@@ -454,6 +454,87 @@ func TestLifecycle(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+	t.Run("switch account keeps the conversation", func(t *testing.T) {
+		source := get()
+		child, err := client.ForkSession(ctx, &api.SessionForkInput{SessionId: source.Id, RunId: source.RunId, ClientId: core.ID()})
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer client.EraseSession(context.Background(), &api.SessionEraseInput{SessionId: child.Id})
+		if err = client.EnsureAccount(ctx, "test-claude-2", "claude"); err != nil {
+			t.Fatal(err)
+		}
+		ask := func(session *api.Session, text string) string {
+			t.Helper()
+			streamCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
+			defer cancel()
+			stream, err := client.Watch(streamCtx, &api.WatchRequest{SessionId: session.Id, AfterSeq: session.LastSeq})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err = client.Send(ctx, &api.Input{SessionId: session.Id, RunId: session.RunId, ClientId: core.ID(), Text: text}); err != nil {
+				t.Fatal(err)
+			}
+			for {
+				event, err := stream.Recv()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if event.Kind == "assistant" {
+					return event.Text
+				}
+			}
+		}
+		// Switch, then start under the new account's own login.
+		run := func(alias string) *api.Session {
+			t.Helper()
+			switched, err := client.SwitchSessionAccount(ctx, &api.SessionAccountInput{SessionId: child.Id, Account: alias})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if switched.Account != alias || switched.AuthBinding == "" {
+				t.Fatal("switch did not rebind the session", switched)
+			}
+			start := &api.Control{SessionId: child.Id, RunId: switched.RunId, ClientId: core.ID()}
+			_, err = client.Resume(ctx, start)
+			details := status.Convert(err).Details()
+			if status.Code(err) != codes.FailedPrecondition || len(details) != 1 {
+				t.Fatal("the new account must ask for its own login", err)
+			}
+			if info, ok := details[0].(*errdetails.ErrorInfo); !ok || info.Reason != "PROJECT_LOGIN_REQUIRED" || info.Metadata["account"] != alias || info.Metadata["session_key"] != child.CreateId {
+				t.Fatal("login challenge named the wrong account", err)
+			}
+			if err = accounts.Install(accounts.SessionRoot(state, child.CreateId), alias, "claude", []byte(`{"claudeAiOauth":{"accessToken":"synthetic-`+alias+`"}}`)); err != nil {
+				t.Fatal(err)
+			}
+			started, err := client.Resume(ctx, start)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if text := ask(started, "account-context"); !strings.HasPrefix(text, "profile="+alias+" ") {
+				t.Fatal("agent did not run under the new account", text)
+			}
+			current, err := client.Get(ctx, &api.SessionRef{Id: child.Id})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if text := ask(current, "fork-context"); text != "inherited hello=true" {
+				t.Fatal("native conversation did not follow the account", text)
+			}
+			return current
+		}
+		// A fork that never ran carries its snapshot of the parent's transcript.
+		running := run("test-claude-2")
+		if _, err = client.SwitchSessionAccount(ctx, &api.SessionAccountInput{SessionId: child.Id, Account: "test-claude"}); status.Code(err) != codes.FailedPrecondition {
+			t.Fatal("switched a running session", err)
+		}
+		if _, err = client.Stop(ctx, &api.Control{SessionId: child.Id, RunId: running.RunId, ClientId: core.ID()}); err != nil {
+			t.Fatal(err)
+		}
+		// A session that ran carries its own provider identity back.
+		running = run("test-claude")
+		client.Stop(ctx, &api.Control{SessionId: child.Id, RunId: running.RunId, ClientId: core.ID()})
+	})
 	if v, e := client.Send(ctx, r); e != nil || v.Status != "accepted" {
 		t.Fatalf("retry: %v %v", v, e)
 	}

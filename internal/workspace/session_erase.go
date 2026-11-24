@@ -33,7 +33,7 @@ func (m *Manager) EraseSession(ctx context.Context, in *api.SessionEraseInput) (
 		return nil, err
 	}
 	defer conn.Close()
-	if !r.DryRun && m.telemetry != nil {
+	if !r.DryRun && m.telemetryClient() != nil {
 		if err = m.eraseTelemetry(ctx, project.ID, r.Session); err != nil {
 			return nil, err
 		}

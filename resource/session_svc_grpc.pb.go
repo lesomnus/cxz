@@ -32,6 +32,7 @@ const (
 	SessionService_Start_FullMethodName             = "/cxz.SessionService/Start"
 	SessionService_Resume_FullMethodName            = "/cxz.SessionService/Resume"
 	SessionService_Fork_FullMethodName              = "/cxz.SessionService/Fork"
+	SessionService_SwitchAccount_FullMethodName     = "/cxz.SessionService/SwitchAccount"
 	SessionService_Stop_FullMethodName              = "/cxz.SessionService/Stop"
 	SessionService_Interrupt_FullMethodName         = "/cxz.SessionService/Interrupt"
 	SessionService_CopyAgentData_FullMethodName     = "/cxz.SessionService/CopyAgentData"
@@ -100,6 +101,10 @@ type SessionServiceClient interface {
 	// Branch a settled conversation, retaining its project, account and settings.
 	// client_id makes retries return the same child rather than creating another.
 	Fork(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
+	// Rebind a stopped session to another account of the same agent. The
+	// conversation, its provider history and its settings stay with the session;
+	// the new account may need its own login before the session runs again.
+	SwitchAccount(ctx context.Context, in *SessionSwitchAccountRequest, opts ...grpc.CallOption) (*Session, error)
 	Stop(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*Session, error)
 	Interrupt(ctx context.Context, in *SessionControl, opts ...grpc.CallOption) (*SessionReceipt, error)
 	CopyAgentData(ctx context.Context, in *SessionCopyAgentDataRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
@@ -290,6 +295,16 @@ func (c *sessionServiceClient) Fork(ctx context.Context, in *SessionControl, opt
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Session)
 	err := c.cc.Invoke(ctx, SessionService_Fork_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) SwitchAccount(ctx context.Context, in *SessionSwitchAccountRequest, opts ...grpc.CallOption) (*Session, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Session)
+	err := c.cc.Invoke(ctx, SessionService_SwitchAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -641,6 +656,10 @@ type SessionServiceServer interface {
 	// Branch a settled conversation, retaining its project, account and settings.
 	// client_id makes retries return the same child rather than creating another.
 	Fork(context.Context, *SessionControl) (*Session, error)
+	// Rebind a stopped session to another account of the same agent. The
+	// conversation, its provider history and its settings stay with the session;
+	// the new account may need its own login before the session runs again.
+	SwitchAccount(context.Context, *SessionSwitchAccountRequest) (*Session, error)
 	Stop(context.Context, *SessionControl) (*Session, error)
 	Interrupt(context.Context, *SessionControl) (*SessionReceipt, error)
 	CopyAgentData(context.Context, *SessionCopyAgentDataRequest) (*SessionReceipt, error)
@@ -736,6 +755,9 @@ func (UnimplementedSessionServiceServer) Resume(context.Context, *SessionControl
 }
 func (UnimplementedSessionServiceServer) Fork(context.Context, *SessionControl) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Fork not implemented")
+}
+func (UnimplementedSessionServiceServer) SwitchAccount(context.Context, *SessionSwitchAccountRequest) (*Session, error) {
+	return nil, status.Error(codes.Unimplemented, "method SwitchAccount not implemented")
 }
 func (UnimplementedSessionServiceServer) Stop(context.Context, *SessionControl) (*Session, error) {
 	return nil, status.Error(codes.Unimplemented, "method Stop not implemented")
@@ -1062,6 +1084,24 @@ func _SessionService_Fork_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionServiceServer).Fork(ctx, req.(*SessionControl))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_SwitchAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionSwitchAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).SwitchAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_SwitchAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).SwitchAccount(ctx, req.(*SessionSwitchAccountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1578,6 +1618,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Fork",
 			Handler:    _SessionService_Fork_Handler,
+		},
+		{
+			MethodName: "SwitchAccount",
+			Handler:    _SessionService_SwitchAccount_Handler,
 		},
 		{
 			MethodName: "Stop",

@@ -31,6 +31,8 @@ import {
   saveContainerDownload,
 } from "#src/features/session/composer/composer-download.ts";
 import { SessionMenu } from "#src/features/session/components/session-menu.tsx";
+import { SessionAccountDialog } from "#src/features/session/components/session-account-dialog.tsx";
+import { accountRef } from "#src/features/accounts/account-data.ts";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { Button } from "@lesomnus/nox";
 import { Code, ConnectError } from "@connectrpc/connect";
@@ -38,7 +40,9 @@ import { authenticationRequired } from "#src/features/session/model/session-auth
 import {
   manageSession,
   prepareSessionLogin,
+  resumableStates,
   sessionLoginSnapshot,
+  type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
 import { performSessionControl } from "#src/features/session/model/session-control-batch.ts";
 import { useNavigate, useRouter } from "@tanstack/react-router";
@@ -49,6 +53,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
   useRef,
   useState,
@@ -203,6 +208,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const [busy, setBusy] = useState(false);
   const [terminalVisible, setTerminalVisible] = useState(false);
   const [terminalActivated, setTerminalActivated] = useState(false);
+  const [accountDialog, setAccountDialog] = useState(false);
   const terminalVisibleRef = useRef(false);
   function showTerminal(show: boolean) {
     terminalVisibleRef.current = show;
@@ -772,6 +778,51 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       ),
     });
   }
+  function manage(operation: SessionOperation, run: string) {
+    return action(
+      async (session) => {
+        const sessionRef = create(SessionRefSchema, ref(id));
+        try {
+          const updated = await manageSession(
+            c.sessions,
+            sessionRef,
+            operation,
+            run,
+          );
+          c.store.apply("cxz.Session", [{ id: updated.id, value: updated }]);
+        } catch (error) {
+          if (
+            !mounted.current ||
+            operation === "stop" ||
+            session.agent !== "claude" ||
+            !(error instanceof ConnectError) ||
+            error.code !== Code.FailedPrecondition
+          )
+            throw error;
+          const bound = await sessionLoginSnapshot(c.sessions, sessionRef, run);
+          if (
+            !requiredSessionLogin(
+              error,
+              bound.account?.alias ?? "",
+              bound.clientId,
+            )
+          )
+            throw error;
+          await openSessionLogin(run);
+        }
+      },
+      operation === "resume" && !run ? String : undefined,
+    );
+  }
+  const startCreatedSession = useEffectEvent(() => {
+    const status = s?.status;
+    if (!status || busy || !c.pendingSessionStarts.delete(id)) return;
+    if (status.state === "created" && !status.runId) void manage("resume", "");
+  });
+  useEffect(() => {
+    startCreatedSession();
+  }, [busy, c, id, s]);
+
   const needsLogin =
     s?.agent === "claude" &&
     authenticationRequired(metadata, s.status?.runId ?? "");
@@ -797,6 +848,27 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       await navigate(sessionLocation(child));
       forkRequest.current = undefined;
     }, forkFailure);
+  }
+  // Stopping is part of the switch: a running agent keeps the old account's
+  // configuration as its home, so the server refuses to move it underneath.
+  async function switchAccount(alias: string) {
+    return action(async (session) => {
+      const sessionRef = create(SessionRefSchema, ref(id));
+      if (!resumableStates.has(session.status?.state ?? "")) {
+        const stopped = await manageSession(
+          c.sessions,
+          sessionRef,
+          "stop",
+          session.status?.runId ?? "",
+        );
+        c.store.apply("cxz.Session", [{ id: stopped.id, value: stopped }]);
+      }
+      const updated = await c.sessions.switchAccount(
+        { ref: sessionRef, account: accountRef(alias) },
+        { timeoutMs: 60000 },
+      );
+      c.store.apply("cxz.Session", [{ id: updated.id, value: updated }]);
+    });
   }
   function control(s: Session) {
     return {
@@ -1277,6 +1349,16 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                 icon: <Icon name="auxiliary" />,
                 run: () => localOpen("aux"),
               },
+              {
+                label: t("Change account"),
+                icon: <Icon name="accounts" />,
+                disabled:
+                  busy ||
+                  !s?.account ||
+                  !!s.status?.pending.length ||
+                  !!s.status?.queued,
+                run: () => setAccountDialog(true),
+              },
               ...(s?.agent === "claude"
                 ? [
                     {
@@ -1304,43 +1386,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
                   await navigate(resourceLocation("sessions"));
               });
             }}
-            manage={(operation, run) =>
-              action(async (session) => {
-                try {
-                  const updated = await manageSession(
-                    c.sessions,
-                    create(SessionRefSchema, ref(id)),
-                    operation,
-                    run,
-                  );
-                  c.store.apply("cxz.Session", [
-                    { id: updated.id, value: updated },
-                  ]);
-                } catch (error) {
-                  if (
-                    operation === "stop" ||
-                    session.agent !== "claude" ||
-                    !(error instanceof ConnectError) ||
-                    error.code !== Code.FailedPrecondition
-                  )
-                    throw error;
-                  const bound = await sessionLoginSnapshot(
-                    c.sessions,
-                    create(SessionRefSchema, ref(id)),
-                    run,
-                  );
-                  if (
-                    !requiredSessionLogin(
-                      error,
-                      bound.account?.alias ?? "",
-                      bound.clientId,
-                    )
-                  )
-                    throw error;
-                  await openSessionLogin(run);
-                }
-              })
-            }
+            manage={manage}
           />
         )}
       >
@@ -1353,6 +1399,14 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         />
         <UsageInfo info={info} agent={s?.agent ?? ""} />
       </ConversationComposer>
+      {accountDialog && s && (
+        <SessionAccountDialog
+          c={c}
+          session={s}
+          switchAccount={switchAccount}
+          close={() => setAccountDialog(false)}
+        />
+      )}
       {terminalActivated && !!s?.project?.id.length && (
         <WorkspaceTerminal
           c={c}

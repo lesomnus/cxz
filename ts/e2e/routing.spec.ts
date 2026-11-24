@@ -53,7 +53,13 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
     popup.getByRole("textbox", { name: "Message", exact: true }),
   ).toBeVisible();
   await popup.close();
-  await page.getByRole("link", { name: "Projects view", exact: true }).click();
+  const projectHeading = page
+    .locator(".session-tree")
+    .getByRole("button", { name: "Demo project", exact: true });
+  await projectHeading.click();
+  await expect(projectHeading).toHaveAttribute("aria-expanded", "false");
+  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat$/);
+  await projectHeading.dblclick();
   await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
   // Row selection keeps the project dashboard open.
   const workspace = page.getByRole("main", { name: "Project workspace" });
@@ -76,6 +82,13 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   ).toBeChecked();
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat$/);
+  await page.getByRole("button", { name: "Session panel options" }).click();
+  await page
+    .getByRole("menuitem", { name: "Disable project collapse" })
+    .click();
+  await expect(session).toBeVisible();
+  await projectHeading.dblclick();
+  await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
   expect(errors).toEqual([]);
 });
 

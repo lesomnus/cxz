@@ -713,20 +713,19 @@ test("file changes show per-file actions and deltas without fetching details", a
   });
   const task = dialog.locator('.tool-activity[data-seq="2"]');
   await expect(task).toHaveAttribute("data-state", "completed");
+  await expect(task.getByRole("img", { name: "Completed" })).toHaveCount(1);
   await expect(task.locator(".tool-file-row")).toHaveText([
-    "✓Edit /workspace/ts/src/app.tsx · +25 -11",
-    "✓Write /workspace/ts/src/send-motion.ts · Δ?",
-    "✓Edit /workspace/ts/src/style.css · +32 -0",
+    "Edit /workspace/ts/src/app.tsx · +25 -11",
+    "Write /workspace/ts/src/send-motion.ts · Δ?",
+    "Edit /workspace/ts/src/style.css · +32 -0",
   ]);
   for (const row of await task.locator(".tool-file-row").all())
     await expect(row).toBeVisible();
   await expect(page.locator(".tool-activity")).toHaveCount(1);
   expect(details).toBe(0);
-  await expect(
-    dialog.getByRole("region", { name: "Task details" }),
-  ).toHaveCount(0);
-  await task.click();
   const card = dialog.getByRole("region", { name: "Task details" });
+  await expect(card).toBeEmpty();
+  await task.click();
   await expect(card).toBeVisible();
   await card.getByRole("tab", { name: "Result", exact: true }).click();
   await expect(card.locator(".view-lines")).toContainText(
@@ -766,7 +765,9 @@ test("file changes show per-file actions and deltas without fetching details", a
     )
     .toBeGreaterThan(0);
   expect(
-    await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
+    await dialog
+      .locator('[data-menu-scroll-area] [data-scroll-area="viewport"]')
+      .evaluate((el) => el.scrollTop),
   ).toBe(0);
   expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
   await card.getByRole("tab", { name: "Approval", exact: true }).click();
@@ -779,8 +780,8 @@ test("file changes show per-file actions and deltas without fetching details", a
     "json",
   );
   await task.click();
-  await expect(card).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Close task dialog" }).click();
+  await expect(card).toBeEmpty();
+  await page.keyboard.press("Escape");
   expect(details).toBe(1);
 });
 
@@ -891,7 +892,9 @@ test.describe("task detail editor", () => {
         .evaluate((el) => parseFloat(el.style.top));
     await expect.poll(readingPosition).toBeGreaterThan(0);
     expect(
-      await dialog.locator(".card-body").evaluate((el) => el.scrollTop),
+      await dialog
+        .locator('[data-menu-scroll-area] [data-scroll-area="viewport"]')
+        .evaluate((el) => el.scrollTop),
     ).toBe(0);
     expect(await pane.evaluate((el) => el.scrollTop)).toBe(top);
     await card.getByRole("tab", { name: "Input", exact: true }).click();

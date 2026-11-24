@@ -25,9 +25,10 @@ Start; after login, retry Start on the existing session. Canceling login leaves
 the resource in place. Before the first run, history is empty and live streams
 wait with heartbeats until the runtime is available.
 
-The web creation form calls AuthBinding.Add, Session.Add, then Session.Start. It
-retains the added session if Start fails and retries only Start. The form stays
-pending until Start returns, then closes and navigates to the conversation.
+The web creation form calls AuthBinding.Add and Session.Add, then closes and
+opens the stored session's conversation. The conversation calls Session.Start
+once on entry and presents any session login challenge there. Login completion
+retries Start on that session.
 The CLI/TUI creation adapters also compose Add and Start explicitly. Storybook
 provides separate creation and start delays, and the WASM sandbox implements the
 same split without running an agent.

@@ -78,10 +78,12 @@ test("task details and replacing paste previews preserve the transcript and draf
   ).toBeVisible();
   expect(await geometry()).toEqual(before);
   await task.click();
+  // The details pane keeps its place in the drawer and empties.
   await expect(
     dialog.getByRole("region", { name: "Task details" }),
-  ).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Close task dialog" }).click();
+  ).toBeEmpty();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
   await inspectPaste(page, page.locator(".paste-chip").first());
   const preview = page.getByRole("dialog", { name: "Paste source" });
   await expect(preview).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");

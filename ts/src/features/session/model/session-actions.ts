@@ -22,7 +22,8 @@ export async function manageSession(
   operation: SessionOperation,
   expectedRun: string,
 ) {
-  const signal = AbortSignal.timeout(45_000);
+  const firstStart = operation === "resume" && !expectedRun;
+  const signal = AbortSignal.timeout(firstStart ? 120_000 : 45_000);
   const options = { signal };
   const get = () =>
     client.get({ ref, select: { all: true, project: { all: true } } }, options);

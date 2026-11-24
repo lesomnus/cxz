@@ -8439,6 +8439,11 @@ func (s interceptSession) Fork(ctx context.Context, req *resource.SessionControl
 		resource.SessionService_Fork_FullMethodName, req, s.SessionServiceServer.Fork)
 }
 
+func (s interceptSession) SwitchAccount(ctx context.Context, req *resource.SessionSwitchAccountRequest) (*resource.Session, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_SwitchAccount_FullMethodName, req, s.SessionServiceServer.SwitchAccount)
+}
+
 func (s interceptSession) Stop(ctx context.Context, req *resource.SessionControl) (*resource.Session, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Stop_FullMethodName, req, s.SessionServiceServer.Stop)
@@ -11240,6 +11245,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.SessionControl{}
 	case resource.SessionService_Fork_FullMethodName:
 		v = &resource.SessionControl{}
+	case resource.SessionService_SwitchAccount_FullMethodName:
+		v = &resource.SessionSwitchAccountRequest{}
 	case resource.SessionService_Stop_FullMethodName:
 		v = &resource.SessionControl{}
 	case resource.SessionService_Interrupt_FullMethodName:
@@ -11494,6 +11501,8 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Session().Resume(ctx, v.(*resource.SessionControl))
 	case resource.SessionService_Fork_FullMethodName:
 		res, err = s.Session().Fork(ctx, v.(*resource.SessionControl))
+	case resource.SessionService_SwitchAccount_FullMethodName:
+		res, err = s.Session().SwitchAccount(ctx, v.(*resource.SessionSwitchAccountRequest))
 	case resource.SessionService_Stop_FullMethodName:
 		res, err = s.Session().Stop(ctx, v.(*resource.SessionControl))
 	case resource.SessionService_Interrupt_FullMethodName:
