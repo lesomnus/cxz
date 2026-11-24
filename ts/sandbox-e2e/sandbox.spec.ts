@@ -53,7 +53,8 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   await expect(
     page.locator('#work-dialog .tool-activity[data-state="completed"]').last(),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close task dialog" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#work-dialog")).toBeHidden();
   // Shared pending-question UI sends the same Reply RPC through the WASM transport.
   await page.getByLabel("Scenario", { exact: true }).selectOption("session-4");
   await expect(
@@ -102,7 +103,8 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   const first = await page
     .locator("#work-dialog .activity-card-content")
     .allTextContents();
-  await page.getByRole("button", { name: "Close task dialog" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#work-dialog")).toBeHidden();
   await page
     .getByRole("button", { name: "Reset sandbox", exact: true })
     .first()
@@ -128,7 +130,8 @@ test("WASM sandbox reuses the UI without backend, credentials or provider calls"
   expect(
     await page.locator("#work-dialog .activity-card-content").allTextContents(),
   ).toEqual(first);
-  await page.getByRole("button", { name: "Close task dialog" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#work-dialog")).toBeHidden();
   expect(backend).toEqual([]);
   expect(errors).toEqual([]);
   await page.screenshot({

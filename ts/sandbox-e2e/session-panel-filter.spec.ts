@@ -115,7 +115,9 @@ test("project collapse can be disabled persistently without losing the current c
   await expect(disable).toBeVisible();
   await expect(enable).toHaveCount(0);
   await disable.click();
-  await expect(heading).toBeDisabled();
+  // The heading stays a button -- a double click opens the project -- but a
+  // single click no longer collapses it.
+  await expect(heading).toBeEnabled();
   await expect(heading).not.toHaveAttribute("aria-expanded");
   await expect(rows).toHaveCount(count);
   const rect = await heading.boundingBox();
@@ -144,7 +146,7 @@ test("project collapse can be disabled persistently without losing the current c
   await expect(panel.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS, {
     timeout: 45000,
   });
-  await expect(heading).toBeDisabled();
+  await expect(heading).not.toHaveAttribute("aria-expanded");
   await menu.click();
   await expect(enable).toBeVisible();
   await expect(disable).toHaveCount(0);
