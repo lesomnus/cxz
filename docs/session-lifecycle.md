@@ -32,3 +32,14 @@ retries Start on that session.
 The CLI/TUI creation adapters also compose Add and Start explicitly. Storybook
 provides separate creation and start delays, and the WASM sandbox implements the
 same split without running an agent.
+
+## When a project runtime is slow
+
+The Manager refreshes every project's session states at once, giving each
+project runtime five seconds to answer. A runtime that is reachable but misses
+the deadline -- usually because the host is short of CPU or memory -- keeps its
+sessions' last known states and logs `runtime did not list its sessions`; a
+loaded host is not a reason to report its sessions as stopped, which would hide
+them from views that leave out stopped sessions. A runtime still silent five
+minutes later, or one whose container is not running or refuses connections,
+has its running sessions reported as `interrupted`.
