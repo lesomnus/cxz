@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
+	"github.com/lesomnus/cxz/internal/kube"
 	"github.com/lesomnus/cxz/internal/versionpin"
 	"os"
 	"os/signal"
@@ -18,6 +19,15 @@ type displayedError struct{ error }
 func (e *displayedError) Unwrap() error { return e.error }
 
 func main() {
+	if len(os.Args) > 1 {
+		if helper, ok := kube.Helpers[os.Args[1]]; ok {
+			if err := helper(os.Args[2:]); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			return
+		}
+	}
 	if err := run(); err != nil {
 		var shown *displayedError
 		if !errors.As(err, &shown) {

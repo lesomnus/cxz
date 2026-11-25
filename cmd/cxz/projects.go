@@ -318,6 +318,15 @@ func projectExec(ctx context.Context, client api.SessionsClient, c *xli.Command)
 	}
 	flags = append(flags, command...)
 	process := exec.CommandContext(ctx, "docker", flags...)
+	if os.Getenv("CXZ_BACKEND") == "kubernetes" {
+		// Run beside a manager on Kubernetes: the project is a pod, and cxz
+		// carries the same exec into it.
+		self, err := os.Executable()
+		if err != nil {
+			return err
+		}
+		process = exec.CommandContext(ctx, self, append([]string{"_kube-exec"}, workspace.KubeExecArgs(flags[1:])...)...)
+	}
 	process.Stdin = c.ReadCloser
 	process.Stdout = c.Writer
 	process.Stderr = c.ErrWriter
@@ -392,7 +401,8 @@ func projectMetadataCommands() *xli.Command {
 			var p *api.Project
 			var err error
 			if c.Name == "add" {
-				p, err = resources.AddProject(ctx, target, name, alias, "")
+				config, _ := flg.Get[string](c, "config")
+				p, err = resources.AddProject(ctx, target, name, alias, config)
 			} else {
 				if !hasName && !hasAlias {
 					return fmt.Errorf("set requires --name or --alias")
@@ -411,6 +421,9 @@ func projectMetadataCommands() *xli.Command {
 			}
 			return writeOutput(c, p)
 		})}
+		if op == "add" {
+			c.Flags = append(c.Flags, &flg.String{Name: "config", Brief: "Devcontainer configuration; on Kubernetes, the project's settings as JSON or an image"})
+		}
 		parent.Commands = append(parent.Commands, c)
 	}
 	parent.Commands = append(parent.Commands, projectEraseCommand())
@@ -437,12 +450,20 @@ func projectEraseCommand() *xli.Command {
 		}
 		if !flg.MustGet[bool](c, "yes") {
 			fmt.Fprintf(c.ErrWriter, "Target: %s %s (%s)\n", p.Id, p.Workspace, p.Name)
+			if os.Getenv("CXZ_BACKEND") == "kubernetes" {
+				// A pod's workspace is on the project's own volume, which erase deletes.
+				return fmt.Errorf("project erase permanently deletes this project's sessions, history, memory and its volume, including the workspace; shared accounts are kept; pass --yes to confirm")
+			}
 			return fmt.Errorf("project erase permanently deletes this project's sessions, history, memory and owned resources; workspace sources and shared accounts are kept; pass --yes to confirm")
 		}
 		if err = resources.EraseProject(ctx, target); err != nil {
 			return err
 		}
-		fmt.Fprintf(c.Writer, "Erased project %s. Workspace sources preserved: %s\n", p.Id, p.Workspace)
+		if os.Getenv("CXZ_BACKEND") == "kubernetes" {
+			fmt.Fprintf(c.Writer, "Erased project %s and its volume, including %s\n", p.Id, p.Workspace)
+		} else {
+			fmt.Fprintf(c.Writer, "Erased project %s. Workspace sources preserved: %s\n", p.Id, p.Workspace)
+		}
 		return nil
 	})}
 }

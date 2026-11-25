@@ -175,6 +175,28 @@ pg로 옮기면 얻는 것도 크다 — 프로젝트 서버가 세션의 파일
 
 cxz#372와 cxz#377은 선행이 없어 병렬로 시작할 수 있다. cxz#376은 cxz#311·cxz#312를 먼저 고친다.
 
+## 진행 상황 (2026-11-25)
+
+첫 동작 버전이 [kubernetes](../kubernetes.md)에 있다. 테스트 클러스터(k3s 3노드)에서 프로젝트 생성·기동·정지·삭제, 세션 생성 경로, 웹 게이트웨이와 웹 터미널, pod 재시작 뒤의 워크스페이스 보존, 프로젝트가 서로 다른 노드에 배치되는 것을 확인했다.
+
+설계에서 바뀐 결정:
+
+- **프로젝트 정의를 번역하지 않는다.** devcontainer를 프런트엔드로 일반화하는 대신 k8s 백엔드는 자기 설정(이미지·사용자·볼륨 크기·requests/limits)을 쓴다. `projectspec.Spec`은 cxz 자신의 요구(env, state·tools 마운트, 기동, 소유 라벨)로만 남고, 마운트를 무엇으로 채우는지는 백엔드가 정한다.
+- **매니저는 클러스터 안에서 돈다.** pod IP의 7348에 바로 닿는다. 클라이언트는 기존 토큰 relay(TUI)와 웹 게이트웨이(port-forward)로 붙는다.
+- **워크스페이스는 빈 PVC다.** 프로젝트 볼륨 하나에 `state/`·`tools/`·`workspace/` subPath를 둔다.
+- **exec는 번역층 하나로.** `docker exec`의 인자를 그대로 `cxz _kube-exec`(websocket exec)로 옮기고, pod 안의 사용자·디렉터리·env는 `cxz _run-as`가 적용한다. 이미지에 su나 sudo가 없어도 된다.
+
+서브이슈와의 관계:
+
+| 서브이슈 | 상태 |
+|---|---|
+| cxz#373 프로비저너 인터페이스 | 인터페이스 대신 `Manager.kube` 분기. 진입점(start·stop·remove·erase·inventory·client·exec·runtime manifest)이 정해졌으니 인터페이스로 묶는 일은 남았다 |
+| cxz#374 k8s 백엔드 | pod·PVC·도달·소유권·터미널 동작. 이미지 기반만 |
+| cxz#375 자원 요청 | 설치 기본값과 프로젝트별 덮어쓰기로 requests/limits를 pod에 싣는다 |
+| cxz#376·#377·#378 | 남음 |
+
+남은 제약(대화 기록은 프로젝트가 떠 있을 때만, telemetry 저장소 미배포, 보조 AI 꺼짐 등)은 [kubernetes](../kubernetes.md#what-does-not-work-yet)에 있다.
+
 ## 10. 열린 질문
 
 - 프로젝트 자원 요청을 devcontainer 설정에 적는가, cxz 프로젝트 설정에 적는가. 전자는 저장소에 커밋되고 후자는 설치에 남는다.

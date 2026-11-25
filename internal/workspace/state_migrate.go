@@ -156,6 +156,9 @@ func (m *Manager) stateLocation(p *Project) string {
 // read directly; one that still has a volume is read through a container,
 // because only a container can see inside a volume.
 func (m *Manager) readRuntime(ctx context.Context, p *Project) ([]byte, error) {
+	if m.kube != nil {
+		return m.kubeReadRuntime(ctx, p)
+	}
 	if p.Volume == "" {
 		dir, _ := m.projectState(p.storageID())
 		b, err := os.ReadFile(filepath.Join(dir, "runtime.json"))

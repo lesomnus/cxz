@@ -91,7 +91,9 @@ const copy: Record<
     body: t(
       "Permanently deletes this project, its sessions, conversation history, shared memory and owned resources. This cannot be undone.",
     ),
-    note: t("Workspace source files and shared accounts are preserved."),
+    note: t(
+      "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.",
+    ),
   },
 };
 export function ProjectActions({

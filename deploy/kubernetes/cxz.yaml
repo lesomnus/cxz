@@ -1,0 +1,149 @@
+# cxz on Kubernetes: one manager, and a pod with its own volume per project.
+# See docs/kubernetes.md. Apply into a namespace of its own:
+#
+#   kubectl create namespace cxz
+#   kubectl -n cxz create secret generic cxz-manager \
+#     --from-literal=owner=$(openssl rand -hex 12) \
+#     --from-literal=token=$(openssl rand -hex 32) \
+#     --from-literal=web-token=$(openssl rand -hex 32)
+#   kubectl -n cxz apply -f cxz.yaml
+#
+# The manager's permissions are this namespace's pods, their exec, volume
+# claims and secrets: what it needs to run projects, and nothing outside.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cxz-manager
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cxz-manager
+rules:
+  - apiGroups: [""]
+    resources: [pods, persistentvolumeclaims, secrets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [pods/exec]
+    verbs: [get, create]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cxz-manager
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: cxz-manager}
+subjects: [{kind: ServiceAccount, name: cxz-manager}]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cxz-manager
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 10Gi}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cxz-kubernetes
+data:
+  # How projects run. Each project may override image, user, storage and
+  # resources when it is added. tools_image defaults to the manager's image.
+  settings.json: |
+    {
+      "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+      "user": "vscode",
+      "storage": "20Gi",
+      "requests": {"cpu": "500m", "memory": "1Gi"},
+      "limits": {"memory": "4Gi"}
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cxz-manager
+spec:
+  replicas: 1
+  # The manager's databases are SQLite on one volume: one writer at a time.
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app.kubernetes.io/name: cxz-manager}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: cxz-manager}
+    spec:
+      serviceAccountName: cxz-manager
+      securityContext: {fsGroup: 65532}
+      containers:
+        - name: manager
+          image: ghcr.io/lesomnus/cxz:edge
+          args: [--state, /var/lib/cxz, manager, serve]
+          env:
+            - {name: CXZ_BACKEND, value: kubernetes}
+            - name: CXZ_OWNER
+              valueFrom: {secretKeyRef: {name: cxz-manager, key: owner}}
+            - name: CXZ_KUBERNETES
+              valueFrom: {configMapKeyRef: {name: cxz-kubernetes, key: settings.json}}
+            # The image a project's pod copies cxz from: the manager's own.
+            - {name: CXZ_MANAGER_IMAGE, value: ghcr.io/lesomnus/cxz:edge}
+          volumeMounts:
+            - {name: state, mountPath: /var/lib/cxz}
+            # The manager's own sockets and tools. Projects have their own.
+            - {name: tools, mountPath: /cxz/tools}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+        # Clients reach the manager through its token relay: cxz --endpoint
+        # tcp://NODE:30749 --token-file FILE. It is the manager's own socket,
+        # on the same volume.
+        - name: relay
+          image: ghcr.io/lesomnus/cxz:edge
+          args: [--state, /var/lib/cxz, expose, --listen, "tcp://0.0.0.0:7349", --token-file, /run/cxz/token]
+          ports: [{name: relay, containerPort: 7349}]
+          volumeMounts:
+            - {name: state, mountPath: /var/lib/cxz}
+            - {name: token, mountPath: /run/cxz, readOnly: true}
+        # The browser UI. Its origin is a loopback address, which a browser
+        # treats as secure without a certificate: reach it with
+        #   kubectl -n cxz port-forward svc/cxz-web 7350
+        # and open http://127.0.0.1:7350. For https, give it tls-cert and
+        # tls-key from a Secret and an https origin instead.
+        - name: web
+          image: ghcr.io/lesomnus/cxz:edge
+          args: [--state, /var/lib/cxz, -x, _web-serve, --listen, "0.0.0.0:7350", --origin, "http://127.0.0.1:7350", --access-token-file, /web/token]
+          ports: [{name: web, containerPort: 7350}]
+          volumeMounts:
+            # Only the manager's sockets, read-only: no database, no projects.
+            - {name: state, subPath: run, mountPath: /var/lib/cxz/run, readOnly: true}
+            - {name: web-token, mountPath: /web, readOnly: true}
+      volumes:
+        - name: web-token
+          secret: {secretName: cxz-manager, items: [{key: web-token, path: token}]}
+        - name: state
+          persistentVolumeClaim: {claimName: cxz-manager}
+        - name: tools
+          emptyDir: {}
+        - name: token
+          secret: {secretName: cxz-manager, items: [{key: token, path: token}]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cxz-manager
+spec:
+  type: NodePort
+  selector: {app.kubernetes.io/name: cxz-manager}
+  ports:
+    - {name: relay, port: 7349, targetPort: relay, nodePort: 30749}
+---
+# The browser UI is plaintext on a loopback origin: reach it through
+# port-forward rather than exposing this port.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cxz-web
+spec:
+  selector: {app.kubernetes.io/name: cxz-manager}
+  ports:
+    - {name: web, port: 7350, targetPort: web}

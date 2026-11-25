@@ -20,6 +20,11 @@ func (m *Manager) NotificationBoundary(ctx context.Context, id string) (uint64, 
 	if err != nil {
 		return 0, err
 	}
+	if m.kube != nil {
+		// The manifest is in the pod. A fork's boundary is only where its
+		// notifications start; without it they start at the beginning.
+		return 0, nil
+	}
 	dir, _ := m.projectState(p.storageID())
 	b, err := os.ReadFile(filepath.Join(core.Dir(filepath.Join(dir, "data"), id), "session.json"))
 	if os.IsNotExist(err) {
@@ -40,7 +45,7 @@ func (m *Manager) NotificationBoundary(ctx context.Context, id string) (uint64, 
 
 func (m *Manager) NotificationHead(ctx context.Context, id string) (uint64, error) {
 	store, err := m.conversationStore(ctx, id)
-	if errors.Is(err, errNoConversation) {
+	if errors.Is(err, errNoConversation) || errors.Is(err, errPodConversation) {
 		return 0, nil
 	}
 	if err != nil {

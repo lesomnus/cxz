@@ -1004,4 +1004,6 @@ export const messages = {
     "먼저 세션을 중지합니다. 진행 중인 작업이 멈춥니다.",
   "No other account is registered for this agent.":
     "이 에이전트에 등록된 다른 계정이 없습니다.",
+  "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.":
+    "공용 계정은 보존됩니다. 호스트의 워크스페이스 폴더는 남지만, Kubernetes 프로젝트의 워크스페이스는 자체 볼륨에 있어 함께 삭제됩니다.",
 } satisfies LanguagePack;

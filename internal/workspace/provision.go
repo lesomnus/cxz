@@ -368,6 +368,9 @@ func (m *Manager) boot(ctx context.Context, p *Project) error {
 	return err
 }
 func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error {
+	if m.kube != nil {
+		return m.kubeWriteRuntime(ctx, p, r)
+	}
 	b, e := json.Marshal(r)
 	if e != nil {
 		return e

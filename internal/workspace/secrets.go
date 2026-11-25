@@ -39,6 +39,10 @@ func (m *Manager) prepareSecretRoot(p *Project) (string, error) {
 // Host tmpfs survives all cxz processes. Sweep at manager startup and hourly,
 // including orphaned project directories, without reading secret contents.
 func (m *Manager) RunSecretSweep(ctx context.Context) {
+	if m.kube != nil {
+		// Pod secrets are in-memory emptyDirs, swept with the pod.
+		return
+	}
 	sweep := func() {
 		if wisp.CheckSecretRoot(wisp.HostSecretsMount) != nil {
 			return

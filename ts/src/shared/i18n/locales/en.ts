@@ -1005,5 +1005,7 @@ export const messages = {
     "The session is stopped first. Active work stops.",
   "No other account is registered for this agent.":
     "No other account is registered for this agent.",
+  "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.":
+    "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.",
 } as const;
 export type Message = keyof typeof messages;

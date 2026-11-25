@@ -71,7 +71,7 @@ test("top-right icon actions follow the requested order and Erase keeps its conf
   await expect(dialog.locator(".floating-card")).toHaveCSS("transform", "none");
   await expect(dialog).toContainText("This cannot be undone.");
   await expect(dialog).toContainText(
-    "Workspace source files and shared accounts are preserved.",
+    "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.",
   );
   await expect(dialog).toContainText("Web workspace");
   await expect(
