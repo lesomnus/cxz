@@ -38,6 +38,7 @@ const (
 	ProjectService_Start_FullMethodName            = "/cxz.ProjectService/Start"
 	ProjectService_Stop_FullMethodName             = "/cxz.ProjectService/Stop"
 	ProjectService_Remove_FullMethodName           = "/cxz.ProjectService/Remove"
+	ProjectService_Build_FullMethodName            = "/cxz.ProjectService/Build"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -111,6 +112,11 @@ type ProjectServiceClient interface {
 	Start(ctx context.Context, in *ProjectStartRequest, opts ...grpc.CallOption) (*Project, error)
 	Stop(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
 	Remove(ctx context.Context, in *ProjectControl, opts ...grpc.CallOption) (*Project, error)
+	// Build the project's image from its workspace and run the project on it.
+	// Only on an installation that names an image builder and a registry: the
+	// build runs where the workspace is, pushes to the registry, and the project
+	// is restarted on the image it pushed, pinned by digest.
+	Build(ctx context.Context, in *ProjectBuildRequest, opts ...grpc.CallOption) (*Project, error)
 }
 
 type projectServiceClient struct {
@@ -350,6 +356,16 @@ func (c *projectServiceClient) Remove(ctx context.Context, in *ProjectControl, o
 	return out, nil
 }
 
+func (c *projectServiceClient) Build(ctx context.Context, in *ProjectBuildRequest, opts ...grpc.CallOption) (*Project, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Project)
+	err := c.cc.Invoke(ctx, ProjectService_Build_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
@@ -421,6 +437,11 @@ type ProjectServiceServer interface {
 	Start(context.Context, *ProjectStartRequest) (*Project, error)
 	Stop(context.Context, *ProjectControl) (*Project, error)
 	Remove(context.Context, *ProjectControl) (*Project, error)
+	// Build the project's image from its workspace and run the project on it.
+	// Only on an installation that names an image builder and a registry: the
+	// build runs where the workspace is, pushes to the registry, and the project
+	// is restarted on the image it pushed, pinned by digest.
+	Build(context.Context, *ProjectBuildRequest) (*Project, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -487,6 +508,9 @@ func (UnimplementedProjectServiceServer) Stop(context.Context, *ProjectControl) 
 }
 func (UnimplementedProjectServiceServer) Remove(context.Context, *ProjectControl) (*Project, error) {
 	return nil, status.Error(codes.Unimplemented, "method Remove not implemented")
+}
+func (UnimplementedProjectServiceServer) Build(context.Context, *ProjectBuildRequest) (*Project, error) {
+	return nil, status.Error(codes.Unimplemented, "method Build not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -786,6 +810,24 @@ func _ProjectService_Remove_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProjectService_Build_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProjectBuildRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProjectServiceServer).Build(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProjectService_Build_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProjectServiceServer).Build(ctx, req.(*ProjectBuildRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -840,6 +882,10 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Remove",
 			Handler:    _ProjectService_Remove_Handler,
+		},
+		{
+			MethodName: "Build",
+			Handler:    _ProjectService_Build_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -55,6 +55,7 @@ const (
 	Sessions_Search_FullMethodName                 = "/cxz.runtime.Sessions/Search"
 	Sessions_Projects_FullMethodName               = "/cxz.runtime.Sessions/Projects"
 	Sessions_StartContainer_FullMethodName         = "/cxz.runtime.Sessions/StartContainer"
+	Sessions_BuildProject_FullMethodName           = "/cxz.runtime.Sessions/BuildProject"
 	Sessions_StopContainer_FullMethodName          = "/cxz.runtime.Sessions/StopContainer"
 	Sessions_RemoveContainer_FullMethodName        = "/cxz.runtime.Sessions/RemoveContainer"
 	Sessions_AuxRun_FullMethodName                 = "/cxz.runtime.Sessions/AuxRun"
@@ -133,6 +134,7 @@ type SessionsClient interface {
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SearchReply], error)
 	Projects(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ProjectList, error)
 	StartContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
+	BuildProject(ctx context.Context, in *BuildProjectInput, opts ...grpc.CallOption) (*Receipt, error)
 	StopContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
 	RemoveContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error)
 	AuxRun(ctx context.Context, in *AuxRunInput, opts ...grpc.CallOption) (*AuxState, error)
@@ -566,6 +568,16 @@ func (c *sessionsClient) StartContainer(ctx context.Context, in *ProjectRequest,
 	return out, nil
 }
 
+func (c *sessionsClient) BuildProject(ctx context.Context, in *BuildProjectInput, opts ...grpc.CallOption) (*Receipt, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Receipt)
+	err := c.cc.Invoke(ctx, Sessions_BuildProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sessionsClient) StopContainer(ctx context.Context, in *ProjectRequest, opts ...grpc.CallOption) (*Receipt, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Receipt)
@@ -975,6 +987,7 @@ type SessionsServer interface {
 	Search(*SearchRequest, grpc.ServerStreamingServer[SearchReply]) error
 	Projects(context.Context, *Empty) (*ProjectList, error)
 	StartContainer(context.Context, *ProjectRequest) (*Receipt, error)
+	BuildProject(context.Context, *BuildProjectInput) (*Receipt, error)
 	StopContainer(context.Context, *ProjectRequest) (*Receipt, error)
 	RemoveContainer(context.Context, *ProjectRequest) (*Receipt, error)
 	AuxRun(context.Context, *AuxRunInput) (*AuxState, error)
@@ -1128,6 +1141,9 @@ func (UnimplementedSessionsServer) Projects(context.Context, *Empty) (*ProjectLi
 }
 func (UnimplementedSessionsServer) StartContainer(context.Context, *ProjectRequest) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method StartContainer not implemented")
+}
+func (UnimplementedSessionsServer) BuildProject(context.Context, *BuildProjectInput) (*Receipt, error) {
+	return nil, status.Error(codes.Unimplemented, "method BuildProject not implemented")
 }
 func (UnimplementedSessionsServer) StopContainer(context.Context, *ProjectRequest) (*Receipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method StopContainer not implemented")
@@ -1881,6 +1897,24 @@ func _Sessions_StartContainer_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionsServer).StartContainer(ctx, req.(*ProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Sessions_BuildProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BuildProjectInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionsServer).BuildProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Sessions_BuildProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionsServer).BuildProject(ctx, req.(*BuildProjectInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2664,6 +2698,10 @@ var Sessions_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartContainer",
 			Handler:    _Sessions_StartContainer_Handler,
+		},
+		{
+			MethodName: "BuildProject",
+			Handler:    _Sessions_BuildProject_Handler,
 		},
 		{
 			MethodName: "StopContainer",

@@ -426,7 +426,7 @@ func projectMetadataCommands() *xli.Command {
 		}
 		parent.Commands = append(parent.Commands, c)
 	}
-	parent.Commands = append(parent.Commands, projectEraseCommand())
+	parent.Commands = append(parent.Commands, projectEraseCommand(), projectBuildCommand())
 	return parent
 }
 
@@ -466,4 +466,22 @@ func projectEraseCommand() *xli.Command {
 		}
 		return nil
 	})}
+}
+
+// `build` makes a Kubernetes project's image from its workspace with the
+// installation's builder, and restarts the project on it.
+func projectBuildCommand() *xli.Command {
+	return &xli.Command{Name: "build", Brief: "Build a Kubernetes project's image from its workspace and restart it on the result", Args: arg.Args{projectArg("PROJECT", false)},
+		Flags: flg.Flags{&flg.String{Name: "dockerfile", Brief: "Dockerfile in the workspace (default: what the project last built with, else Dockerfile)"}, &flg.String{Name: "context", Brief: "Build context in the workspace (default: what the project last built with, else .)"}},
+		Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+			call, cancel := context.WithTimeout(ctx, 60*time.Minute)
+			defer cancel()
+			dockerfile, _ := flg.Get[string](c, "dockerfile")
+			buildContext, _ := flg.Get[string](c, "context")
+			reply, err := client.BuildProject(call, &api.BuildProjectInput{Workspace: arg.MustGet[string](c, "PROJECT"), ClientId: core.ID(), Dockerfile: dockerfile, Context: buildContext})
+			if err != nil {
+				return err
+			}
+			return writeOutput(c, reply)
+		})}
 }

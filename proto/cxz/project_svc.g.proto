@@ -76,6 +76,11 @@ service ProjectService {
   rpc Start(ProjectStartRequest) returns (Project);
   rpc Stop(ProjectControl) returns (Project);
   rpc Remove(ProjectControl) returns (Project);
+  // Build the project's image from its workspace and run the project on it.
+  // Only on an installation that names an image builder and a registry: the
+  // build runs where the workspace is, pushes to the registry, and the project
+  // is restarted on the image it pushed, pinned by digest.
+  rpc Build(ProjectBuildRequest) returns (Project);
 }
 
 message ProjectAddRequest {
@@ -362,4 +367,13 @@ message ProjectStartRequest {
 message ProjectControl {
   ProjectRef ref = 1;
   string client_id = 2;
+}
+
+// dockerfile and context are paths in the workspace; empty keeps what the
+// project last built with.
+message ProjectBuildRequest {
+  ProjectRef ref = 1;
+  string client_id = 2;
+  string dockerfile = 3;
+  string context = 4;
 }

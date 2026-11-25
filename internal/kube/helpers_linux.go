@@ -157,7 +157,7 @@ func lookPath(file, path string) (string, error) {
 
 // Prepare readies a project pod's volume before its runtime starts:
 //
-//	_kube-prepare [--copy-self DIR] [--runtime SRC DST] [--own USER PATH...]
+//	_kube-prepare [--copy-self DIR [--copy FILE]...] [--runtime SRC DST] [--own USER PATH...]
 //
 // --copy-self installs this cxz as DIR/cxz, so the runtime is always the
 // manager's own build. --runtime copies the runtime manifest from its Secret.
@@ -166,6 +166,8 @@ func lookPath(file, path string) (string, error) {
 func Prepare(args []string) error {
 	fs := flag.NewFlagSet("_kube-prepare", flag.ContinueOnError)
 	copySelf := fs.String("copy-self", "", "directory to install this executable into")
+	var extra multi
+	fs.Var(&extra, "copy", "another executable to install beside it, when it exists; repeatable")
 	runtime := fs.String("runtime", "", "runtime manifest to copy; the destination is the next argument")
 	owner := fs.String("own", "", "user to give the remaining paths to")
 	if err := fs.Parse(args); err != nil {
@@ -182,6 +184,14 @@ func Prepare(args []string) error {
 		}
 		if err = copyFile(self, filepath.Join(*copySelf, "cxz"), 0755); err != nil {
 			return err
+		}
+		for _, file := range extra {
+			if _, err := os.Stat(file); os.IsNotExist(err) {
+				continue
+			}
+			if err = copyFile(file, filepath.Join(*copySelf, filepath.Base(file)), 0755); err != nil {
+				return err
+			}
 		}
 	}
 	if *runtime != "" {
