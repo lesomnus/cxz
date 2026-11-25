@@ -22,6 +22,32 @@ import (
 
 const BrokerSocket = "/cxz/tools/auth-broker.sock"
 
+// BrokerAddress, when set, is where projects reach the broker instead of
+// BrokerSocket: tcp://host:port. A project pod on Kubernetes shares no volume
+// with the manager, so the socket is not there for it to open. The manager sets
+// it from CXZ_BROKER_ADDRESS.
+var BrokerAddress = ""
+
+func brokerEndpoint() string {
+	if BrokerAddress != "" {
+		return BrokerAddress
+	}
+	return BrokerSocket
+}
+
+// validBrokerEndpoint is BrokerSocket or a tcp://host:port address.
+func validBrokerEndpoint(endpoint string) bool {
+	if endpoint == BrokerSocket {
+		return true
+	}
+	address, ok := strings.CutPrefix(endpoint, "tcp://")
+	if !ok {
+		return false
+	}
+	host, port, err := net.SplitHostPort(address)
+	return err == nil && host != "" && port != ""
+}
+
 // Token is an internal, memory-only protocol value, never a resource or event.
 type Token struct {
 	AccessToken string  `json:"accessToken"`
@@ -207,7 +233,7 @@ func InstallGrant(root string, g Grant) error {
 	if err := validateGrantBinding(g); err != nil {
 		return err
 	}
-	if g.Socket != BrokerSocket || len(g.Capability) != 64 || g.AccountID == "" {
+	if !validBrokerEndpoint(g.Socket) || len(g.Capability) != 64 || g.AccountID == "" {
 		return fmt.Errorf("invalid token supply grant")
 	}
 	if err := Prepare(root, g.Account, "codex"); err != nil {
@@ -254,8 +280,11 @@ func issueGrant(root, project, account, scope string) (Grant, error) {
 		if _, err = rand.Read(secret[:]); err != nil {
 			return g, err
 		}
-		g = Grant{BrokerSocket, fmt.Sprintf("%x", secret), project, account, spec.ID, token.AccountID, scope}
+		g = Grant{brokerEndpoint(), fmt.Sprintf("%x", secret), project, account, spec.ID, token.AccountID, scope}
 	}
+	// A capability outlives where the broker is: the manager may have moved
+	// from a Docker host to a cluster. The secret stays, the address follows.
+	g.Socket = brokerEndpoint()
 	for _, dir := range []string{filepath.Dir(path), filepath.Dir(capabilityPath(root, g.Capability))} {
 		if err := os.MkdirAll(dir, 0700); err != nil {
 			return g, err
@@ -288,6 +317,21 @@ func StartBroker(root, socket string, refresh func(context.Context, string) erro
 		ln.Close()
 		return nil, err
 	}
+	return serveBroker(ln, root, refresh), nil
+}
+
+// StartBrokerTCP serves the same broker on a TCP address, for projects that
+// cannot reach the manager's socket. Every request still carries a
+// capability; the address only decides who can ask.
+func StartBrokerTCP(root, address string, refresh func(context.Context, string) error) (io.Closer, error) {
+	ln, err := net.Listen("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+	return serveBroker(ln, root, refresh), nil
+}
+
+func serveBroker(ln net.Listener, root string, refresh func(context.Context, string) error) io.Closer {
 	srv := &http.Server{ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 3 * time.Second, WriteTimeout: 9 * time.Second, IdleTimeout: 5 * time.Second}
 	srv.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
@@ -343,7 +387,7 @@ func StartBroker(root, socket string, refresh func(context.Context, string) erro
 		_ = json.NewEncoder(w).Encode(token)
 	})
 	go srv.Serve(ln)
-	return srv, nil
+	return srv
 }
 func FetchToken(ctx context.Context, root, account, project, binding, previous string, refresh bool) (Token, error) {
 	g, err := ReadGrant(root, account)
@@ -356,8 +400,12 @@ func FetchToken(ctx context.Context, root, account, project, binding, previous s
 	return fetchGrantToken(ctx, g, previous, refresh)
 }
 func fetchGrantToken(ctx context.Context, g Grant, previous string, refresh bool) (Token, error) {
+	network, address := "unix", g.Socket
+	if tcp, ok := strings.CutPrefix(g.Socket, "tcp://"); ok {
+		network, address = "tcp", tcp
+	}
 	transport := &http.Transport{DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-		return (&net.Dialer{}).DialContext(ctx, "unix", g.Socket)
+		return (&net.Dialer{}).DialContext(ctx, network, address)
 	}}
 	defer transport.CloseIdleConnections()
 	body, _ := json.Marshal(tokenRequest{previous, refresh})

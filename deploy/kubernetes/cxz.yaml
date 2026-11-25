@@ -88,6 +88,12 @@ spec:
               valueFrom: {configMapKeyRef: {name: cxz-kubernetes, key: settings.json}}
             # The image a project's pod copies cxz from: the manager's own.
             - {name: CXZ_MANAGER_IMAGE, value: ghcr.io/lesomnus/cxz:edge}
+            # Codex access tokens for brokered accounts, served to project pods
+            # over the cluster network: each request carries a capability the
+            # manager issued for that project and account.
+            - {name: CXZ_BROKER_LISTEN, value: ":7351"}
+            - {name: CXZ_BROKER_ADDRESS, value: "tcp://cxz-broker:7351"}
+          ports: [{name: broker, containerPort: 7351}]
           volumeMounts:
             - {name: state, mountPath: /var/lib/cxz}
             # The manager's own sockets and tools. Projects have their own.
@@ -147,3 +153,13 @@ spec:
   selector: {app.kubernetes.io/name: cxz-manager}
   ports:
     - {name: web, port: 7350, targetPort: web}
+---
+# The token broker is for project pods only: not published on any node.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cxz-broker
+spec:
+  selector: {app.kubernetes.io/name: cxz-manager}
+  ports:
+    - {name: broker, port: 7351, targetPort: broker}
