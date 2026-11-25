@@ -30,7 +30,16 @@ kubectl -n cxz apply -f deploy/kubernetes/cxz.yaml
 - the manager Deployment: one replica, `Recreate`, because its databases are
   SQLite on that one volume. Beside the manager run its token relay (for the
   TUI) and the browser gateway, both reading only the manager's sockets;
-- a NodePort Service for the relay (30749) and a ClusterIP Service for the web.
+- a NodePort Service for the relay (30749), and ClusterIP Services for the web
+  and for the Codex token broker.
+
+Codex accounts keep their default, brokered login: the manager holds the
+central login and hands each project short-lived access tokens. On Docker the
+broker is a Unix socket on the shared tools volume; a pod shares no volume, so
+the manager also serves it at `CXZ_BROKER_LISTEN` and issues grants naming
+`CXZ_BROKER_ADDRESS` (`tcp://cxz-broker:7351`). Every request carries the
+capability issued for that project and account, as on the socket; the Service
+is not published on any node.
 
 The manifest names `ghcr.io/lesomnus/cxz:edge`. Pin a `sha-…` tag for anything
 you rely on; a project pod copies its cxz from the manager's image when it
@@ -160,8 +169,6 @@ background; creating a session waits for it.
   Kubernetes yet. See [managed telemetry](managed-telemetry.md).
 - **Auxiliary AI** (summaries, suggestions, titles) is off: it runs in containers
   of a Docker engine.
-- **Codex** accounts need `project-local-oauth`; the brokered backend's token
-  broker is not reachable from pods.
 - **Updates.** A project's runtime is the manager's image, taken when its pod
   starts; agent CLIs are fetched at start. Nothing updates a running pod.
 - GitHub credential sync, host git configuration, the browser editor, file

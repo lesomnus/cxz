@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"github.com/lesomnus/cxz/internal/projectid"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -192,5 +193,59 @@ func TestRevokeProjectGrantsPreservesOtherScopes(t *testing.T) {
 	}
 	if err := RevokeProjectGrants(root, "project-a"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A project pod shares no volume with the manager: it is given the broker's
+// network address, and the capability is what admits it, as on the socket.
+func TestBrokerOverTCP(t *testing.T) {
+	ctx := context.Background()
+	root, projectRoot := t.TempDir(), t.TempDir()
+	seedCentral(t, root, "work", "subject-work", "synthetic-access")
+	socketGrant, err := IssueGrant(root, "project-a", "work")
+	if err != nil || socketGrant.Socket != BrokerSocket {
+		t.Fatal(socketGrant, err)
+	}
+	defer func(previous string) { BrokerAddress = previous }(BrokerAddress)
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	BrokerAddress = "tcp://" + ln.Addr().String()
+	srv := serveBroker(ln, root, func(context.Context, string) error { return nil })
+	defer srv.Close()
+	if closer, err := StartBrokerTCP(root, "127.0.0.1:0", nil); err != nil {
+		t.Fatal(err)
+	} else {
+		closer.Close()
+	}
+	grant, err := IssueGrant(root, "project-a", "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if grant.Capability != socketGrant.Capability || grant.Socket != BrokerAddress {
+		t.Fatal("a reissued grant must keep its capability and follow the broker's address", grant)
+	}
+	if err = InstallGrant(projectRoot, grant); err != nil {
+		t.Fatal(err)
+	}
+	tok, err := FetchToken(ctx, projectRoot, "work", "project-a", grant.Binding, "", false)
+	if err != nil || tok.AccessToken != "synthetic-access" {
+		t.Fatal(tok, err)
+	}
+	stolen := grant
+	stolen.Capability = strings.Repeat("0", 64)
+	if err = core.WriteJSON(grantPath(projectRoot, "work"), stolen); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = FetchToken(ctx, projectRoot, "work", "project-a", grant.Binding, "", false); err == nil {
+		t.Fatal("a capability the broker never issued was served")
+	}
+	for _, bad := range []string{"tcp://", "tcp://host", "http://host:1", "/elsewhere.sock"} {
+		g := grant
+		g.Socket = bad
+		if InstallGrant(t.TempDir(), g) == nil {
+			t.Errorf("grant endpoint %q accepted", bad)
+		}
 	}
 }

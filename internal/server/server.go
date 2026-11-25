@@ -179,17 +179,32 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		// reads journals, and a manager that is busy when the rollout asks
 		// whether it is healthy is rolled back.
 		go s.manager.ConvertStores(ctx)
-		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, func(ctx context.Context, account string) error {
+		refresh := func(ctx context.Context, account string) error {
 			bin, err := distribution.Ensure(ctx, "/cxz/tools", "codex", "", true)
 			if err != nil {
 				return err
 			}
 			return accounts.RefreshManaged(ctx, root, account, bin)
-		})
+		}
+		broker, err := accounts.StartBroker(root, accounts.BrokerSocket, refresh)
 		if err != nil {
 			return err
 		}
 		defer broker.Close()
+		// Projects that share no volume with the manager -- pods on
+		// Kubernetes -- reach the same broker over the network instead.
+		if listen := os.Getenv("CXZ_BROKER_LISTEN"); listen != "" {
+			address := os.Getenv("CXZ_BROKER_ADDRESS")
+			if !strings.HasPrefix(address, "tcp://") {
+				return fmt.Errorf("CXZ_BROKER_LISTEN needs CXZ_BROKER_ADDRESS, the tcp://host:port projects reach it at")
+			}
+			accounts.BrokerAddress = address
+			tcp, err := accounts.StartBrokerTCP(root, listen, refresh)
+			if err != nil {
+				return err
+			}
+			defer tcp.Close()
+		}
 		quota, err := quotashare.Start(root, quotashare.Socket, s.manager.AuthorizeQuota)
 		if err != nil {
 			return err
