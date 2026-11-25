@@ -9,7 +9,6 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
-	"github.com/lesomnus/cxz/internal/githubauth"
 	"github.com/lesomnus/cxz/internal/projectid"
 	"github.com/tailscale/hujson"
 	"io"
@@ -161,152 +160,8 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	if err != nil {
 		return err
 	}
-	env := map[string]any{}
-	if v, ok := cfg["containerEnv"].(map[string]any); ok {
-		env = v
-	}
-	// The shared override is applied before cxz's own keys below, so a project
-	// cannot be handed a devcontainer whose override redefined CXZ_STATE.
-	for name, value := range override.Image.Env {
-		env[name] = value
-	}
-	if dockerHost != "" {
-		env["DOCKER_HOST"] = dockerHost
-		env["DOCKER_CONTEXT"] = ""
-		env["DOCKER_TLS_VERIFY"] = ""
-		env["DOCKER_CERT_PATH"] = ""
-	}
-	env["CXZ_PROJECT_ID"] = p.ID
-	env["CXZ_STATE"] = "/cxz/state/data"
-	env["GH_CONFIG_DIR"] = githubauth.ConfigDir
-	env["CXZ_SECRET_STORAGE"] = "host-tmpfs"
-	cfg["containerEnv"] = env
-	mounts, _ := cfg["mounts"].([]any)
-	for _, mount := range override.Image.Mounts {
-		mounts = append(mounts, mount)
-	}
-	// cxz's own two go last, and the Compose path below strips exactly those two
-	// again because Compose declares them itself.
-	mounts = append(mounts, "type=volume,source="+p.Volume+",target=/cxz/state", "type=volume,source="+m.ToolsVolume+",target=/cxz/tools,readonly")
-	cfg["mounts"] = mounts
-	hooks := map[string]any{}
-	if v, ok := cfg["postStartCommand"]; ok {
-		if old, ok := v.(map[string]any); ok {
-			hooks = old
-		} else {
-			hooks["project"] = v
-		}
-	}
-	if _, exists := hooks["cxz-runtime"]; exists {
-		return fmt.Errorf("postStartCommand key cxz-runtime is reserved")
-	}
-	hooks["cxz-runtime"] = "/cxz/tools/cxz --state /cxz/state/data _boot"
-	cfg["postStartCommand"] = hooks
-	p.RemoteWorkspace = "/workspaces/" + filepath.Base(p.Workspace)
-	if v, ok := cfg["workspaceFolder"].(string); ok {
-		p.RemoteWorkspace = strings.ReplaceAll(v, "${localWorkspaceFolderBasename}", filepath.Base(p.Workspace))
-	}
-	cfg["workspaceFolder"] = p.RemoteWorkspace
-	files, e := composeFiles(cfg, base)
-	if e != nil {
+	if e = m.renderProvisionConfig(p, cfg, override, base, dockerHost, secretSource, assetSource); e != nil {
 		return e
-	}
-	if override.ComposeFile != "" {
-		files = append(files, override.ComposeFile)
-	}
-	if len(files) > 0 {
-		// The CLI's string-mount conversion gives Compose volumes a project
-		// prefix and drops readonly. Declare our exact external volumes directly.
-		cfg["mounts"] = mounts[:len(mounts)-2]
-		services := map[string]any{}
-		devNetworks := map[string]any{}
-		service, _ := cfg["service"].(string)
-		if service == "" {
-			return fmt.Errorf("compose devcontainer requires service")
-		}
-		for _, file := range files {
-			b, e := os.ReadFile(file.(string))
-			if e != nil {
-				return e
-			}
-			var compose map[string]any
-			if e = yaml.Unmarshal(b, &compose); e != nil {
-				return e
-			}
-			ss, _ := compose["services"].(map[string]any)
-			for name := range ss {
-				services[name] = map[string]any{"labels": map[string]string{"cxz.owner": m.Owner, "cxz.project": p.storageID()}}
-				if name == service {
-					if spec, ok := ss[name].(map[string]any); ok {
-						switch networks := spec["networks"].(type) {
-						case map[string]any:
-							for name, options := range networks {
-								devNetworks[name] = options
-							}
-						case []any:
-							for _, name := range networks {
-								if s, ok := name.(string); ok {
-									devNetworks[s] = nil
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		dev, ok := services[service].(map[string]any)
-		if !ok {
-			return fmt.Errorf("devcontainer service missing from compose files")
-		}
-		if len(devNetworks) == 0 {
-			devNetworks["default"] = nil
-		}
-		devNetworks["cxz"] = nil
-		dev["networks"] = devNetworks
-		dev["environment"] = map[string]string{"CXZ_PROJECT_ID": p.ID, "CXZ_STATE": "/cxz/state/data", "GH_CONFIG_DIR": githubauth.ConfigDir, "CXZ_SECRET_STORAGE": "host-tmpfs"}
-		if dockerHost != "" {
-			de := dev["environment"].(map[string]string)
-			de["DOCKER_HOST"] = dockerHost
-			de["DOCKER_CONTEXT"] = ""
-			de["DOCKER_TLS_VERIFY"] = ""
-			de["DOCKER_CERT_PATH"] = ""
-		}
-		// A project's state is a subdirectory of the manager's volume, mounted in
-		// as /cxz/state. That is what lets the manager read a session's
-		// conversation out of the file the session wrote rather than keeping its
-		// own copy of every conversation -- and it is the same mechanism the web
-		// and relay containers already use for `run` and `pki/server`.
-		//
-		// A project registered before this still has a volume of its own, and
-		// keeps it until a recreate moves it. See cxz#238.
-		stateMount := map[string]any{"type": "volume", "source": p.Volume, "target": "/cxz/state"}
-		stateVolumes := map[string]any{p.Volume: map[string]any{"external": true, "name": p.Volume}}
-		if p.Volume == "" {
-			if m.StateVolume == "" {
-				return fmt.Errorf("project %s has no state volume and this manager was installed without one", p.ID)
-			}
-			dir, subpath := m.projectState(p.storageID())
-			// A subpath mount requires the directory to be there already, and
-			// the manager's own root is that volume.
-			if e = os.MkdirAll(dir, 0700); e != nil {
-				return e
-			}
-			stateMount = map[string]any{"type": "volume", "source": m.StateVolume, "target": "/cxz/state", "volume": map[string]any{"subpath": subpath}}
-			stateVolumes = map[string]any{m.StateVolume: map[string]any{"external": true, "name": m.StateVolume}}
-		}
-		dev["volumes"] = []any{stateMount, map[string]any{"type": "volume", "source": m.ToolsVolume, "target": "/cxz/tools", "read_only": true}}
-		dev["volumes"] = append(dev["volumes"].([]any), map[string]any{"type": "bind", "source": secretSource, "target": "/cxz/secrets"}, map[string]any{"type": "bind", "source": assetSource, "target": "/cxz/assets", "read_only": true})
-		stateVolumes[m.ToolsVolume] = map[string]any{"external": true, "name": m.ToolsVolume}
-		override := map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + p.storageID(), "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": p.Network}}, "volumes": stateVolumes}
-		cp := filepath.Join(m.Root, "projects", p.storageID(), "compose.json")
-		if e = core.WriteJSON(cp, override); e != nil {
-			return e
-		}
-		cfg["dockerComposeFile"] = append(files, cp)
-	} else {
-		runArgs, _ := cfg["runArgs"].([]any)
-		runArgs = append(runArgs, "--network", p.Network, "--mount", "type=bind,source="+secretSource+",target=/cxz/secrets", "--mount", "type=bind,source="+assetSource+",target=/cxz/assets,readonly")
-		cfg["runArgs"] = runArgs
 	}
 	configPath := filepath.Join(m.Root, "projects", p.storageID(), "devcontainer.json")
 	if e = core.WriteJSON(configPath, cfg); e != nil {
@@ -410,6 +265,43 @@ func (m *Manager) provision(ctx context.Context, p *Project, kind string, overri
 	return m.boot(ctx, p)
 }
 
+// renderProvisionConfig decides the project's runtime spec and writes it into
+// cfg, the configuration handed to the devcontainer CLI.
+func (m *Manager) renderProvisionConfig(p *Project, cfg map[string]any, override Override, base, dockerHost, secretSource, assetSource string) error {
+	spec, e := m.runtimeSpec(p, cfg, dockerHost, secretSource, assetSource)
+	if e != nil {
+		return e
+	}
+	if p.Volume == "" {
+		// A subpath mount requires the directory to be there already, and the
+		// manager's own root is that volume.
+		dir, _ := m.projectState(p.storageID())
+		if e = os.MkdirAll(dir, 0700); e != nil {
+			return e
+		}
+	}
+	p.RemoteWorkspace = spec.Workspace
+	files, e := composeFiles(cfg, base)
+	if e != nil {
+		return e
+	}
+	if override.ComposeFile != "" {
+		files = append(files, override.ComposeFile)
+	}
+	compose, e := m.applySpec(cfg, spec, override.Image, files)
+	if e != nil {
+		return e
+	}
+	if compose != nil {
+		cp := filepath.Join(m.Root, "projects", p.storageID(), "compose.json")
+		if e = core.WriteJSON(cp, compose); e != nil {
+			return e
+		}
+		cfg["dockerComposeFile"] = append(files, cp)
+	}
+	return nil
+}
+
 // upResult is what the Dev Container CLI reports about the container it acted
 // on. The CLI prints one JSON object per phase, so the last one with an id is
 // the answer.
@@ -472,7 +364,7 @@ func (m *Manager) upArgs(p *Project, configFile, configPath string, existing boo
 // only starts a detached, independently locked process, so calling it again is
 // how a start converges rather than a second runtime.
 func (m *Manager) boot(ctx context.Context, p *Project) error {
-	_, err := dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_boot")
+	_, err := dockerx.Run(ctx, append([]string{"exec", "--user", p.RemoteUser, p.ContainerID}, runtimeStart...)...)
 	return err
 }
 func (m *Manager) writeRuntime(ctx context.Context, p *Project, r Runtime) error {

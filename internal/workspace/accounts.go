@@ -8,6 +8,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/projectid"
+	"github.com/lesomnus/cxz/internal/projectspec"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"os/exec"
@@ -38,7 +39,7 @@ func (m *Manager) connectAccount(ctx context.Context, p *Project, account, backe
 	if err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", "/cxz/state/data", "_account-bind")
+	cmd := exec.CommandContext(ctx, "docker", "exec", "-i", "--user", p.RemoteUser, p.ContainerID, "/cxz/tools/cxz", "--state", projectspec.StateDir, "_account-bind")
 	cmd.Stdin = bytes.NewReader(raw)
 	if err = cmd.Run(); err != nil {
 		return fmt.Errorf("could not connect central account to project")

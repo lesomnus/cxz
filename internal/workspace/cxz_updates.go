@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectspec"
 	"os"
 	"path/filepath"
 	"sync"
@@ -22,7 +23,7 @@ func (m *Manager) projectHealth(ctx context.Context, p *Project, action, tx stri
 	if _, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID()); e != nil {
 		return cxzupdate.Health{}, e
 	}
-	return cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, "/cxz/state/data", action, tx)
+	return cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, projectspec.StateDir, action, tx)
 }
 
 func (m *Manager) runtimeUpdater(ctx context.Context, p *Project, r cxzupdate.Release, platform string) (string, error) {
@@ -87,7 +88,7 @@ func (m *Manager) QuietForUpdate(ctx context.Context) (map[string]string, error)
 			if !v.State.Running {
 				return
 			}
-			h, e := cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, "/cxz/state/data", "status", "")
+			h, e := cxzupdate.ContainerHealth(ctx, p.ContainerID, p.RemoteUser, projectspec.StateDir, "status", "")
 			if e != nil {
 				out[i] = answer{blocked: fmt.Errorf("project %s: bootstrap/readiness unavailable: %w", p.ID, e)}
 				return
@@ -399,7 +400,7 @@ func (m *Manager) cxzUpdateStep(ctx context.Context) {
 				err = os.Chmod(manifest, 0644)
 			}
 			if err == nil {
-				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_update-runtime", "/cxz/state/data", binary, manifest)
+				_, err = dockerx.Run(work, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "_update-runtime", projectspec.StateDir, binary, manifest)
 			}
 			if err != nil {
 				s.Reason = err.Error()

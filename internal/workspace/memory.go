@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectspec"
 	"os/exec"
 	"strings"
 	"time"
@@ -46,7 +47,7 @@ func (m *Manager) memoryHelper(ctx context.Context, project, entry string, input
 		}
 		args = append(args, "--mount", mount)
 	}
-	args = append(args, "--entrypoint", "/cxz/tools/cxz", m.Image, "--state", "/cxz/state/data", entry)
+	args = append(args, "--entrypoint", "/cxz/tools/cxz", m.Image, "--state", projectspec.StateDir, entry)
 	data, err := json.Marshal(input)
 	if err != nil {
 		return nil, err

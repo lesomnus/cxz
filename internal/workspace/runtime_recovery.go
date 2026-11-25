@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lesomnus/cxz/internal/projectspec"
 	"os"
 	"path/filepath"
 	"time"
@@ -45,7 +46,7 @@ func (m *Manager) recoverRuntime(ctx context.Context, p *Project, release cxzupd
 		if finalize {
 			action = "_finalize-runtime"
 		}
-		b, err := dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, binary, action, "/cxz/state/data", "--json")
+		b, err := dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, binary, action, projectspec.StateDir, "--json")
 		if err != nil {
 			result.Failure = cxzupdate.RecoveryProblem(err)
 			return result
