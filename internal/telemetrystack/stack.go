@@ -26,10 +26,29 @@ const ClickHouseImage = "clickhouse/clickhouse-server:26.10.3.7-alpine@sha256:1b
 type Stack struct {
 	Root, Owner, StateVolume, ToolsVolume, Image, Manager, ToolsRoot string
 	Config                                                           telemetryconfig.Config
+	// External is a stack someone else runs -- the database and collector of
+	// a Kubernetes installation, declared beside the manager. The manager then
+	// configures, initializes and checks them, and creates nothing.
+	External bool
+	// DBHost is the database's host name; empty is the Docker container's.
+	DBHost string
+	// Listen is the collector's TCP receiver for projects that cannot reach
+	// its socket; empty receives on the socket only.
+	Listen string
+	// Password is the database credential an external stack was given.
+	Password string
+	// Health is the collector's health check URL; empty is the container's.
+	Health string
 }
 
-func (s Stack) prefix() string    { return "cxz-" + s.Owner[:12] + "-telemetry" }
-func (s Stack) Endpoint() string  { return "http://" + s.prefix() + "-db:8123" }
+func (s Stack) prefix() string { return "cxz-" + s.Owner[:12] + "-telemetry" }
+func (s Stack) dbHost() string {
+	if s.DBHost != "" {
+		return s.DBHost
+	}
+	return s.prefix() + "-db"
+}
+func (s Stack) Endpoint() string  { return "http://" + s.dbHost() + ":8123" }
 func (s Stack) directory() string { return filepath.Join(s.Root, "telemetry") }
 func (s Stack) tools() string {
 	if s.ToolsRoot != "" {
@@ -47,6 +66,12 @@ func (s Stack) Client() (*telemetrystore.Client, error) {
 	return client, nil
 }
 func (s Stack) validate() error {
+	if s.External {
+		if len(s.Owner) < 12 || s.DBHost == "" || len(s.Password) < 16 {
+			return fmt.Errorf("an external telemetry stack needs its database host and a password of at least 16 characters")
+		}
+		return s.Config.Validate()
+	}
 	if len(s.Owner) < 12 || s.StateVolume == "" || s.ToolsVolume == "" || s.Image == "" || s.Manager == "" {
 		return fmt.Errorf("telemetry requires an installed Manager with a shared state volume")
 	}
@@ -67,6 +92,13 @@ func (s Stack) Prepare() error {
 		}
 	}
 	passwordFile := filepath.Join(s.directory(), "db", "password")
+	if s.External {
+		// The credential is the deployment's; the file is where Client reads it.
+		if err := os.WriteFile(passwordFile, []byte(s.Password), 0600); err != nil {
+			return err
+		}
+		return core.WriteJSON(filepath.Join(s.directory(), "preferences.json"), s.Config)
+	}
 	password, err := os.ReadFile(passwordFile)
 	if os.IsNotExist(err) {
 		b := make([]byte, 32)
@@ -105,6 +137,9 @@ func (s Stack) Ensure(ctx context.Context) error {
 	config := s.CollectorConfig(client.Password)
 	if err = os.WriteFile(filepath.Join(s.directory(), "collector.yaml"), []byte(config), 0600); err != nil {
 		return err
+	}
+	if s.External {
+		return s.ensureExternal(ctx, client)
 	}
 	network := s.prefix()
 	volume := s.prefix() + "-data"
@@ -179,6 +214,46 @@ func (s Stack) Ensure(ctx context.Context) error {
 		}
 	}
 	return os.WriteFile(filepath.Join(s.tools(), "telemetry", "enabled"), []byte("1\n"), 0644)
+}
+
+// ensureExternal waits for a stack it does not run: the database, then the
+// schema, then the collector that reads the configuration just written.
+func (s Stack) ensureExternal(ctx context.Context, client *telemetrystore.Client) error {
+	deadline, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+	var err error
+	for {
+		if _, err = client.Query(deadline, "SELECT 1", nil); err == nil {
+			break
+		}
+		select {
+		case <-deadline.Done():
+			return fmt.Errorf("telemetry database did not become ready: %w", err)
+		case <-time.After(time.Second):
+		}
+	}
+	if err = s.initializeSchema(ctx, client); err != nil {
+		return err
+	}
+	if s.Health == "" {
+		return nil
+	}
+	health, done := context.WithTimeout(ctx, 60*time.Second)
+	defer done()
+	for {
+		r, _ := http.NewRequestWithContext(health, http.MethodGet, s.Health, nil)
+		if response, err := client.HTTP.Do(r); err == nil {
+			response.Body.Close()
+			if response.StatusCode == 200 {
+				return nil
+			}
+		}
+		select {
+		case <-health.Done():
+			return fmt.Errorf("telemetry collector did not become healthy: %w", health.Err())
+		case <-time.After(time.Second):
+		}
+	}
 }
 
 func (s Stack) initializeSchema(ctx context.Context, client *telemetrystore.Client) error {
@@ -263,12 +338,16 @@ func (s Stack) Stop(ctx context.Context) error {
 }
 
 func (s Stack) CollectorConfig(password string) string {
+	receiver, transport := "/var/run/cxz-telemetry/collector.sock", "unix"
+	if s.Listen != "" {
+		receiver, transport = s.Listen, "tcp"
+	}
 	return fmt.Sprintf(`receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: /var/run/cxz-telemetry/collector.sock
-        transport: unix
+        endpoint: %s
+        transport: %s
         include_metadata: true
         max_recv_msg_size_mib: 4
 processors:
@@ -280,7 +359,7 @@ processors:
     registry_directory: /var/lib/cxz-telemetry/auth
 exporters:
   clickhouse:
-    endpoint: tcp://%s-db:9000?dial_timeout=5s
+    endpoint: tcp://%s:9000?dial_timeout=5s
     username: cxz
     password: %q
     database: telemetry
@@ -330,7 +409,7 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, cxzidentity]
       exporters: [clickhouse]
-`, s.prefix(), password, s.Config.Days()*24, s.Config.QueueBytes(), max(16<<20, s.Config.QueueBytes()*2), max(1, s.Config.QueueBytes()>>21))
+`, receiver, transport, s.dbHost(), password, s.Config.Days()*24, s.Config.QueueBytes(), max(16<<20, s.Config.QueueBytes()*2), max(1, s.Config.QueueBytes()>>21))
 }
 
 var databaseConfig = `<clickhouse>

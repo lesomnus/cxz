@@ -100,12 +100,6 @@ func (m *Manager) TelemetryStats(ctx context.Context, scope, id string, from, to
 // StartTelemetry schedules installation maintenance after the Manager can serve
 // health checks. Docker downloads/schema setup never delay session control.
 func (m *Manager) StartTelemetry(ctx context.Context) {
-	if m.Owner == "" || m.StateVolume == "" {
-		return
-	}
-	if _, err := os.Stat("/usr/local/bin/cxz-otelcol"); err != nil {
-		return
-	}
 	var config telemetryconfig.Config
 	if raw := os.Getenv("CXZ_TELEMETRY_CONFIG"); raw != "" {
 		if err := json.Unmarshal([]byte(raw), &config); err != nil {
@@ -113,7 +107,25 @@ func (m *Manager) StartTelemetry(ctx context.Context) {
 			return
 		}
 	}
-	stack := telemetrystack.Stack{Root: m.Root, Owner: m.Owner, StateVolume: m.StateVolume, ToolsVolume: m.ToolsVolume, Image: m.Image, Manager: m.Container, Config: config}
+	var stack telemetrystack.Stack
+	if m.kube != nil {
+		// On Kubernetes the database and collector are declared beside the
+		// manager; it configures and checks them and runs neither.
+		host := os.Getenv("CXZ_TELEMETRY_DB_HOST")
+		if host == "" || m.Owner == "" {
+			fmt.Fprintln(os.Stderr, "telemetry: CXZ_TELEMETRY_DB_HOST is not set; usage is not collected")
+			return
+		}
+		stack = telemetrystack.Stack{Root: m.Root, Owner: m.Owner, Config: config, External: true, DBHost: host, Password: os.Getenv("CXZ_TELEMETRY_PASSWORD"), Listen: os.Getenv("CXZ_TELEMETRY_LISTEN"), Health: os.Getenv("CXZ_TELEMETRY_HEALTH")}
+	} else {
+		if m.Owner == "" || m.StateVolume == "" {
+			return
+		}
+		if _, err := os.Stat("/usr/local/bin/cxz-otelcol"); err != nil {
+			return
+		}
+		stack = telemetrystack.Stack{Root: m.Root, Owner: m.Owner, StateVolume: m.StateVolume, ToolsVolume: m.ToolsVolume, Image: m.Image, Manager: m.Container, Config: config}
+	}
 	// Usage has no other source, so a store that could not be reached at
 	// startup is retried with the rest of the maintenance rather than given up
 	// on until the Manager restarts. The first attempt stays synchronous: its

@@ -4,7 +4,9 @@ An installed Manager manages one OpenTelemetry Collector and one ClickHouse
 server. Both run in separate, installation-owned containers. Updating or
 restarting either service does not stop project runtimes or agents.
 
-Telemetry is part of every installation and cannot be turned off. It is the only
+Telemetry is part of every installation and cannot be turned off. On
+Kubernetes the same database and collector are declared in the manifest rather
+than created by the Manager; see [Kubernetes](kubernetes.md#usage-telemetry). It is the only
 source of usage statistics: a Manager without it -- a local source runtime
 without the packaged Collector, or an installation whose store is not running --
 reports usage as unavailable rather than recomputing it from conversation
