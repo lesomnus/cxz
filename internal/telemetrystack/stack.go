@@ -82,7 +82,13 @@ func (s Stack) Prepare() error {
 	if err := s.validate(); err != nil {
 		return err
 	}
-	for _, dir := range []string{s.directory(), filepath.Join(s.directory(), "auth"), filepath.Join(s.directory(), "queue"), filepath.Join(s.directory(), "db"), filepath.Join(s.tools(), "telemetry")} {
+	dirs := []string{s.directory(), filepath.Join(s.directory(), "auth"), filepath.Join(s.directory(), "queue"), filepath.Join(s.directory(), "db")}
+	if !s.External {
+		// Projects find the collector's socket here; an external collector is
+		// reached over the network instead.
+		dirs = append(dirs, filepath.Join(s.tools(), "telemetry"))
+	}
+	for _, dir := range dirs {
 		mode := os.FileMode(0700)
 		if filepath.Base(dir) == "db" || dir == filepath.Join(s.tools(), "telemetry") {
 			mode = 0755
