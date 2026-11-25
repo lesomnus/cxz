@@ -79,7 +79,11 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 			for _, s := range p.Sessions {
 				forget = append(forget, s.Id)
 			}
-			if p.ContainerID != "" {
+			if m.kube != nil {
+				if err := m.kubeRemove(ctx, p); err != nil {
+					return err
+				}
+			} else if p.ContainerID != "" {
 				containers, err := run(ctx, "container", "ls", "-a", "-q", "--no-trunc")
 				if err != nil {
 					return err
@@ -115,8 +119,10 @@ func (m *Manager) removeProject(ctx context.Context, id string, sessions []strin
 			return fmt.Errorf("invalid session removal scope")
 		}
 	}
-	if err := removeProjectDocker(ctx, run, m.Owner, storage, m.Container); err != nil {
-		return err
+	if m.kube == nil {
+		if err := removeProjectDocker(ctx, run, m.Owner, storage, m.Container); err != nil {
+			return err
+		}
 	}
 	// Serialize with cached stream writes and block late frames from recreating
 	// history or derived summaries after removal. These guards contain no content.

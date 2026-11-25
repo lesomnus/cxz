@@ -42,6 +42,16 @@ func (e *Precondition) GRPCStatus() *status.Status {
 func (m *Manager) stopContainer(ctx context.Context, p *Project) (retErr error) {
 	defer m.recordFailure(ctx, p, &retErr)
 	m.quiesce(ctx, p)
+	if m.kube != nil {
+		// A pod is not stopped and kept: it is deleted, and its volume kept.
+		if err := m.kubeDeletePod(ctx, p); err != nil {
+			return err
+		}
+		p.Error = ""
+		p.Job.State, p.Job.Step = "complete", "stopped"
+		p.Job.UpdatedAt = time.Now().UnixMilli()
+		return m.save(ctx, p)
+	}
 	containers, err := m.owned(ctx, p)
 	if err != nil {
 		return err
@@ -113,6 +123,16 @@ func (m *Manager) startContainer(ctx context.Context, p *Project, agent string) 
 func (m *Manager) removeContainer(ctx context.Context, p *Project) (retErr error) {
 	defer m.recordFailure(ctx, p, &retErr)
 	m.quiesce(ctx, p)
+	if m.kube != nil {
+		if err := m.kubeDeletePod(ctx, p); err != nil {
+			return err
+		}
+		p.ContainerID = ""
+		p.Error = ""
+		p.Job.State, p.Job.Step = "complete", "down"
+		p.Job.UpdatedAt = time.Now().UnixMilli()
+		return m.save(ctx, p)
+	}
 	containers, err := m.owned(ctx, p)
 	if err != nil {
 		return err

@@ -60,6 +60,9 @@ func (m *Manager) conversationStore(ctx context.Context, session string) (*sessi
 	if !assets.ValidID(session) {
 		return nil, fmt.Errorf("invalid session id")
 	}
+	if m.kube != nil {
+		return nil, errPodConversation
+	}
 	// An installation that still keeps project state in project volumes cannot
 	// be read this way, and saying so is better than serving an empty
 	// conversation: the project has to be recreated once to migrate it.

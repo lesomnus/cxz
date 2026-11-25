@@ -12,6 +12,7 @@ import (
 	"github.com/lesomnus/cxz/internal/convindex"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/kube"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/telemetryauth"
@@ -38,6 +39,8 @@ type Project struct {
 	TrustedConfig, ConfigDigest string
 	Sessions                    []*api.Session
 	Job                         ProvisionJob
+	// Kube is the project's own settings when it runs as a Kubernetes pod.
+	Kube *KubeProject `json:",omitempty"`
 }
 type Runtime struct{ ProjectID, LegacyProjectID, Workspace, Token, Claude, Codex string }
 type Manager struct {
@@ -62,7 +65,11 @@ type Manager struct {
 	slowSince map[string]time.Time
 	// sweepClient replaces client in tests of the sweep.
 	sweepClient func(context.Context, *Project) (*grpc.ClientConn, api.SessionsClient, error)
-	DB          *sql.DB
+	// kube is set when projects run as pods; nothing then asks Docker for a
+	// project. See kube_backend.go.
+	kube         *kube.Client
+	kubeSettings KubeSettings
+	DB           *sql.DB
 	// Conversations is the installation's searchable record of what was said.
 	// The manager is where every project's events are consolidated, so it is
 	// where they are extracted; a nil index simply means nothing is indexed.
@@ -126,6 +133,9 @@ func (m *Manager) projectLock(id string) *sync.Mutex {
 
 func New(db *sql.DB, root string) (*Manager, error) {
 	m := &Manager{DB: db, Root: root, Owner: os.Getenv("CXZ_OWNER"), WorkspaceRoot: os.Getenv("CXZ_WORKSPACE_ROOT"), ToolsVolume: os.Getenv("CXZ_TOOLS_VOLUME"), StateVolume: os.Getenv("CXZ_STATE_VOLUME"), Image: os.Getenv("CXZ_MANAGER_IMAGE"), Container: os.Getenv("CXZ_MANAGER_CONTAINER")}
+	if e := m.useKubernetes(); e != nil {
+		return nil, e
+	}
 	_, e := db.Exec(`CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,data BLOB NOT NULL)`)
 	if e != nil {
 		return nil, e
@@ -266,6 +276,17 @@ func (m *Manager) client(ctx context.Context, p *Project) (*grpc.ClientConn, api
 	if p.ContainerID == "" {
 		return nil, nil, &Precondition{Message: "project has no container"}
 	}
+	if m.kube != nil {
+		addr, e := m.kubeAddress(ctx, p)
+		if e != nil {
+			return nil, nil, e
+		}
+		conn, e := transport.Remote(addr, p.Token)
+		if e != nil {
+			return nil, nil, e
+		}
+		return conn, resourceclient.New(conn), nil
+	}
 	v, e := dockerx.Owned(ctx, p.ContainerID, m.Owner, p.storageID())
 	if e != nil {
 		return nil, nil, e
@@ -325,6 +346,9 @@ func (m *Manager) Projects(ctx context.Context) (*api.ProjectList, error) {
 	if e != nil {
 		return nil, e
 	}
+	if m.kube != nil {
+		return m.kubeProjects(ctx, all)
+	}
 	// One look at Docker answers for every project, and whether it answered at
 	// all decides what can be said. A list of registered projects is still a
 	// list when Docker cannot be reached: what is unknown is the containers.
@@ -369,6 +393,9 @@ func (m *Manager) StartContainer(ctx context.Context, r *api.ProjectRequest) (re
 	}
 	if r.Agent != "" && r.Agent != "claude" && r.Agent != "codex" {
 		return nil, fmt.Errorf("agent must be claude or codex")
+	}
+	if m.kube != nil {
+		return m.kubeStart(ctx, r)
 	}
 	path := r.Workspace
 	if path == "" {

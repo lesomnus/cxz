@@ -58,6 +58,10 @@ func (m *Manager) RunUpdates(ctx context.Context) {
 	if value := os.Getenv("CXZ_AUTO_UPDATE"); value == "0" || strings.EqualFold(value, "false") {
 		return
 	}
+	if m.kube != nil {
+		// A pod fetches its agent CLI when it starts; updates follow a restart.
+		return
+	}
 	var state updateState
 	path := filepath.Join(m.Root, "updates.json")
 	if b, e := os.ReadFile(path); e == nil {

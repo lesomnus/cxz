@@ -17,6 +17,14 @@ import (
 // manager's volume now, so there is nothing to mirror and nothing to fall back
 // to. See cxz#268.
 func (m *Manager) History(ctx context.Context, r *api.WatchRequest) (*api.EventBatch, error) {
+	if m.kube != nil {
+		conn, c, err := m.kubeSession(ctx, r.SessionId)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Close()
+		return c.History(ctx, r)
+	}
 	store, err := m.conversationStore(ctx, r.SessionId)
 	if errors.Is(err, errNoConversation) {
 		return &api.EventBatch{}, nil

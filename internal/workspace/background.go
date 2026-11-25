@@ -9,6 +9,14 @@ import (
 )
 
 func (m *Manager) Background(ctx context.Context, r *api.SessionRef) (*api.BackgroundReply, error) {
+	if m.kube != nil {
+		conn, c, err := m.kubeSession(ctx, r.Id)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Close()
+		return c.Background(ctx, r)
+	}
 	store, err := m.conversationStore(ctx, r.Id)
 	if errors.Is(err, errNoConversation) {
 		return &api.BackgroundReply{Data: []byte(`{}`)}, nil

@@ -117,6 +117,10 @@ func (m *Manager) QuietForUpdate(ctx context.Context) (map[string]string, error)
 // RunCxzUpdates serializes with provider updates and external manager helpers.
 // The published manifest is pinned before any runtime or session mutation.
 func (m *Manager) RunCxzUpdates(ctx context.Context) {
+	if m.kube != nil {
+		// A pod's runtime is copied from the manager's image when it starts.
+		return
+	}
 	if !cxzupdate.Current().Managed() {
 		return
 	}

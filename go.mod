@@ -32,6 +32,7 @@ require (
 	github.com/mattn/go-shellwords v1.0.12
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/muesli/termenv v0.16.0
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/protobuf-orm/ent v0.0.0-20261024205432-0dd7dadc81bc
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20261017212716-3430237a8656
 	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261022151422-5b2cd8279e07
@@ -43,6 +44,7 @@ require (
 	golang.org/x/net v0.60.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/sys v0.48.0
+	golang.org/x/term v0.46.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
@@ -99,7 +101,6 @@ require (
 	github.com/ncruces/julianday v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/petermattis/goid v0.0.0-20260113132338-7c7de50cc741 // indirect
-	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261021213534-6068959c562d // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e // indirect
@@ -128,7 +129,6 @@ require (
 	golang.org/x/crypto v0.57.0 // indirect
 	golang.org/x/exp v0.0.0-20260908205506-85c1c2202aba // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/tools v0.51.0 // indirect

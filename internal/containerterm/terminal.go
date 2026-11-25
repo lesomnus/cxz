@@ -61,18 +61,7 @@ func OpenPTY(ctx context.Context, p *api.Project, width, height int) (Terminal, 
 	if !c.State.Running || !projectid.Same(c.Config.Labels["cxz.project"], p.Id) || c.Config.Labels["cxz.owner"] == "" {
 		return nil, fmt.Errorf("refusing terminal in an unowned or stopped project container")
 	}
-	cmd := exec.CommandContext(ctx, "docker", "exec", "-it", "--user", p.RemoteUser, "--workdir", p.RemoteWorkspace, "--env", "TERM=xterm-256color", c.ID, "sh", "-c", `
-`+utf8ShellLocale+`
-if command -v getent >/dev/null 2>&1; then
-  entry=$(getent passwd "$(id -u)")
-  home=$(printf '%s' "$entry" | cut -d: -f6)
-  login=$(printf '%s' "$entry" | cut -d: -f1)
-  shell=$(printf '%s' "$entry" | cut -d: -f7)
-  if [ -n "$home" ]; then export HOME="$home"; fi
-  if [ -n "$login" ]; then export USER="$login" LOGNAME="$login"; fi
-  case "$shell" in */nologin|*/false|'') ;; *) SHELL="$shell" ;; esac
-fi
-exec "${SHELL:-/bin/sh}" -l`)
+	cmd := exec.CommandContext(ctx, "docker", append([]string{"exec", "-it", "--user", p.RemoteUser, "--workdir", p.RemoteWorkspace, "--env", "TERM=xterm-256color", c.ID}, LoginShell()...)...)
 	return StartPTY(cmd, width, height)
 }
 
@@ -252,4 +241,21 @@ func (s *Session) Capture(history bool) Snapshot {
 		out.Lines[y] = row
 	}
 	return out
+}
+
+// LoginShell is the command a project terminal runs: the user's login shell,
+// with HOME, USER and a UTF-8 locale set from inside the container.
+func LoginShell() []string {
+	return []string{"sh", "-c", `
+` + utf8ShellLocale + `
+if command -v getent >/dev/null 2>&1; then
+  entry=$(getent passwd "$(id -u)")
+  home=$(printf '%s' "$entry" | cut -d: -f6)
+  login=$(printf '%s' "$entry" | cut -d: -f1)
+  shell=$(printf '%s' "$entry" | cut -d: -f7)
+  if [ -n "$home" ]; then export HOME="$home"; fi
+  if [ -n "$login" ]; then export USER="$login" LOGNAME="$login"; fi
+  case "$shell" in */nologin|*/false|'') ;; *) SHELL="$shell" ;; esac
+fi
+exec "${SHELL:-/bin/sh}" -l`}
 }

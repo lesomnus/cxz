@@ -14,6 +14,14 @@ import (
 // syncs them on every append, which is why a reader needs no write access and
 // why the project does not have to be running. See cxz#268.
 func (m *Manager) Transcript(ctx context.Context, r *api.TranscriptRequest) (*api.TranscriptReply, error) {
+	if m.kube != nil {
+		conn, c, err := m.kubeSession(ctx, r.SessionId)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Close()
+		return c.Transcript(ctx, r)
+	}
 	store, err := m.conversationStore(ctx, r.SessionId)
 	if errors.Is(err, errNoConversation) {
 		return &api.TranscriptReply{}, nil
@@ -29,6 +37,14 @@ func (m *Manager) Transcript(ctx context.Context, r *api.TranscriptRequest) (*ap
 // that asks for an event the session no longer retains is told so by the
 // projection, as before. See cxz#268.
 func (m *Manager) EventDetails(ctx context.Context, r *api.EventDetailsRequest) (*api.EventBatch, error) {
+	if m.kube != nil {
+		conn, c, err := m.kubeSession(ctx, r.SessionId)
+		if err != nil {
+			return nil, err
+		}
+		defer conn.Close()
+		return c.EventDetails(ctx, r)
+	}
 	store, err := m.conversationStore(ctx, r.SessionId)
 	if err != nil {
 		return nil, err

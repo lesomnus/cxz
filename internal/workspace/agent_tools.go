@@ -11,6 +11,7 @@ import (
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/distribution"
 	"github.com/lesomnus/cxz/internal/dockerx"
+	"github.com/lesomnus/cxz/internal/kube"
 	"github.com/lesomnus/cxz/internal/projectid"
 )
 
@@ -47,6 +48,14 @@ func (m *Manager) projectRuntime(ctx context.Context, p *Project) (Runtime, erro
 }
 
 func (m *Manager) ensureAgentBinary(ctx context.Context, p *Project, kind string) (string, error) {
+	if m.kube != nil {
+		// A pod has its own /cxz/tools, so it fetches the CLI itself.
+		out, err := m.containerRun(ctx, "--user", p.RemoteUser, p.ContainerID, kube.RuntimeBinary, "_agent-ensure", kind)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimSpace(string(out)), nil
+	}
 	arch, err := dockerx.Run(ctx, "exec", p.ContainerID, "uname", "-m")
 	if err != nil {
 		return "", err
@@ -64,7 +73,7 @@ func (m *Manager) verifyAgentBinary(ctx context.Context, p *Project, binary stri
 	}
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	_, err := dockerx.Run(ctx, "exec", "--user", p.RemoteUser, p.ContainerID, binary, "--version")
+	_, err := m.containerRun(ctx, "--user", p.RemoteUser, p.ContainerID, binary, "--version")
 	return err
 }
 
