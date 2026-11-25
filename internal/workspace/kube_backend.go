@@ -42,12 +42,18 @@ type KubeSettings struct {
 	// manager's own image.
 	ToolsImage      string `json:"tools_image"`
 	ImagePullPolicy string `json:"image_pull_policy"`
+	// Build names the installation's image builder and registry.
+	Build KubeBuild `json:"build,omitempty"`
 	// ReadyTimeout bounds waiting for a pod: image pull, volume and runtime.
 	ReadyTimeout string `json:"ready_timeout"`
 }
 
 // KubeProject is one project's choices, over the installation's.
 type KubeProject struct {
+	// Built is the image this project's last build pushed, by digest. It
+	// takes precedence over Image.
+	Built    string            `json:"built,omitempty"`
+	Build    *ProjectBuild     `json:"build,omitempty"`
 	Image    string            `json:"image,omitempty"`
 	User     string            `json:"user,omitempty"`
 	Storage  string            `json:"storage,omitempty"`
@@ -109,6 +115,9 @@ func (m *Manager) kubeProject(p *Project) (image, user, storage string, requests
 	if k := p.Kube; k != nil {
 		if k.Image != "" {
 			image = k.Image
+		}
+		if k.Built != "" {
+			image = k.Built
 		}
 		if k.User != "" {
 			user = k.User
@@ -410,6 +419,20 @@ func (m *Manager) kubePodObject(p *Project, spec projectspec.Spec, image, user s
 	} else {
 		prepare = append(prepare, "/mnt/state/runtime.json")
 	}
+	volumes := []any{
+		map[string]any{"name": "project", "persistentVolumeClaim": map[string]any{"claimName": name}},
+		map[string]any{"name": "runtime", "secret": map[string]any{"secretName": name}},
+		map[string]any{"name": "secrets", "emptyDir": map[string]any{"medium": "Memory"}},
+		map[string]any{"name": "assets", "emptyDir": map[string]any{}},
+	}
+	var pullSecrets []any
+	if secret := m.kubeSettings.Build.AuthSecret; secret != "" {
+		// The registry credential: kubelet pulls built images with it, and a
+		// build pushes with it (DOCKER_CONFIG=/cxz/registry).
+		pullSecrets = append(pullSecrets, map[string]string{"name": secret})
+		volumes = append(volumes, map[string]any{"name": "registry", "secret": map[string]any{"secretName": secret, "items": []any{map[string]string{"key": ".dockerconfigjson", "path": "config.json"}}}})
+		mounts = append(mounts, map[string]any{"name": "registry", "mountPath": "/cxz/registry", "readOnly": true})
+	}
 	resources := map[string]any{}
 	if len(requests) > 0 {
 		resources["requests"] = requests
@@ -430,7 +453,7 @@ func (m *Manager) kubePodObject(p *Project, spec projectspec.Spec, image, user s
 			"initContainers": []any{
 				map[string]any{
 					"name": "tools", "image": m.kubeSettings.ToolsImage, "imagePullPolicy": m.kubeSettings.ImagePullPolicy,
-					"command":      []string{"cxz", "_kube-prepare", "--copy-self", "/mnt/tools"},
+					"command":      []string{"cxz", "_kube-prepare", "--copy-self", "/mnt/tools", "--copy", "/usr/local/bin/buildctl"},
 					"volumeMounts": []any{map[string]any{"name": "project", "subPath": "tools", "mountPath": "/mnt/tools"}},
 				},
 				map[string]any{
@@ -456,12 +479,8 @@ func (m *Manager) kubePodObject(p *Project, spec projectspec.Spec, image, user s
 				"resources":       resources,
 				"volumeMounts":    mounts,
 			}},
-			"volumes": []any{
-				map[string]any{"name": "project", "persistentVolumeClaim": map[string]any{"claimName": name}},
-				map[string]any{"name": "runtime", "secret": map[string]any{"secretName": name}},
-				map[string]any{"name": "secrets", "emptyDir": map[string]any{"medium": "Memory"}},
-				map[string]any{"name": "assets", "emptyDir": map[string]any{}},
-			},
+			"volumes":          volumes,
+			"imagePullSecrets": pullSecrets,
 		},
 	}
 }

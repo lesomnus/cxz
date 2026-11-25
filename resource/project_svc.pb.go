@@ -4308,6 +4308,177 @@ func (b0 ProjectControl_builder) Build() *ProjectControl {
 	return m0
 }
 
+// dockerfile and context are paths in the workspace; empty keeps what the
+// project last built with.
+type ProjectBuildRequest struct {
+	state                  protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref         *ProjectRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_ClientId    *string                `protobuf:"bytes,2,opt,name=client_id,json=clientId"`
+	xxx_hidden_Dockerfile  *string                `protobuf:"bytes,3,opt,name=dockerfile"`
+	xxx_hidden_Context     *string                `protobuf:"bytes,4,opt,name=context"`
+	XXX_raceDetectHookData protoimpl.RaceDetectHookData
+	XXX_presence           [1]uint32
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *ProjectBuildRequest) Reset() {
+	*x = ProjectBuildRequest{}
+	mi := &file_cxz_project_svc_g_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectBuildRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectBuildRequest) ProtoMessage() {}
+
+func (x *ProjectBuildRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_project_svc_g_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *ProjectBuildRequest) GetRef() *ProjectRef {
+	if x != nil {
+		return x.xxx_hidden_Ref
+	}
+	return nil
+}
+
+func (x *ProjectBuildRequest) GetClientId() string {
+	if x != nil {
+		if x.xxx_hidden_ClientId != nil {
+			return *x.xxx_hidden_ClientId
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ProjectBuildRequest) GetDockerfile() string {
+	if x != nil {
+		if x.xxx_hidden_Dockerfile != nil {
+			return *x.xxx_hidden_Dockerfile
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ProjectBuildRequest) GetContext() string {
+	if x != nil {
+		if x.xxx_hidden_Context != nil {
+			return *x.xxx_hidden_Context
+		}
+		return ""
+	}
+	return ""
+}
+
+func (x *ProjectBuildRequest) SetRef(v *ProjectRef) {
+	x.xxx_hidden_Ref = v
+}
+
+func (x *ProjectBuildRequest) SetClientId(v string) {
+	x.xxx_hidden_ClientId = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *ProjectBuildRequest) SetDockerfile(v string) {
+	x.xxx_hidden_Dockerfile = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *ProjectBuildRequest) SetContext(v string) {
+	x.xxx_hidden_Context = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *ProjectBuildRequest) HasRef() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Ref != nil
+}
+
+func (x *ProjectBuildRequest) HasClientId() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *ProjectBuildRequest) HasDockerfile() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *ProjectBuildRequest) HasContext() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *ProjectBuildRequest) ClearRef() {
+	x.xxx_hidden_Ref = nil
+}
+
+func (x *ProjectBuildRequest) ClearClientId() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_ClientId = nil
+}
+
+func (x *ProjectBuildRequest) ClearDockerfile() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_Dockerfile = nil
+}
+
+func (x *ProjectBuildRequest) ClearContext() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_Context = nil
+}
+
+type ProjectBuildRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	Ref        *ProjectRef
+	ClientId   *string
+	Dockerfile *string
+	Context    *string
+}
+
+func (b0 ProjectBuildRequest_builder) Build() *ProjectBuildRequest {
+	m0 := &ProjectBuildRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Ref = b.Ref
+	if b.ClientId != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_ClientId = b.ClientId
+	}
+	if b.Dockerfile != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_Dockerfile = b.Dockerfile
+	}
+	if b.Context != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_Context = b.Context
+	}
+	return m0
+}
+
 var File_cxz_project_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_project_svc_g_proto_rawDesc = "" +
@@ -4462,7 +4633,14 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x06config\x18\x05 \x01(\tR\x06config\"P\n" +
 	"\x0eProjectControl\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId2\xfc\b\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\"\x8f\x01\n" +
+	"\x13ProjectBuildRequest\x12!\n" +
+	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x1b\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12\x1e\n" +
+	"\n" +
+	"dockerfile\x18\x03 \x01(\tR\n" +
+	"dockerfile\x12\x18\n" +
+	"\acontext\x18\x04 \x01(\tR\acontext2\xad\t\n" +
 	"\x0eProjectService\x12+\n" +
 	"\x03Add\x12\x16.cxz.ProjectAddRequest\x1a\f.cxz.Project\x12+\n" +
 	"\x03Get\x12\x16.cxz.ProjectGetRequest\x1a\f.cxz.Project\x12/\n" +
@@ -4482,9 +4660,10 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x10DeleteSecretFile\x12\x1c.cxz.DeleteSecretFileRequest\x1a\x14.cxz.SecretFileReply\x12/\n" +
 	"\x05Start\x12\x18.cxz.ProjectStartRequest\x1a\f.cxz.Project\x12)\n" +
 	"\x04Stop\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x12+\n" +
-	"\x06Remove\x12\x13.cxz.ProjectControl\x1a\f.cxz.ProjectB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
+	"\x06Remove\x12\x13.cxz.ProjectControl\x1a\f.cxz.Project\x12/\n" +
+	"\x05Build\x12\x18.cxz.ProjectBuildRequest\x1a\f.cxz.ProjectB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_cxz_project_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_cxz_project_svc_g_proto_goTypes = []any{
 	(*ProjectAddRequest)(nil),          // 0: cxz.ProjectAddRequest
 	(*ProjectGetRequest)(nil),          // 1: cxz.ProjectGetRequest
@@ -4517,35 +4696,36 @@ var file_cxz_project_svc_g_proto_goTypes = []any{
 	(*DeleteSecretFileRequest)(nil),    // 28: cxz.DeleteSecretFileRequest
 	(*ProjectStartRequest)(nil),        // 29: cxz.ProjectStartRequest
 	(*ProjectControl)(nil),             // 30: cxz.ProjectControl
-	nil,                                // 31: cxz.ProjectAddRequest.LabelsEntry
-	nil,                                // 32: cxz.ProjectPatchRequest.LabelsEntry
-	(*timestamppb.Timestamp)(nil),      // 33: google.protobuf.Timestamp
-	(*ProjectStatus)(nil),              // 34: cxz.ProjectStatus
-	(*patchpb.Patch)(nil),              // 35: patch.Patch
-	(*Project)(nil),                    // 36: cxz.Project
-	(*AccountRef)(nil),                 // 37: cxz.AccountRef
+	(*ProjectBuildRequest)(nil),        // 31: cxz.ProjectBuildRequest
+	nil,                                // 32: cxz.ProjectAddRequest.LabelsEntry
+	nil,                                // 33: cxz.ProjectPatchRequest.LabelsEntry
+	(*timestamppb.Timestamp)(nil),      // 34: google.protobuf.Timestamp
+	(*ProjectStatus)(nil),              // 35: cxz.ProjectStatus
+	(*patchpb.Patch)(nil),              // 36: patch.Patch
+	(*Project)(nil),                    // 37: cxz.Project
+	(*AccountRef)(nil),                 // 38: cxz.AccountRef
 }
 var file_cxz_project_svc_g_proto_depIdxs = []int32{
-	31, // 0: cxz.ProjectAddRequest.labels:type_name -> cxz.ProjectAddRequest.LabelsEntry
-	33, // 1: cxz.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	34, // 2: cxz.ProjectAddRequest.status:type_name -> cxz.ProjectStatus
+	32, // 0: cxz.ProjectAddRequest.labels:type_name -> cxz.ProjectAddRequest.LabelsEntry
+	34, // 1: cxz.ProjectAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	35, // 2: cxz.ProjectAddRequest.status:type_name -> cxz.ProjectStatus
 	2,  // 3: cxz.ProjectGetRequest.ref:type_name -> cxz.ProjectRef
 	3,  // 4: cxz.ProjectGetRequest.select:type_name -> cxz.ProjectSelect
 	2,  // 5: cxz.ProjectPatchRequest.ref:type_name -> cxz.ProjectRef
-	32, // 6: cxz.ProjectPatchRequest.labels:type_name -> cxz.ProjectPatchRequest.LabelsEntry
-	33, // 7: cxz.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	34, // 8: cxz.ProjectPatchRequest.status:type_name -> cxz.ProjectStatus
+	33, // 6: cxz.ProjectPatchRequest.labels:type_name -> cxz.ProjectPatchRequest.LabelsEntry
+	34, // 7: cxz.ProjectPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	35, // 8: cxz.ProjectPatchRequest.status:type_name -> cxz.ProjectStatus
 	2,  // 9: cxz.ProjectApplyRequest.ref:type_name -> cxz.ProjectRef
-	35, // 10: cxz.ProjectApplyRequest.patch:type_name -> patch.Patch
+	36, // 10: cxz.ProjectApplyRequest.patch:type_name -> patch.Patch
 	9,  // 11: cxz.ProjectListRequest.filters:type_name -> cxz.ProjectFilter
-	36, // 12: cxz.ProjectListResponse.items:type_name -> cxz.Project
+	37, // 12: cxz.ProjectListResponse.items:type_name -> cxz.Project
 	2,  // 13: cxz.ProjectFilter.ref:type_name -> cxz.ProjectRef
 	9,  // 14: cxz.ProjectWatchRequest.filters:type_name -> cxz.ProjectFilter
 	12, // 15: cxz.ProjectWatchResponse.items:type_name -> cxz.ProjectWatchItem
-	36, // 16: cxz.ProjectWatchItem.value:type_name -> cxz.Project
+	37, // 16: cxz.ProjectWatchItem.value:type_name -> cxz.Project
 	2,  // 17: cxz.ProjectTerminalRequest.ref:type_name -> cxz.ProjectRef
 	2,  // 18: cxz.ProjectLoginRequest.ref:type_name -> cxz.ProjectRef
-	37, // 19: cxz.ProjectLoginRequest.account:type_name -> cxz.AccountRef
+	38, // 19: cxz.ProjectLoginRequest.account:type_name -> cxz.AccountRef
 	2,  // 20: cxz.ProjectPathsRequest.ref:type_name -> cxz.ProjectRef
 	19, // 21: cxz.ProjectPathsReply.entries:type_name -> cxz.ProjectPathEntry
 	2,  // 22: cxz.ProjectDownloadRequest.ref:type_name -> cxz.ProjectRef
@@ -4555,49 +4735,52 @@ var file_cxz_project_svc_g_proto_depIdxs = []int32{
 	2,  // 26: cxz.DeleteSecretFileRequest.ref:type_name -> cxz.ProjectRef
 	2,  // 27: cxz.ProjectStartRequest.ref:type_name -> cxz.ProjectRef
 	2,  // 28: cxz.ProjectControl.ref:type_name -> cxz.ProjectRef
-	0,  // 29: cxz.ProjectService.Add:input_type -> cxz.ProjectAddRequest
-	1,  // 30: cxz.ProjectService.Get:input_type -> cxz.ProjectGetRequest
-	4,  // 31: cxz.ProjectService.Patch:input_type -> cxz.ProjectPatchRequest
-	5,  // 32: cxz.ProjectService.Apply:input_type -> cxz.ProjectApplyRequest
-	2,  // 33: cxz.ProjectService.Erase:input_type -> cxz.ProjectRef
-	7,  // 34: cxz.ProjectService.List:input_type -> cxz.ProjectListRequest
-	10, // 35: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
-	13, // 36: cxz.ProjectService.Terminal:input_type -> cxz.ProjectTerminalRequest
-	15, // 37: cxz.ProjectService.AuxiliaryLogin:input_type -> cxz.ProjectLoginRequest
-	15, // 38: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
-	17, // 39: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
-	20, // 40: cxz.ProjectService.Download:input_type -> cxz.ProjectDownloadRequest
-	22, // 41: cxz.ProjectService.Editor:input_type -> cxz.ProjectEditorRequest
-	24, // 42: cxz.ProjectService.EditorTunnel:input_type -> cxz.ProjectEditorTunnelRequest
-	26, // 43: cxz.ProjectService.PutSecretFile:input_type -> cxz.PutSecretFileRequest
-	28, // 44: cxz.ProjectService.DeleteSecretFile:input_type -> cxz.DeleteSecretFileRequest
-	29, // 45: cxz.ProjectService.Start:input_type -> cxz.ProjectStartRequest
-	30, // 46: cxz.ProjectService.Stop:input_type -> cxz.ProjectControl
-	30, // 47: cxz.ProjectService.Remove:input_type -> cxz.ProjectControl
-	36, // 48: cxz.ProjectService.Add:output_type -> cxz.Project
-	36, // 49: cxz.ProjectService.Get:output_type -> cxz.Project
-	36, // 50: cxz.ProjectService.Patch:output_type -> cxz.Project
-	36, // 51: cxz.ProjectService.Apply:output_type -> cxz.Project
-	6,  // 52: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
-	8,  // 53: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
-	11, // 54: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
-	14, // 55: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
-	16, // 56: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
-	16, // 57: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
-	18, // 58: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
-	21, // 59: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
-	23, // 60: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
-	25, // 61: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
-	27, // 62: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
-	27, // 63: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
-	36, // 64: cxz.ProjectService.Start:output_type -> cxz.Project
-	36, // 65: cxz.ProjectService.Stop:output_type -> cxz.Project
-	36, // 66: cxz.ProjectService.Remove:output_type -> cxz.Project
-	48, // [48:67] is the sub-list for method output_type
-	29, // [29:48] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	2,  // 29: cxz.ProjectBuildRequest.ref:type_name -> cxz.ProjectRef
+	0,  // 30: cxz.ProjectService.Add:input_type -> cxz.ProjectAddRequest
+	1,  // 31: cxz.ProjectService.Get:input_type -> cxz.ProjectGetRequest
+	4,  // 32: cxz.ProjectService.Patch:input_type -> cxz.ProjectPatchRequest
+	5,  // 33: cxz.ProjectService.Apply:input_type -> cxz.ProjectApplyRequest
+	2,  // 34: cxz.ProjectService.Erase:input_type -> cxz.ProjectRef
+	7,  // 35: cxz.ProjectService.List:input_type -> cxz.ProjectListRequest
+	10, // 36: cxz.ProjectService.Watch:input_type -> cxz.ProjectWatchRequest
+	13, // 37: cxz.ProjectService.Terminal:input_type -> cxz.ProjectTerminalRequest
+	15, // 38: cxz.ProjectService.AuxiliaryLogin:input_type -> cxz.ProjectLoginRequest
+	15, // 39: cxz.ProjectService.SessionLogin:input_type -> cxz.ProjectLoginRequest
+	17, // 40: cxz.ProjectService.Paths:input_type -> cxz.ProjectPathsRequest
+	20, // 41: cxz.ProjectService.Download:input_type -> cxz.ProjectDownloadRequest
+	22, // 42: cxz.ProjectService.Editor:input_type -> cxz.ProjectEditorRequest
+	24, // 43: cxz.ProjectService.EditorTunnel:input_type -> cxz.ProjectEditorTunnelRequest
+	26, // 44: cxz.ProjectService.PutSecretFile:input_type -> cxz.PutSecretFileRequest
+	28, // 45: cxz.ProjectService.DeleteSecretFile:input_type -> cxz.DeleteSecretFileRequest
+	29, // 46: cxz.ProjectService.Start:input_type -> cxz.ProjectStartRequest
+	30, // 47: cxz.ProjectService.Stop:input_type -> cxz.ProjectControl
+	30, // 48: cxz.ProjectService.Remove:input_type -> cxz.ProjectControl
+	31, // 49: cxz.ProjectService.Build:input_type -> cxz.ProjectBuildRequest
+	37, // 50: cxz.ProjectService.Add:output_type -> cxz.Project
+	37, // 51: cxz.ProjectService.Get:output_type -> cxz.Project
+	37, // 52: cxz.ProjectService.Patch:output_type -> cxz.Project
+	37, // 53: cxz.ProjectService.Apply:output_type -> cxz.Project
+	6,  // 54: cxz.ProjectService.Erase:output_type -> cxz.ProjectEraseResponse
+	8,  // 55: cxz.ProjectService.List:output_type -> cxz.ProjectListResponse
+	11, // 56: cxz.ProjectService.Watch:output_type -> cxz.ProjectWatchResponse
+	14, // 57: cxz.ProjectService.Terminal:output_type -> cxz.ProjectTerminalReply
+	16, // 58: cxz.ProjectService.AuxiliaryLogin:output_type -> cxz.ProjectLoginOutput
+	16, // 59: cxz.ProjectService.SessionLogin:output_type -> cxz.ProjectLoginOutput
+	18, // 60: cxz.ProjectService.Paths:output_type -> cxz.ProjectPathsReply
+	21, // 61: cxz.ProjectService.Download:output_type -> cxz.ProjectDownloadReply
+	23, // 62: cxz.ProjectService.Editor:output_type -> cxz.ProjectEditorReply
+	25, // 63: cxz.ProjectService.EditorTunnel:output_type -> cxz.ProjectEditorTunnelReply
+	27, // 64: cxz.ProjectService.PutSecretFile:output_type -> cxz.SecretFileReply
+	27, // 65: cxz.ProjectService.DeleteSecretFile:output_type -> cxz.SecretFileReply
+	37, // 66: cxz.ProjectService.Start:output_type -> cxz.Project
+	37, // 67: cxz.ProjectService.Stop:output_type -> cxz.Project
+	37, // 68: cxz.ProjectService.Remove:output_type -> cxz.Project
+	37, // 69: cxz.ProjectService.Build:output_type -> cxz.Project
+	50, // [50:70] is the sub-list for method output_type
+	30, // [30:50] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_cxz_project_svc_g_proto_init() }
@@ -4619,7 +4802,7 @@ func file_cxz_project_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_project_svc_g_proto_rawDesc), len(file_cxz_project_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   33,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

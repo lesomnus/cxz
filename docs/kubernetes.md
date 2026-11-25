@@ -129,6 +129,43 @@ For a reachable HTTPS address, mount a certificate and key into the `web`
 container from a Secret and give it `--origin https://HOST --tls-cert … --tls-key …`.
 The gateway terminates TLS itself; it does not trust a proxy's.
 
+## Building images
+
+cxz does not run an image builder or a registry, but it uses yours. Name both
+in the settings and a project can be built from its own workspace:
+
+```json
+"build": {
+  "buildkit": "tcp://buildkitd.build.svc:1234",
+  "registry": "registry.example.com/cxz",
+  "auth_secret": "cxz-registry"
+}
+```
+
+- `buildkit` is a BuildKit daemon's address, as `buildctl --addr` takes it.
+- `registry` is where images are pushed; a project's image is `REGISTRY/NAME`.
+- `pull_registry` is how the nodes name that registry, when it differs from how
+  the builder reaches it — for example a registry the builder reaches as
+  `registry:5000` and the nodes pull as `localhost:30500`. Empty is `registry`.
+- `auth_secret`, optional, is a `kubernetes.io/dockerconfigjson` Secret: builds
+  push with it and project pods pull with it.
+- `insecure` pushes over plain HTTP.
+
+```sh
+kcxz project build --dockerfile .devcontainer/Dockerfile --context . demo
+kcxz project build demo        # again, with what it last built with
+```
+
+The build runs in the project's pod, where the workspace is, with the
+`buildctl` the pod copies from the manager's image. It pushes
+`REGISTRY/NAME:TIMESTAMP`, and the project is restarted on that image **by
+digest**, so what runs is what was built whatever the tag points to later. The
+volume, and with it the workspace, sessions and tools, is kept. The output of
+the last build is the project's `build.log` in the manager's state.
+
+The image still needs `/etc/passwd` with the project user and `sh`. Builds are
+asked for, never automatic. The browser UI has no build action yet.
+
 ## Usage telemetry
 
 Usage comes from [managed telemetry](managed-telemetry.md) here as on Docker,
@@ -180,8 +217,9 @@ background; creating a session waits for it.
 
 ## What does not work yet
 
-- **Images are prebuilt.** No devcontainer.json, Dockerfile, features, Compose,
-  lifecycle hooks or Docker engine inside projects.
+- **No devcontainer.json.** An image is either prebuilt or
+  [built](#building-images) from a Dockerfile; devcontainer features, Compose,
+  lifecycle hooks and a Docker engine inside projects are not available.
 - **Conversation history needs the project running.** The manager cannot read a
   pod's volume, so it asks the project's runtime; a stopped project's history is
   not readable until it starts.

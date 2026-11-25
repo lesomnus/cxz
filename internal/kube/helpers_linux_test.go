@@ -54,3 +54,21 @@ func TestRunAsRejects(t *testing.T) {
 		t.Fatal("no command was accepted")
 	}
 }
+
+func TestPrepareCopiesBesideItself(t *testing.T) {
+	dir := t.TempDir()
+	extra := filepath.Join(dir, "buildctl")
+	if err := os.WriteFile(extra, []byte("#!/bin/sh\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	tools := filepath.Join(dir, "tools")
+	if err := Prepare([]string{"--copy-self", tools, "--copy", extra, "--copy", filepath.Join(dir, "absent")}); err != nil {
+		t.Fatal(err)
+	}
+	if st, err := os.Stat(filepath.Join(tools, "buildctl")); err != nil || st.Mode().Perm() != 0755 {
+		t.Fatal("buildctl was not installed beside cxz", st, err)
+	}
+	if _, err := os.Stat(filepath.Join(tools, "absent")); !os.IsNotExist(err) {
+		t.Fatal("a file that does not exist was installed")
+	}
+}

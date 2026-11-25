@@ -8307,6 +8307,11 @@ func (s interceptProject) Remove(ctx context.Context, req *resource.ProjectContr
 		resource.ProjectService_Remove_FullMethodName, req, s.ProjectServiceServer.Remove)
 }
 
+func (s interceptProject) Build(ctx context.Context, req *resource.ProjectBuildRequest) (*resource.Project, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.ProjectServiceServer,
+		resource.ProjectService_Build_FullMethodName, req, s.ProjectServiceServer.Build)
+}
+
 func (s Intercept) AuthBinding() resource.AuthBindingServiceServer {
 	return interceptAuthBinding{s, s.Next().AuthBinding()}
 }
@@ -11207,6 +11212,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.ProjectControl{}
 	case resource.ProjectService_Remove_FullMethodName:
 		v = &resource.ProjectControl{}
+	case resource.ProjectService_Build_FullMethodName:
+		v = &resource.ProjectBuildRequest{}
 	case resource.AuthBindingService_Add_FullMethodName:
 		v = &resource.AuthBindingAddRequest{}
 	case resource.AuthBindingService_Get_FullMethodName:
@@ -11463,6 +11470,8 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Project().Stop(ctx, v.(*resource.ProjectControl))
 	case resource.ProjectService_Remove_FullMethodName:
 		res, err = s.Project().Remove(ctx, v.(*resource.ProjectControl))
+	case resource.ProjectService_Build_FullMethodName:
+		res, err = s.Project().Build(ctx, v.(*resource.ProjectBuildRequest))
 	case resource.AuthBindingService_Add_FullMethodName:
 		res, err = s.AuthBinding().Add(ctx, v.(*resource.AuthBindingAddRequest))
 	case resource.AuthBindingService_Get_FullMethodName:

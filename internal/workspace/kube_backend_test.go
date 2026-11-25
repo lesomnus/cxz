@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/kube"
 )
 
@@ -113,7 +114,7 @@ func TestKubePodObject(t *testing.T) {
 		t.Fatalf("%+v", pod.Metadata)
 	}
 	tools, prepare := pod.Spec.InitContainers[0], pod.Spec.InitContainers[1]
-	if tools.Image != "cxz:test" || strings.Join(tools.Command, " ") != "cxz _kube-prepare --copy-self /mnt/tools" {
+	if tools.Image != "cxz:test" || strings.Join(tools.Command, " ") != "cxz _kube-prepare --copy-self /mnt/tools --copy /usr/local/bin/buildctl" {
 		t.Fatal("tools", tools)
 	}
 	if prepare.Image != "node:24" || strings.Join(prepare.Command, " ") != "/mnt/tools/cxz _kube-prepare --runtime /cxz/runtime/runtime.json --own vscode /mnt/state/runtime.json /mnt/state /mnt/tools /mnt/workspace" {
@@ -198,5 +199,57 @@ func TestKubeProjectsAndOwnership(t *testing.T) {
 	failList = true
 	if list, err = m.kubeProjects(ctx, all); err != nil || list.Projects[0].State != "unknown" {
 		t.Fatal("a failed look was reported as an observation", list, err)
+	}
+}
+
+func TestKubeBuildSettings(t *testing.T) {
+	for _, bad := range []string{"", "/etc/passwd", "..", "../x", "a/../../x"} {
+		if _, err := workspacePath(bad); err == nil {
+			t.Errorf("%q accepted as a workspace path", bad)
+		}
+	}
+	if p, err := workspacePath("./.devcontainer//Dockerfile"); err != nil || p != ".devcontainer/Dockerfile" {
+		t.Fatal(p, err)
+	}
+	ctx := context.Background()
+	docker := &Manager{}
+	if _, err := docker.BuildProject(ctx, &api.BuildProjectInput{Workspace: "x"}); err == nil || !strings.Contains(err.Error(), "Kubernetes") {
+		t.Fatal("a Docker manager offered to build", err)
+	}
+	m := kubeManager(t, nil)
+	if _, err := m.BuildProject(ctx, &api.BuildProjectInput{Workspace: "x"}); err == nil || !strings.Contains(err.Error(), "build.buildkit") {
+		t.Fatal("building without a builder was not explained", err)
+	}
+	p := &Project{ID: "id", StorageID: "sid", RemoteWorkspace: "/workspaces/web", Kube: &KubeProject{Image: "node:24", Built: "registry/x/web@sha256:abc"}}
+	if image, _, _, _, _ := m.kubeProject(p); image != "registry/x/web@sha256:abc" {
+		t.Fatal("a built image did not take precedence", image)
+	}
+	m.kubeSettings.Build = KubeBuild{BuildKit: "tcp://b:1234", Registry: "r/x", AuthSecret: "pull"}
+	spec, err := m.kubeSpec(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(m.kubePodObject(p, spec, "img", "vscode", nil, nil))
+	var pod struct {
+		Spec struct {
+			ImagePullSecrets []map[string]string `json:"imagePullSecrets"`
+			Containers       []struct {
+				VolumeMounts []map[string]any `json:"volumeMounts"`
+			}
+			Volumes []map[string]any
+		}
+	}
+	json.Unmarshal(b, &pod)
+	if len(pod.Spec.ImagePullSecrets) != 1 || pod.Spec.ImagePullSecrets[0]["name"] != "pull" {
+		t.Fatal("pods do not pull with the registry credential", pod.Spec.ImagePullSecrets)
+	}
+	found := false
+	for _, v := range pod.Spec.Containers[0].VolumeMounts {
+		if v["mountPath"] == "/cxz/registry" && v["readOnly"] == true {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("the registry credential is not where a build looks for it")
 	}
 }

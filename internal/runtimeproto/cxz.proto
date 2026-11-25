@@ -59,6 +59,8 @@ service Sessions {
   // because `Stop` on this service is a session's.
   // See docs/plans/project-lifecycle-api.md.
   rpc StartContainer(ProjectRequest) returns (Receipt);
+  // Build a Kubernetes project's image in its pod and restart it on the result.
+  rpc BuildProject(BuildProjectInput) returns (Receipt);
   rpc StopContainer(ProjectRequest) returns (Receipt);
   rpc RemoveContainer(ProjectRequest) returns (Receipt);
   // Aux is a model task attached to a session: run once, with the context cxz
@@ -225,6 +227,7 @@ message ResponseMetadata {
   string phase = 6; bytes completion_json = 7;
 }
 message EventBatch { repeated Event events = 1; }
+message BuildProjectInput { string workspace = 1; string client_id = 2; string dockerfile = 3; string context = 4; }
 message ProjectRequest {
  string workspace = 1; string agent = 2; string config = 3;
  bool new_session = 4; bool recreate = 5; bool confirmed = 6;

@@ -17,6 +17,9 @@ COPY --from=docker:29-cli /usr/local/libexec/docker/cli-plugins /usr/local/libex
 RUN npm install -g @devcontainers/cli@0.89.0
 ARG TARGETARCH
 COPY linux-${TARGETARCH}/cxz /usr/local/bin/cxz
+# BuildKit's client, which Kubernetes projects copy in to build their images
+# with the installation's builder.
+COPY --from=moby/buildkit:v0.23.2 /usr/bin/buildctl /usr/local/bin/buildctl
 COPY --from=cxz-collector /out/cxz-otelcol /usr/local/bin/cxz-otelcol
 COPY webui/ /usr/local/share/cxz/webui/
 ENTRYPOINT ["/usr/local/bin/cxz"]
