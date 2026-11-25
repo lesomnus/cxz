@@ -195,7 +195,7 @@ cxz#372와 cxz#377은 선행이 없어 병렬로 시작할 수 있다. cxz#376�
 | cxz#375 자원 요청 | 설치 기본값과 프로젝트별 덮어쓰기로 requests/limits를 pod에 싣는다 |
 | cxz#376·#377·#378 | 남음 |
 
-남은 제약(대화 기록은 프로젝트가 떠 있을 때만, telemetry 저장소 미배포, 보조 AI 꺼짐 등)은 [kubernetes](../kubernetes.md#what-does-not-work-yet)에 있다.
+남은 제약(대화 기록은 프로젝트가 떠 있을 때만, 보조 AI 꺼짐 등)은 [kubernetes](../kubernetes.md#what-does-not-work-yet)에 있다.
 
 ## 10. 열린 질문
 

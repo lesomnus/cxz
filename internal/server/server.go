@@ -213,6 +213,16 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		s.manager.StartAuxiliary(ctx)
 	}
 	if s.manager == nil {
+		// A pod's collector is across the network; give it the socket first,
+		// so the relay below and every session find telemetry where they look.
+		if collector := os.Getenv("CXZ_TELEMETRY_COLLECTOR"); collector != "" {
+			forward, err := telemetry.ForwardSocket(ctx, telemetryauth.Socket, collector)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "telemetry forward:", err)
+			} else {
+				defer forward.Close()
+			}
+		}
 		if rt, err := workspace.LoadRuntime(root); err == nil && rt.Token != "" {
 			relay, err := telemetry.StartRelay(ctx, telemetry.RelayAddress, telemetryauth.Socket, rt.ProjectID, rt.Token)
 			if err != nil {

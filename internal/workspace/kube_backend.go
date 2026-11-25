@@ -379,6 +379,11 @@ func (m *Manager) kubeSpec(p *Project) (projectspec.Spec, error) {
 		Workspace: p.RemoteWorkspace, HostWorkspace: p.RemoteWorkspace,
 		Start: []string{kube.RuntimeBinary, "--state", projectspec.StateDir, "_project"},
 	}
+	// Where the runtime forwards its telemetry: the collector beside the
+	// manager, across the network. See telemetry.ForwardSocket.
+	if collector := os.Getenv("CXZ_TELEMETRY_COLLECTOR"); collector != "" {
+		spec.Env["CXZ_TELEMETRY_COLLECTOR"] = collector
+	}
 	return spec, spec.Validate()
 }
 

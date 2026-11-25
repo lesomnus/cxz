@@ -48,3 +48,31 @@ exit 1
 		})
 	}
 }
+
+func TestExternalStack(t *testing.T) {
+	s := Stack{Root: t.TempDir(), Owner: strings.Repeat("o", 24), External: true, DBHost: "cxz-telemetry-db", Password: strings.Repeat("p", 32), Listen: "0.0.0.0:4317"}
+	config := s.CollectorConfig(s.Password)
+	for _, want := range []string{"endpoint: 0.0.0.0:4317\n        transport: tcp", "endpoint: tcp://cxz-telemetry-db:9000?"} {
+		if !strings.Contains(config, want) {
+			t.Fatalf("collector config lacks %q:\n%s", want, config)
+		}
+	}
+	if s.Endpoint() != "http://cxz-telemetry-db:8123" {
+		t.Fatal(s.Endpoint())
+	}
+	if err := s.Prepare(); err != nil {
+		t.Fatal(err)
+	}
+	if client, err := s.Client(); err != nil || client.Password != s.Password {
+		t.Fatal("the deployment's credential was not used", err)
+	}
+	weak := s
+	weak.Password = "short"
+	if weak.Prepare() == nil {
+		t.Fatal("a short database password was accepted")
+	}
+	docker := Stack{Owner: strings.Repeat("o", 24)}
+	if c := docker.CollectorConfig("x"); !strings.Contains(c, "endpoint: /var/run/cxz-telemetry/collector.sock\n        transport: unix") || !strings.Contains(c, "tcp://cxz-oooooooooooo-telemetry-db:9000?") {
+		t.Fatal("the Docker collector configuration changed")
+	}
+}

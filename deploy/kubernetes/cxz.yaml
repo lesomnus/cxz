@@ -5,7 +5,8 @@
 #   kubectl -n cxz create secret generic cxz-manager \
 #     --from-literal=owner=$(openssl rand -hex 12) \
 #     --from-literal=token=$(openssl rand -hex 32) \
-#     --from-literal=web-token=$(openssl rand -hex 32)
+#     --from-literal=web-token=$(openssl rand -hex 32) \
+#     --from-literal=telemetry-password=$(openssl rand -hex 32)
 #   kubectl -n cxz apply -f cxz.yaml
 #
 # The manager's permissions are this namespace's pods, their exec, volume
@@ -93,6 +94,14 @@ spec:
             # manager issued for that project and account.
             - {name: CXZ_BROKER_LISTEN, value: ":7351"}
             - {name: CXZ_BROKER_ADDRESS, value: "tcp://cxz-broker:7351"}
+            # Usage telemetry: the database below, and the collector beside
+            # this container, which project pods reach at cxz-telemetry.
+            - {name: CXZ_TELEMETRY_DB_HOST, value: cxz-telemetry-db}
+            - name: CXZ_TELEMETRY_PASSWORD
+              valueFrom: {secretKeyRef: {name: cxz-manager, key: telemetry-password}}
+            - {name: CXZ_TELEMETRY_LISTEN, value: "0.0.0.0:4317"}
+            - {name: CXZ_TELEMETRY_HEALTH, value: "http://127.0.0.1:13133/"}
+            - {name: CXZ_TELEMETRY_COLLECTOR, value: "tcp://cxz-telemetry:4317"}
           ports: [{name: broker, containerPort: 7351}]
           volumeMounts:
             - {name: state, mountPath: /var/lib/cxz}
@@ -110,6 +119,20 @@ spec:
           volumeMounts:
             - {name: state, mountPath: /var/lib/cxz}
             - {name: token, mountPath: /run/cxz, readOnly: true}
+        # The usage collector. It reads the configuration and the project
+        # registries the manager writes, and starts once the configuration is
+        # there. Projects send to it over the cluster network, signed.
+        - name: collector
+          image: ghcr.io/lesomnus/cxz:edge
+          command: [/bin/sh, -ec]
+          args:
+            - until [ -f /var/lib/cxz-telemetry/collector.yaml ]; do sleep 1; done; exec /usr/local/bin/cxz-otelcol --config=/var/lib/cxz-telemetry/collector.yaml
+          ports: [{name: otlp, containerPort: 4317}]
+          volumeMounts:
+            - {name: state, subPath: telemetry, mountPath: /var/lib/cxz-telemetry}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 256Mi}
         # The browser UI. Its origin is a loopback address, which a browser
         # treats as secure without a certificate: reach it with
         #   kubectl -n cxz port-forward svc/cxz-web 7350
@@ -163,3 +186,92 @@ spec:
   selector: {app.kubernetes.io/name: cxz-manager}
   ports:
     - {name: broker, port: 7351, targetPort: broker}
+---
+# Usage collector, for project pods only.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cxz-telemetry
+spec:
+  selector: {app.kubernetes.io/name: cxz-manager}
+  ports:
+    - {name: otlp, port: 4317, targetPort: otlp}
+---
+# The usage database: the same ClickHouse, and the same limits, as a Docker
+# installation's. The manager creates its schema.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cxz-telemetry-db
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 10Gi}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cxz-telemetry-db
+data:
+  cxz.xml: |
+    <clickhouse>
+      <listen_host>0.0.0.0</listen_host>
+      <logger><level>warning</level><console>true</console><log remove="1"/><errorlog remove="1"/></logger>
+      <max_server_memory_usage>805306368</max_server_memory_usage>
+      <max_connections>128</max_connections>
+      <background_pool_size>16</background_pool_size>
+      <background_move_pool_size>2</background_move_pool_size>
+      <background_schedule_pool_size>4</background_schedule_pool_size>
+      <background_message_broker_schedule_pool_size>2</background_message_broker_schedule_pool_size>
+      <background_distributed_schedule_pool_size>2</background_distributed_schedule_pool_size>
+      <mark_cache_size>33554432</mark_cache_size><uncompressed_cache_size>16777216</uncompressed_cache_size>
+      <query_log remove="1"/><query_thread_log remove="1"/><query_views_log remove="1"/><query_metric_log remove="1"/>
+      <part_log remove="1"/><trace_log remove="1"/><text_log remove="1"/><metric_log remove="1"/>
+      <asynchronous_metric_log remove="1"/><asynchronous_insert_log remove="1"/><processors_profile_log remove="1"/>
+      <error_log remove="1"/><crash_log remove="1"/><session_log remove="1"/><blob_storage_log remove="1"/>
+      <backup_log remove="1"/><zookeeper_log remove="1"/><filesystem_cache_log remove="1"/>
+    </clickhouse>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cxz-telemetry-db
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app.kubernetes.io/name: cxz-telemetry-db}}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: cxz-telemetry-db}
+    spec:
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:26.10.3.7-alpine@sha256:1b09f476eb1109522cfc0e8e4ddf6a4305263e7cdd310f7bd1d3fd29dfcb8b33
+          env:
+            - {name: CLICKHOUSE_USER, value: cxz}
+            - {name: CLICKHOUSE_DB, value: telemetry}
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom: {secretKeyRef: {name: cxz-manager, key: telemetry-password}}
+          ports:
+            - {name: http, containerPort: 8123}
+            - {name: native, containerPort: 9000}
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/clickhouse}
+            - {name: config, mountPath: /etc/clickhouse-server/config.d/cxz.xml, subPath: cxz.xml, readOnly: true}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: cxz-telemetry-db}
+        - name: config
+          configMap: {name: cxz-telemetry-db}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cxz-telemetry-db
+spec:
+  selector: {app.kubernetes.io/name: cxz-telemetry-db}
+  ports:
+    - {name: http, port: 8123, targetPort: http}
+    - {name: native, port: 9000, targetPort: native}

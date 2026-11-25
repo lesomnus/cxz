@@ -18,7 +18,8 @@ kubectl create namespace cxz
 kubectl -n cxz create secret generic cxz-manager \
   --from-literal=owner=$(openssl rand -hex 12) \
   --from-literal=token=$(openssl rand -hex 32) \
-  --from-literal=web-token=$(openssl rand -hex 32)
+  --from-literal=web-token=$(openssl rand -hex 32) \
+  --from-literal=telemetry-password=$(openssl rand -hex 32)
 kubectl -n cxz apply -f deploy/kubernetes/cxz.yaml
 ```
 
@@ -30,8 +31,10 @@ kubectl -n cxz apply -f deploy/kubernetes/cxz.yaml
 - the manager Deployment: one replica, `Recreate`, because its databases are
   SQLite on that one volume. Beside the manager run its token relay (for the
   TUI) and the browser gateway, both reading only the manager's sockets;
-- a NodePort Service for the relay (30749), and ClusterIP Services for the web
-  and for the Codex token broker.
+- the usage store: ClickHouse as its own Deployment with a 10 GiB claim, and
+  the collector beside the manager;
+- a NodePort Service for the relay (30749), and ClusterIP Services for the web,
+  the Codex token broker and the collector.
 
 Codex accounts keep their default, brokered login: the manager holds the
 central login and hands each project short-lived access tokens. On Docker the
@@ -126,6 +129,23 @@ For a reachable HTTPS address, mount a certificate and key into the `web`
 container from a Secret and give it `--origin https://HOST --tls-cert … --tls-key …`.
 The gateway terminates TLS itself; it does not trust a proxy's.
 
+## Usage telemetry
+
+Usage comes from [managed telemetry](managed-telemetry.md) here as on Docker,
+with the same database image, limits and schema. What differs is who runs it:
+the manifest declares ClickHouse (`cxz-telemetry-db`) and runs the collector as
+a container beside the manager, and the manager configures and checks them
+instead of creating containers. It writes the collector's configuration and the
+per-project ingest registries to its own volume, which the collector reads, and
+creates the schema once the database answers.
+
+A project pod cannot reach the collector's socket, so its runtime makes that
+socket itself and forwards each connection to `CXZ_TELEMETRY_COLLECTOR`
+(`tcp://cxz-telemetry:4317`). Agents and the supervisor send exactly what they
+send on Docker, signed with the project's credential; the collector rejects
+anything that does not verify against its registry. The collector's Service is
+not published on any node.
+
 ## A project's pod
 
 | Path | From |
@@ -165,8 +185,6 @@ background; creating a session waits for it.
 - **Conversation history needs the project running.** The manager cannot read a
   pod's volume, so it asks the project's runtime; a stopped project's history is
   not readable until it starts.
-- **Usage statistics** are unavailable: the telemetry store is not deployed on
-  Kubernetes yet. See [managed telemetry](managed-telemetry.md).
 - **Auxiliary AI** (summaries, suggestions, titles) is off: it runs in containers
   of a Docker engine.
 - **Updates.** A project's runtime is the manager's image, taken when its pod
