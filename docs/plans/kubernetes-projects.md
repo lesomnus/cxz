@@ -75,6 +75,23 @@ compose 경로에서 cxz는 세 파일을 병합한다(`internal/workspace/devco
 
 **순서가 중요하다.** 스펙을 먼저 혼자 설계하면 소비자가 하나뿐이어서 Docker의 전제를 그대로 인코딩한다. 반대로 지금 상태에 k8s를 붙이면 k8s 경로에만 임시 번역이 생겨 고착된다. 그래서 **스펙을 추출하고 곧바로 Docker 경로를 그 위로 이전한다.** Docker가 동작 변화 없이 지나가면 스펙이 맞다는 증거이고, k8s는 두 번째 소비자로 붙는다.
 
+### 추출한 스펙 (cxz#372)
+
+`internal/projectspec.Spec`이 cxz 자신의 요구를 담는다 — 소유 라벨(`cxz.owner`/`cxz.project`), prebuilt 이미지(있을 때), cxz의 env, cxz의 마운트(state·tools·secrets·assets), 워크스페이스 경로, 런타임 기동 명령, 매니저가 7348로 도달하는 네트워크. 프로젝트 자신의 설정(이미지/빌드, 자기 env·마운트·훅)은 프로젝트 것으로 남고, 둘이 만나는 곳에서는 cxz가 이긴다.
+
+`internal/workspace`의 `runtimeSpec`이 devcontainer 설정에서 스펙을 결정하고(프런트엔드), `applySpec`이 그것을 devcontainer CLI가 받는 두 형식 — image/Dockerfile 설정, 또는 마지막에 병합되는 Compose 파일 — 으로 옮긴다(Docker 백엔드). 같은 의도를 두 곳에 따로 적던 코드가 하나의 값에서 나온다. 이전 렌더링과 출력이 같음을 아홉 가지 설정 조합으로 비교했고, 다른 곳은 하나다: **설치형 매니저에서 image/Dockerfile 프로젝트의 `/cxz/state`가 소스 없는 볼륨으로 마운트되던 것**이 Compose 경로와 같은 매니저 볼륨 subpath가 됐다.
+
+스펙이 담지 못하는 devcontainer 속성은 `projectspec.UnexpressedIn`이 열거한다. Docker 경로는 devcontainer CLI가 프로젝트 설정을 그대로 실행하므로 전부 계속 지원한다. 스펙만 실행하는 백엔드(cxz#374)가 거부할 목록이고, 항목마다 이유와 대안을 함께 둔다.
+
+| 속성 | 대안 |
+|---|---|
+| `build`, `dockerFile`, `context`, `features` | 이미지를 빌드해 push하고 `image`로 지정 |
+| `dockerComposeFile`, `service`, `runServices` | image 기반 devcontainer, 다른 서비스는 따로 |
+| `initializeCommand`, `onCreateCommand`, `updateContentCommand`, `postCreateCommand`, `postStartCommand`, `postAttachCommand` | 이미지에서, 또는 세션에서 |
+| `runArgs`, `privileged`, `capAdd`, `securityOpt`, `init`, `overrideCommand`, `appPort` | 제거 (Docker 호스트의 속성) |
+| `mounts`, `workspaceMount` | 워크스페이스나 이미지에 둔다 |
+| `hostRequirements` | 프로젝트 자원 요청(cxz#375) |
+
 ## 4. 확정한 범위 제한
 
 - **dind 미지원.** `EngineMode{OFF, DIND}`의 DIND는 k8s 백엔드에서 제공하지 않는다. `internal/engine` 전체(dind 전용 구조체: `Name() = "cxz-<owner>-docker"`, `Endpoint() = tcp://…:2375`, compose 렌더링)와 `internal/networkservices`의 상당 부분이 k8s 경로에서 빠진다.
