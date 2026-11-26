@@ -1,6 +1,6 @@
 # 연결: 브라우저가 어디에 붙어 있는지
 
-상태: 1~4단계 구현됨 (계약, 서버의 거절, 브라우저 구현, UI 자리). 5·6단계는 남아 있다. 웹 클라이언트에는 연결이라는 개념이 없고, 이 문서는 그것을 리소스 계약
+상태: 1~4단계 구현됨 (계약, 서버의 거절, 브라우저 구현, UI 자리). 6단계 대신 [허브](#허브-게이트웨이가-연결을-든다-6단계-대신-택한-길)로 가기로 했고, 개발 서버에 구현돼 있다. 5단계, 허브의 게이트웨이(Go) 구현, 전환 UI는 남아 있다. 웹 클라이언트에는 연결이라는 개념이 없고, 이 문서는 그것을 리소스 계약
 하나로 세우고 클라이언트마다 구현하는 길을 적는다. 원격 접속 자체는
 [원격 접속](../remote.md)에 이미 문서화돼 있다.
 
@@ -160,6 +160,75 @@ if e.Scheme == "local" {
 
 1~4가 한 PR이다. 5와 6은 각각 따로이며, 6은 보안 표면을 넓히는 결정이라 그 자체로
 판단한다.
+
+## 허브: 게이트웨이가 연결을 든다 (6단계 대신 택한 길)
+
+6단계(브라우저가 각 게이트웨이에 직접)는 CORS·Bearer로 보안 표면을 넓히고, 연결별
+자격증명을 브라우저가 들어야 한다. 대신 **게이트웨이가 클라이언트 쪽 부품이 되어
+연결을 든다.** TUI가 `settings.jsonc`의 연결들을 묶어 보여주듯이, 허브 게이트웨이가
+여러 설치본을 연결로 묶어 한 origin으로 보여준다. 매니저는 그대로 설치본마다 하나이고
+연결을 모른다. 원격 쪽 게이트웨이(사내 k8s의 web 컨테이너 등)도 바뀌지 않는다.
+
+```
+브라우저 ──> 허브 (한 origin) ──/c/dev/──> 로컬 게이트웨이 ──> 로컬 매니저
+                              └─/c/k8s/──> k8s 게이트웨이  ──> k8s 매니저
+```
+
+### 계약
+
+- **경로.** 연결 `NAME`의 게이트웨이 경로 `P`는 허브의 `/c/NAME` + `P`다.
+  `/c/k8s/cxz.ProjectService/List`, `/c/k8s/rpc-stream/cxz.SessionService/Events`,
+  `/c/k8s/terminal/<project>?…`, `/c/k8s/auth/status`. 게이트웨이가 받는 모든
+  경로(Connect, `rpc-stream`, 터미널·로그인·에디터 WebSocket, 첨부, `auth`)가 같은
+  규칙이다. 그래서 UI의 연결 하나는 `baseUrl = origin + "/c/" + name`인
+  `Connection` 하나다.
+- **이름.** 소문자·숫자·`-`, 1~40자(`^[a-z0-9][a-z0-9-]{0,39}$`). 경로에 그대로 들어간다.
+- **접두어 없는 경로**는 기본 연결(목록의 첫째)이다. 연결을 모르는 UI는 그대로 동작한다.
+- **목록.** `ConnectionService.List`는 허브가 답한다. 어느 연결을 거쳐 물어도
+  (`/cxz.ConnectionService/List`, `/c/NAME/cxz.ConnectionService/List`) 같은 답이다.
+
+  ```json
+  {"items": [
+    {"name": "dev", "target": "http://127.0.0.1:7350", "transport": "gateway", "isDefault": true,  "readOnly": true},
+    {"name": "k8s", "target": "https://alice.cxz.example", "transport": "gateway", "isDefault": false, "readOnly": true}
+  ]}
+  ```
+
+  `target`은 그 연결이 닿는 설치본의 게이트웨이(표시용)이고, 경로는 `name`에서
+  나온다. `transport: "gateway"`는 "허브를 거쳐"라는 뜻이다. 목록은 허브 설정이 정하므로
+  모두 `readOnly`다. 브라우저 `localStorage` 구현(3단계)은 허브가 없는 origin,
+  즉 연결이 자기 자신 하나인 경우의 답으로 남는다.
+- **세션.** 연결의 게이트웨이 세션(쿠키)은 **허브가 서버 쪽에 든다.** 브라우저에는
+  가지 않는다. 두 게이트웨이의 쿠키가 모두 `__Host-cxz`(Path=/ 강제)라서 한 origin
+  안에서 둘을 나눠 둘 수 없기도 하다. `/c/NAME/auth/status`가 허브의 세션을 확인하고
+  없거나 만료됐으면 그 연결의 토큰으로 로그인한다. `/c/NAME/auth/logout`은 그
+  연결의 세션만 버린다. 연결마다 `Payday-Identity`가 따로라서 UI의 읽기 캐시가
+  섞이지 않는다.
+- **보안.** 허브는 자기 origin의 요청만 받는다(loopback, `Origin`이 자기 자신,
+  `Sec-Fetch-Site`가 cross-site가 아님). 자격증명(토큰 파일, 게이트웨이 세션)은
+  허브 프로세스 밖으로 나가지 않는다 -- "자격증명은 영속하지 않는다"(브라우저 쪽)와
+  같은 원칙이다.
+
+### 구현 상태
+
+- **개발 서버**(`ts/scripts/web-hub.mjs`, `web-dev.mjs`): 구현됨.
+  `CXZ_WEB_CONNECTIONS`가 가리키는 파일로 연결을 정한다.
+
+  ```json
+  {"connections": [
+    {"name": "dev", "config": "/home/me/.local/state/cxz/web-installation.json"},
+    {"name": "k8s", "config": "k8s/web.json"}
+  ]}
+  ```
+
+  각 `config`는 `cxz web` 설정(`origin`, `access_token_file`)이고, 상대 경로는 이
+  파일 기준이다. 없으면 지금처럼 게이트웨이 하나가 `dev`라는 연결 하나다.
+  `ConnectionService.List`는 Connect JSON으로만 답한다(UI가 쓰는 형식).
+- **게이트웨이(Go)**: 남음. 같은 계약을 `internal/webui`에 -- 연결 설정(원격 게이트웨이
+  origin과 웹 토큰 파일), `/c/NAME` 프록시, 서버 쪽 세션, `List`. 연결 설정을 TUI의
+  `settings.jsonc` `connections`에 웹 항목으로 더할지 따로 둘지는 그때 정한다
+  (TUI 연결은 relay 주소·relay 토큰이라 웹과 다르다).
+- **UI**: 남음. 목록을 허브의 `List`에서 받아 연결마다 `Connection`을 만들고 전환한다.
 
 ## 지켜야 할 것
 

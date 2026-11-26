@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "vite";
 import WebSocket from "ws";
-import { devGatewayPlugin, loadDevGateway } from "./web-dev.mjs";
+import {
+  devGatewayPlugin,
+  loadDevConnections,
+  loadDevGateway,
+} from "./web-dev.mjs";
 
 const token = "test-only-token-".repeat(4);
 const cleanup = [];
@@ -408,5 +412,280 @@ describe("Vite against a real HTTP gateway", () => {
     expect(upgrades[0].origin).toBe(f.origin);
     expect(upgrades[0].cookie).toBe("test-session=valid");
     expect(await upgrade("https://other.example")).toBe(false);
+  });
+});
+
+// A gateway of one installation for the hub tests: its session cookie is its
+// own name, so which gateway a request reached with whose session is visible.
+async function hubGateway(dir, name) {
+  const tokenFile = join(dir, `${name}-token`);
+  await writeFile(tokenFile, token);
+  const calls = [];
+  const session = `__Host-cxz=${name}-session`;
+  const server = createHttpServer(async (req, res) => {
+    const parts = [];
+    for await (const part of req) parts.push(part);
+    calls.push({
+      path: req.url,
+      headers: req.headers,
+      body: Buffer.concat(parts).toString(),
+    });
+    if (req.url === "/auth/status") {
+      res.writeHead(req.headers.cookie === session ? 204 : 401);
+      res.end();
+    } else if (req.url === "/auth/login") {
+      res.writeHead(204, {
+        "Set-Cookie": `${session}; Path=/; Secure; HttpOnly; SameSite=Strict`,
+        "Payday-Identity": `${name}-identity`,
+      });
+      res.end();
+    } else if (req.url === "/auth/logout") {
+      res.writeHead(204, { "Set-Cookie": "__Host-cxz=; Path=/; Max-Age=-1" });
+      res.end();
+    } else if (req.url === "/cxz.SessionService/Events") {
+      res.writeHead(200, { "Content-Type": "application/connect+json" });
+      res.end(Buffer.from([0, 0, 0, 0, 2, 123, 125]));
+    } else {
+      res.end(`${name} answered`);
+    }
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  cleanup.push(
+    () =>
+      new Promise((resolve) => {
+        server.close(resolve);
+        server.closeAllConnections();
+      }),
+  );
+  return {
+    name,
+    origin: `http://127.0.0.1:${server.address().port}`,
+    tokenFile,
+    calls,
+    server,
+    session,
+  };
+}
+
+async function hubFixture() {
+  const dir = await temp();
+  const dev = await hubGateway(dir, "dev");
+  const k8s = await hubGateway(dir, "k8s");
+  const vite = await createServer({
+    root: dir,
+    configFile: false,
+    plugins: [devGatewayPlugin([dev, k8s])],
+    logLevel: "silent",
+    optimizeDeps: { noDiscovery: true, include: [] },
+    server: { host: "127.0.0.1", port: 0, watch: null },
+  });
+  await vite.listen();
+  cleanup.push(() => vite.close());
+  return {
+    url: `http://127.0.0.1:${vite.httpServer.address().port}`,
+    dev,
+    k8s,
+  };
+}
+
+describe("Vite as a hub of connections", () => {
+  it("reads named connections and refuses bad names", async () => {
+    const dir = await temp();
+    await config(join(dir, "dev"));
+    await config(join(dir, "k8s"), "web.json", {
+      origin: "https://alice.cxz.example",
+    });
+    const file = join(dir, "connections.json");
+    await writeFile(
+      file,
+      JSON.stringify({
+        connections: [
+          { name: "dev", config: "dev/web.json" },
+          { name: "k8s", config: "k8s/web.json" },
+        ],
+      }),
+    );
+    const got = await loadDevConnections({ CXZ_WEB_CONNECTIONS: file });
+    expect(got.map((c) => [c.name, c.origin])).toEqual([
+      ["dev", "http://127.0.0.1:7350"],
+      ["k8s", "https://alice.cxz.example"],
+    ]);
+    expect(got[1].tokenFile).toBe(join(dir, "k8s", "web-token"));
+    for (const connections of [
+      [{ name: "K8s", config: "k8s/web.json" }],
+      [
+        { name: "a", config: "dev/web.json" },
+        { name: "a", config: "k8s/web.json" },
+      ],
+      [],
+    ]) {
+      await writeFile(file, JSON.stringify({ connections }));
+      await expect(
+        loadDevConnections({ CXZ_WEB_CONNECTIONS: file }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("keeps each connection's session server-side and sends it only to its gateway", async () => {
+    const f = await hubFixture();
+    const status = await fetch(f.url + "/c/k8s/auth/status", {
+      headers: { Origin: f.url },
+    });
+    expect(status.status).toBe(204);
+    expect(status.headers.getSetCookie()).toEqual([]);
+    expect(status.headers.get("payday-identity")).toBe("k8s-identity");
+    const list = await fetch(f.url + "/c/k8s/cxz.ProjectService/List", {
+      method: "POST",
+      headers: {
+        Origin: f.url,
+        Cookie: "__Host-cxz=browser-cookie",
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    expect(await list.text()).toBe("k8s answered");
+    const call = f.k8s.calls.at(-1);
+    expect(call.path).toBe("/cxz.ProjectService/List");
+    expect(call.headers.cookie).toBe(f.k8s.session);
+    expect(call.headers.origin).toBe(f.k8s.origin);
+    expect(f.dev.calls).toHaveLength(0);
+    // Unprefixed is the default connection, as a single gateway was.
+    expect(
+      await (
+        await fetch(f.url + "/cxz.ProjectService/List", {
+          method: "POST",
+          headers: { Origin: f.url },
+          body: "{}",
+        })
+      ).text(),
+    ).toBe("dev answered");
+    // Signing out of one connection forgets its session.
+    await fetch(f.url + "/c/k8s/auth/logout", {
+      method: "POST",
+      headers: { Origin: f.url },
+    });
+    await fetch(f.url + "/c/k8s/cxz.ProjectService/List", {
+      method: "POST",
+      headers: { Origin: f.url },
+      body: "{}",
+    });
+    expect(f.k8s.calls.at(-1).headers.cookie).toBeUndefined();
+  });
+
+  it("answers ConnectionService.List itself and refuses unknown connections", async () => {
+    const f = await hubFixture();
+    for (const path of [
+      "/cxz.ConnectionService/List",
+      "/c/k8s/cxz.ConnectionService/List",
+    ]) {
+      const r = await fetch(f.url + path, {
+        method: "POST",
+        headers: { Origin: f.url, "Content-Type": "application/json" },
+        body: "{}",
+      });
+      expect(r.status).toBe(200);
+      expect(await r.json()).toEqual({
+        items: [
+          {
+            name: "dev",
+            target: f.dev.origin,
+            transport: "gateway",
+            isDefault: true,
+            readOnly: true,
+          },
+          {
+            name: "k8s",
+            target: f.k8s.origin,
+            transport: "gateway",
+            isDefault: false,
+            readOnly: true,
+          },
+        ],
+      });
+    }
+    const proto = await fetch(f.url + "/cxz.ConnectionService/List", {
+      method: "POST",
+      headers: { Origin: f.url, "Content-Type": "application/proto" },
+      body: "",
+    });
+    expect(proto.status).toBe(415);
+    expect(
+      (
+        await fetch(f.url + "/c/nope/cxz.ProjectService/List", {
+          method: "POST",
+          headers: { Origin: f.url },
+          body: "{}",
+        })
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await fetch(f.url + "/c/k8s/cxz.ProjectService/List", {
+          method: "POST",
+          headers: { Origin: "https://other.example" },
+          body: "{}",
+        })
+      ).status,
+    ).toBe(403);
+    expect(f.dev.calls.length + f.k8s.calls.length).toBe(0);
+  });
+
+  it("carries a connection's streams and sockets with its session", async () => {
+    const f = await hubFixture();
+    await fetch(f.url + "/c/k8s/auth/status", { headers: { Origin: f.url } });
+    const socket = new WebSocket(
+      f.url.replace("http:", "ws:") +
+        "/c/k8s/rpc-stream/cxz.SessionService/Events",
+      {
+        headers: { Origin: f.url, Cookie: "__Host-cxz=browser-cookie" },
+      },
+    );
+    const frames = [];
+    socket.on("message", (data) => frames.push(data));
+    await new Promise((resolve, reject) => {
+      socket.once("open", resolve);
+      socket.once("error", reject);
+    });
+    socket.send(
+      JSON.stringify({
+        headers: { "content-type": "application/connect+json" },
+      }),
+    );
+    socket.send(Buffer.from([0, 0, 0, 0, 2, 123, 125]));
+    await expect.poll(() => frames.length).toBeGreaterThanOrEqual(2);
+    socket.close();
+    const stream = f.k8s.calls.find(
+      (c) => c.path === "/cxz.SessionService/Events",
+    );
+    expect(stream.headers.cookie).toBe(f.k8s.session);
+    expect(stream.headers.origin).toBe(f.k8s.origin);
+
+    const upgrades = [];
+    f.k8s.server.on("upgrade", (req, s) => {
+      upgrades.push(req);
+      s.end(
+        "HTTP/1.1 101 Switching Protocols\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n\r\n",
+      );
+    });
+    const opened = await new Promise((resolve) => {
+      const req = request(`${f.url}/c/k8s/terminal/project?cols=80&rows=24`, {
+        headers: {
+          Connection: "Upgrade",
+          Upgrade: "websocket",
+          Origin: f.url,
+          Cookie: "__Host-cxz=browser-cookie",
+        },
+      });
+      req.on("upgrade", (_, s) => {
+        s.destroy();
+        resolve(true);
+      });
+      req.on("error", () => resolve(false));
+      req.end();
+    });
+    expect(opened).toBe(true);
+    expect(upgrades[0].url).toBe("/terminal/project?cols=80&rows=24");
+    expect(upgrades[0].headers.cookie).toBe(f.k8s.session);
+    expect(upgrades[0].headers.origin).toBe(f.k8s.origin);
   });
 });

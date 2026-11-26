@@ -8,15 +8,29 @@ const blocked =
 // Forward Connect envelopes without parsing protobuf or dispatching RPC methods.
 // This terminates the local development socket, so an older installed gateway
 // does not need a new endpoint just to debug its UI through HTTP/1.1 Vite.
-export function devRPCStreams(server, gateway, localRequest) {
+//
+// route answers where a request's stream goes: {origin, path, cookie}, with
+// path the request's own once any connection prefix is off. A gateway object
+// is the one-connection form: every stream goes to it with the browser's
+// cookie.
+export function devRPCStreams(server, route, localRequest) {
+  if (typeof route !== "function") {
+    const gateway = route;
+    route = (req) => ({
+      origin: gateway.origin,
+      path: req.url || "",
+      cookie: req.headers.cookie || "",
+    });
+  }
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 8 << 20 });
   const upgrade = (req, socket, head) => {
-    if (!(req.url || "").startsWith(prefix + "/")) return;
-    if (!localRequest(req) || !rpcPath.test(req.url.slice(prefix.length))) {
+    const target = route(req);
+    if (!target?.path.startsWith(prefix + "/")) return;
+    if (!localRequest(req) || !rpcPath.test(target.path.slice(prefix.length))) {
       socket.destroy();
       return;
     }
-    sockets.handleUpgrade(req, socket, head, (ws) => bridge(ws, req, gateway));
+    sockets.handleUpgrade(req, socket, head, (ws) => bridge(ws, target));
   };
   server.httpServer.prependListener("upgrade", upgrade);
   server.httpServer.once("close", () => {
@@ -26,7 +40,7 @@ export function devRPCStreams(server, gateway, localRequest) {
   });
 }
 
-function bridge(socket, request, gateway) {
+function bridge(socket, target) {
   const active = new AbortController();
   let headers,
     started = false;
@@ -76,13 +90,13 @@ function bridge(socket, request, gateway) {
     );
   async function forward(body) {
     const response = await fetch(
-      gateway.origin + request.url.slice(prefix.length),
+      target.origin + target.path.slice(prefix.length),
       {
         method: "POST",
         headers: {
           ...headers,
-          Origin: gateway.origin,
-          Cookie: request.headers.cookie || "",
+          Origin: target.origin,
+          Cookie: target.cookie,
         },
         body,
         redirect: "error",
