@@ -7,7 +7,9 @@ import (
 	"github.com/lesomnus/cxz/internal/projectid"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -248,4 +250,88 @@ func TestBrokerOverTCP(t *testing.T) {
 			t.Errorf("grant endpoint %q accepted", bad)
 		}
 	}
+}
+
+// TestHelperCentralLogin is the process a test starts to hold a login: it takes
+// the account's lock as a login would and waits to be stopped.
+func TestHelperCentralLogin(t *testing.T) {
+	root := os.Getenv("CXZ_TEST_LOGIN_ROOT")
+	if root == "" {
+		t.Skip("helper process")
+	}
+	lock, err := centralLock(root, "work")
+	if err != nil {
+		os.Exit(3)
+	}
+	defer lock.Close()
+	os.WriteFile(filepath.Join(Dir(centralRoot(root), "work"), loginHolder), []byte(strconv.Itoa(os.Getpid())), 0600)
+	os.WriteFile(filepath.Join(root, "holding"), nil, 0600)
+	time.Sleep(time.Minute)
+	os.Exit(4)
+}
+
+func TestCentralLoginTakesOverAbandonedLogin(t *testing.T) {
+	if _, err := os.Stat("/proc/self/cmdline"); err != nil {
+		t.Skip("needs /proc")
+	}
+	root := t.TempDir()
+	if err := core.Prepare(root); err != nil {
+		t.Fatal(err)
+	}
+	seedCentral(t, root, "work", "subject-work", "synthetic-original")
+	// The marker in argv is what identifies a login process.
+	helper := exec.Command(os.Args[0], "-test.run=^TestHelperCentralLogin$", "_central-account-login")
+	helper.Env = append(os.Environ(), "CXZ_TEST_LOGIN_ROOT="+root)
+	if err := helper.Start(); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- helper.Wait() }()
+	for i := 0; ; i++ {
+		if _, err := os.Stat(filepath.Join(root, "holding")); err == nil {
+			break
+		}
+		if i > 200 {
+			helper.Process.Kill()
+			t.Fatal("helper never held the lock")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	binary := filepath.Join(root, "codex-fixture")
+	script := `#!/bin/sh
+printf '%s' '{"tokens":{"id_token":"e30.eyJzdWIiOiJ1c2VyLXdvcmsifQ.synthetic","access_token":"synthetic-new","refresh_token":"synthetic-refresh","account_id":"subject-work"}}' > "$CODEX_HOME/auth.json"
+`
+	if err := os.WriteFile(binary, []byte(script), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := CentralLogin(context.Background(), LoginRequest{Root: root, Account: "work", Binary: binary, Env: os.Environ()}); err != nil {
+		t.Fatal("a new login did not take over the abandoned one:", err)
+	}
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("abandoned login still running")
+	}
+	if _, err := os.Stat(filepath.Join(Dir(centralRoot(root), "work"), loginHolder)); !os.IsNotExist(err) {
+		t.Fatal("holder file left behind", err)
+	}
+}
+
+func TestCentralLoginWaitsForOtherHolders(t *testing.T) {
+	root := t.TempDir()
+	if err := core.Prepare(root); err != nil {
+		t.Fatal(err)
+	}
+	seedCentral(t, root, "work", "subject-work", "synthetic-original")
+	// A refresh holds the lock and records no login: it is waited for, not stopped.
+	lock, err := centralLock(root, "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() { time.Sleep(300 * time.Millisecond); lock.Close() }()
+	got, err := centralLoginLock(context.Background(), root, "work")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got.Close()
 }

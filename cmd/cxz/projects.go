@@ -364,6 +364,10 @@ func projectContainerCommand(ctx context.Context, client api.SessionsClient, c *
 			return e
 		}
 	}
+	// The server caps a call that names no deadline at 30s, and starting may
+	// pull an image and make the container. Name one, as `project up` does.
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+	defer cancel()
 	r := &api.ProjectRequest{Workspace: path, ClientId: core.ID()}
 	var reply *api.Receipt
 	var err error

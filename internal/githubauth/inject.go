@@ -22,8 +22,10 @@ tmp=$(mktemp /cxz/state/data/gh/.hosts.XXXXXX)
 trap 'rm -f "$tmp"' EXIT
 cat > "$tmp"
 mv -f "$tmp" /cxz/state/data/gh/hosts.yml`
+	// The credential goes in on stdin and the script never prints it, so its
+	// output is safe to report -- and without it the failure is unexplained.
 	if err := dockerx.Input(ctx, bytes.NewReader(data), "exec", "-i", "--user", user, container, "sh", "-c", script); err != nil {
-		return fmt.Errorf("could not inject project gh credentials")
+		return fmt.Errorf("could not inject project gh credentials: %w", err)
 	}
 	return nil
 }

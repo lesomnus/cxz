@@ -310,5 +310,46 @@ func removeProjectDocker(ctx context.Context, run removalDocker, owner, project,
 			}
 		}
 	}
+	return removeComposeNetworks(ctx, run, owner, project)
+}
+
+// removeComposeNetworks removes the networks Compose made for a compose
+// project, its default among them. Compose labels them with its own project
+// name only, not cxz's labels, so they are found by the name cxz gave the
+// Compose project, which is this installation's and this project's alone. A
+// network something is still attached to is not removed.
+func removeComposeNetworks(ctx context.Context, run removalDocker, owner, project string) error {
+	if len(owner) < 12 {
+		return nil
+	}
+	name := composeProjectName(owner, project)
+	b, err := run(ctx, "network", "ls", "-q", "--filter", "label=com.docker.compose.project="+name)
+	if err != nil {
+		return err
+	}
+	for _, id := range strings.Fields(string(b)) {
+		var v []removalResource
+		raw, err := run(ctx, "network", "inspect", id)
+		if err != nil {
+			return err
+		}
+		if json.Unmarshal(raw, &v) != nil || len(v) != 1 {
+			return fmt.Errorf("invalid network inventory")
+		}
+		if v[0].Labels["com.docker.compose.project"] != name {
+			return fmt.Errorf("refusing network %s of another Compose project", id)
+		}
+		for _, c := range v[0].Containers {
+			return fmt.Errorf("project network %s still has endpoint %s; disconnect it before retrying", id, c.Name)
+		}
+		if _, err := run(ctx, "network", "rm", id); err != nil {
+			return fmt.Errorf("remove project network %s: %w", id, err)
+		}
+	}
 	return nil
+}
+
+// composeProjectName is the Compose project a compose devcontainer runs as.
+func composeProjectName(owner, project string) string {
+	return "cxz-" + owner[:12] + "-" + project
 }

@@ -28,11 +28,31 @@ func (f *removalFake) run(_ context.Context, args ...string) ([]byte, error) {
 	key := args[0] + ":" + args[len(args)-1]
 	switch args[1] {
 	case "ls":
-		var ids []string
-		for key := range f.items {
-			if strings.HasPrefix(key, args[0]+":") {
-				ids = append(ids, strings.TrimPrefix(key, args[0]+":"))
+		var filters [][2]string
+		for i, a := range args {
+			// Only Compose's label is filtered: listing cxz's labels returns
+			// everything, so the inspect recheck is what refuses a stranger.
+			if a == "--filter" && strings.HasPrefix(args[i+1], "label=com.docker.compose.project=") {
+				k, v, _ := strings.Cut(strings.TrimPrefix(args[i+1], "label="), "=")
+				filters = append(filters, [2]string{k, v})
 			}
+		}
+		var ids []string
+	items:
+		for key, item := range f.items {
+			if !strings.HasPrefix(key, args[0]+":") {
+				continue
+			}
+			labels, _ := item["Labels"].(map[string]string)
+			if config, ok := item["Config"].(map[string]any); ok {
+				labels, _ = config["Labels"].(map[string]string)
+			}
+			for _, f := range filters {
+				if labels[f[0]] != f[1] {
+					continue items
+				}
+			}
+			ids = append(ids, strings.TrimPrefix(key, args[0]+":"))
 		}
 		return []byte(strings.Join(ids, "\n")), nil
 	case "inspect":
@@ -199,5 +219,24 @@ func TestRemoveProjectNetworkRefusesForeignEndpoint(t *testing.T) {
 	}
 	if _, ok := f.items["network:n"]; !ok {
 		t.Fatal("removed network with foreign endpoint")
+	}
+}
+
+func TestRemoveProjectComposeNetwork(t *testing.T) {
+	owner := strings.Repeat("a", 24)
+	compose := composeProjectName(owner, "p")
+	f := &removalFake{items: map[string]map[string]any{
+		"network:default": {"Id": "default", "Labels": map[string]string{"com.docker.compose.project": compose}},
+		"network:theirs":  {"Id": "theirs", "Labels": map[string]string{"com.docker.compose.project": compose + "x"}},
+	}}
+	if err := removeComposeNetworks(t.Context(), f.run, owner, "p"); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(f.removed, " ") != "network:default" {
+		t.Fatal("removed", f.removed)
+	}
+	f.items["network:default"] = map[string]any{"Id": "default", "Labels": map[string]string{"com.docker.compose.project": compose}, "Containers": map[string]any{"e": map[string]string{"Name": "someone"}}}
+	if err := removeComposeNetworks(t.Context(), f.run, owner, "p"); err == nil || !strings.Contains(err.Error(), "endpoint") {
+		t.Fatal("removed a network something is attached to", err)
 	}
 }

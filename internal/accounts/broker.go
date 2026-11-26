@@ -14,7 +14,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/lesomnus/cxz/internal/core"
@@ -101,6 +103,57 @@ func centralLock(root, account string) (*os.File, error) {
 	}
 	return core.Lock(filepath.Join(Dir(centralRoot(root), account), "broker.lock"))
 }
+// loginHolder names the process running a central login, beside broker.lock.
+const loginHolder = "login.pid"
+
+// centralLoginLock takes the account's lock for a login. A login already in
+// progress is one whose client may be gone -- `docker exec` leaves its process
+// running when the client disconnects -- and a device code nobody can see
+// holds the lock until it expires. Starting a login again is asking for a new
+// one, so it ends that one and takes its place. Anything else holding the lock
+// (a token refresh, a status check) is waited for briefly, never stopped.
+func centralLoginLock(ctx context.Context, root, account string) (*os.File, error) {
+	lock, err := centralLock(root, account)
+	if err == nil {
+		return lock, nil
+	}
+	if pid := loginInProgress(filepath.Join(Dir(centralRoot(root), account), loginHolder)); pid > 0 {
+		if p, e := os.FindProcess(pid); e == nil {
+			_ = p.Signal(syscall.SIGTERM)
+		}
+	}
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	for {
+		if lock, err = centralLock(root, account); err == nil {
+			return lock, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("account authentication busy: another login or token refresh for %s did not finish", account)
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+}
+
+// loginInProgress is the pid in the holder file when that process is still a
+// central login: a pid reused by something else is left alone.
+func loginInProgress(path string) int {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(b)))
+	if err != nil || pid <= 1 || pid == os.Getpid() {
+		return 0
+	}
+	cmdline, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
+	if err != nil || !bytes.Contains(cmdline, []byte("_central-account-login")) {
+		return 0
+	}
+	return pid
+}
+
 func decodeToken(raw []byte) (Token, error) {
 	var v struct {
 		Tokens struct {
@@ -164,11 +217,16 @@ func CentralToken(root, account string) (Token, error) {
 	return decodeToken(raw)
 }
 func CentralLogin(ctx context.Context, r LoginRequest) error {
-	lock, err := centralLock(r.Root, r.Account)
+	lock, err := centralLoginLock(ctx, r.Root, r.Account)
 	if err != nil {
-		return fmt.Errorf("account authentication busy")
+		return err
 	}
 	defer lock.Close()
+	holder := filepath.Join(Dir(centralRoot(r.Root), r.Account), loginHolder)
+	if err = os.WriteFile(holder, []byte(strconv.Itoa(os.Getpid())), 0600); err != nil {
+		return err
+	}
+	defer os.Remove(holder)
 	originalRoot := r.Root
 	// Keep an immutable subject pin separate from rotating vendor credentials.
 	pinPath := filepath.Join(Dir(centralRoot(originalRoot), r.Account), "subject.json")
