@@ -140,6 +140,19 @@ func registeredAccountWorkflow(ctx context.Context, resources *resourceclient.Cl
 		if err != nil {
 			return err
 		}
+		if os.Getenv("CXZ_BACKEND") == "kubernetes" && os.Getenv("CXZ_OWNER") != "" {
+			// In the manager's own pod: the central login runs right here,
+			// where a Docker manager is reached with docker exec.
+			self, err := os.Executable()
+			if err != nil {
+				return err
+			}
+			cmd := exec.CommandContext(ctx, self, "--state", stateFrom(ctx), "_central-account-"+op, profile)
+			cmd.Stdin = c.ReadCloser
+			cmd.Stdout = c.Writer
+			cmd.Stderr = c.ErrWriter
+			return runAccountProcess(cmd, c, a, op)
+		}
 		install, err := transport.Load(stateFrom(ctx))
 		if err != nil {
 			return err

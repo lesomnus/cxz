@@ -21,6 +21,10 @@ rules:
   - apiGroups: [""]
     resources: [pods/log]
     verbs: [get]
+  # What cxz did to a project's pod, for kubectl describe and get events.
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create, patch]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

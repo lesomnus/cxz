@@ -934,6 +934,9 @@ export const messages = {
   Refresh: "새로고침",
   "Recent session": "최근 활동 세션",
   "Last activity": "마지막 활동",
+  "{state}, runtime update pending": "{state}, 런타임 업데이트 대기",
+  "Its cxz runtime is older than the manager's and is replaced when the project next starts.":
+    "cxz 런타임이 매니저보다 오래되어 프로젝트가 다음에 시작될 때 교체됩니다.",
   "The project container is running.": "프로젝트 컨테이너가 실행 중입니다.",
   "The project container exists and has not been started.":
     "프로젝트 컨테이너가 생성되었지만 아직 시작되지 않았습니다.",

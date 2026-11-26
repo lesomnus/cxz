@@ -11,10 +11,12 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/lesomnus/cxz/internal/core"
+	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/dockerx"
 	"github.com/lesomnus/cxz/internal/kube"
 	"github.com/lesomnus/cxz/internal/projectid"
@@ -46,6 +48,10 @@ type KubeSettings struct {
 	Build KubeBuild `json:"build,omitempty"`
 	// ReadyTimeout bounds waiting for a pod: image pull, volume and runtime.
 	ReadyTimeout string `json:"ready_timeout"`
+	// RuntimeRollout is what happens to a project pod whose runtime is an
+	// older manager's: "idle" replaces it once its sessions are idle, "manual"
+	// only reports it. See kube_rollout.go.
+	RuntimeRollout string `json:"runtime_rollout,omitempty"`
 	// PodTemplates name PodTemplates in the namespace merged into every
 	// project's pod, in order: a credential, a node selector. See
 	// kube_podtemplate.go.
@@ -78,6 +84,13 @@ func loadKubeSettings() (KubeSettings, error) {
 	}
 	if _, err := time.ParseDuration(s.ReadyTimeout); err != nil {
 		return s, fmt.Errorf("CXZ_KUBERNETES ready_timeout: %w", err)
+	}
+	switch s.RuntimeRollout {
+	case "":
+		s.RuntimeRollout = rolloutIdle
+	case rolloutIdle, rolloutManual:
+	default:
+		return s, fmt.Errorf("CXZ_KUBERNETES runtime_rollout: %q is neither %q nor %q", s.RuntimeRollout, rolloutIdle, rolloutManual)
 	}
 	return s, nil
 }
@@ -217,8 +230,15 @@ type kubePod struct {
 	Metadata struct {
 		Name              string            `json:"name"`
 		Labels            map[string]string `json:"labels"`
+		Annotations       map[string]string `json:"annotations"`
 		DeletionTimestamp string            `json:"deletionTimestamp"`
 	} `json:"metadata"`
+	Spec struct {
+		InitContainers []struct {
+			Name  string `json:"name"`
+			Image string `json:"image"`
+		} `json:"initContainers"`
+	} `json:"spec"`
 	Status struct {
 		Phase             string `json:"phase"`
 		PodIP             string `json:"podIP"`
@@ -498,9 +518,18 @@ func (m *Manager) kubePodObject(p *Project, spec projectspec.Spec, image, user s
 	if len(limits) > 0 {
 		resources["limits"] = limits
 	}
+	labels := spec.Labels()
+	for k, v := range m.kubeLabels(p) {
+		labels[k] = v
+	}
 	return map[string]any{
 		"apiVersion": "v1", "kind": "Pod",
-		"metadata": map[string]any{"name": name, "labels": spec.Labels()},
+		// The runtime's build and protocol, so a later manager can tell an
+		// older runtime from its own (kubeRuntimeAge).
+		"metadata": map[string]any{"name": name, "labels": labels, "annotations": map[string]string{
+			annotationRevision: cxzupdate.Current().Revision,
+			annotationProtocol: strconv.Itoa(cxzupdate.Protocol),
+		}},
 		"spec": map[string]any{
 			// The pause container becomes PID 1 and reaps what agents leave.
 			"shareProcessNamespace":         true,
@@ -602,20 +631,25 @@ func (m *Manager) kubeRemove(ctx context.Context, p *Project) error {
 
 // kubeState is containerState for a pod: running only once the runtime is
 // ready, absent when there is no pod, stopped otherwise.
-func (m *Manager) kubeStates(ctx context.Context) (map[string]string, error) {
+type kubeObserved struct {
+	state    string
+	outdated bool
+}
+
+func (m *Manager) kubeStates(ctx context.Context) (map[string]kubeObserved, error) {
 	var list struct {
 		Items []kubePod `json:"items"`
 	}
 	if err := m.kube.List(ctx, m.kube.Path("pods"), projectspec.LabelOwner+"="+m.Owner, &list); err != nil {
 		return nil, err
 	}
-	out := map[string]string{}
-	for _, pod := range list.Items {
+	out := map[string]kubeObserved{}
+	for i, pod := range list.Items {
 		state := "stopped"
 		if pod.ready() {
 			state = "running"
 		}
-		out[pod.Metadata.Labels[projectspec.LabelProject]] = state
+		out[pod.Metadata.Labels[projectspec.LabelProject]] = kubeObserved{state: state, outdated: m.kubeRuntimeAge(&list.Items[i]) != runtimeCurrent}
 	}
 	return out, nil
 }
@@ -693,16 +727,17 @@ func (m *Manager) kubeProjects(ctx context.Context, all []*Project) (*api.Projec
 	states, lookErr := m.kubeStates(ctx)
 	out := &api.ProjectList{}
 	for _, p := range all {
-		state, name := "unknown", ""
+		state, name, outdated := "unknown", "", false
 		if lookErr == nil {
-			state = states[p.storageID()]
+			observed := states[p.storageID()]
+			state, outdated = observed.state, observed.outdated
 			if state == "" {
 				state = "absent"
 			} else {
 				name = m.kubeResource(p)
 			}
 		}
-		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, ContainerName: name, State: state, Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt})
+		out.Projects = append(out.Projects, &api.Project{Id: p.ID, Workspace: p.Workspace, Name: p.Name, Config: p.Config, ContainerId: p.ContainerID, ContainerName: name, State: state, Error: p.Error, RemoteUser: p.RemoteUser, RemoteWorkspace: p.RemoteWorkspace, ProvisionState: p.Job.State, ProvisionStep: p.Job.Step, ProvisionAttempt: p.Job.Attempt, RuntimeOutdated: outdated})
 	}
 	return out, nil
 }

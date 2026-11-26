@@ -248,6 +248,9 @@ message Project {
  string provision_state = 10; string provision_step = 11; uint64 provision_attempt = 12;
  string alias = 13;
  string container_name = 14;
+ // The project's runtime is an older cxz than the manager's; it is replaced
+ // when the project next starts (Kubernetes: also once its sessions are idle).
+ bool runtime_outdated = 15;
 }
 message ProjectList { repeated Project projects = 1; }
 

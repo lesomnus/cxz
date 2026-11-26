@@ -137,7 +137,10 @@ export function ProjectTable({
                 />
               </TableCell>
               <TableCell className={styles.state}>
-                <ProjectStateIcon state={state} />
+                <ProjectStateIcon
+                  state={state}
+                  outdated={project.status?.runtimeOutdated}
+                />
               </TableCell>
               <TableCell className={styles.nameCell}>
                 <RouteLink

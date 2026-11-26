@@ -104,7 +104,8 @@ The `cxz-kubernetes` ConfigMap is how projects run:
   "requests": {"cpu": "500m", "memory": "1Gi"},
   "limits": {"memory": "4Gi"},
   "image_pull_policy": "IfNotPresent",
-  "ready_timeout": "10m"
+  "ready_timeout": "10m",
+  "runtime_rollout": "idle"
 }
 ```
 
@@ -115,6 +116,9 @@ The `cxz-kubernetes` ConfigMap is how projects run:
   non-root user is the useful default.
 - `storage` and `storage_class` size the project's volume. Empty class is the
   cluster's default.
+- `runtime_rollout` is what happens to project pods after the manager is
+  updated: `idle` replaces them once their sessions are idle, `manual` only
+  reports them. See [Updates](#updates).
 - `requests` are what the scheduler places by; `limits` are the most a project
   may use. Give requests for the usual load and limits for the peak.
 
@@ -356,6 +360,62 @@ storage class lets it move.
 The first start of a project downloads its agent CLI into `tools/` in the
 background; creating a session waits for it.
 
+## Updates
+
+cxz does not update itself on Kubernetes. The manager's version is the image
+tag of its Deployment, and changing it is the deployment's job: edit the tag
+where the installation is declared and let the cluster roll it out.
+
+```yaml
+images:
+  - name: ghcr.io/lesomnus/cxz
+    newTag: sha-1a2b3c4 # the new build
+```
+
+`cxz self-update`, `cxz use`, `install`, `uninstall` and `purge` refuse to run
+against a Kubernetes manager and say so. The manager's background checks for
+new builds and agent CLI versions do not run either.
+
+A project pod's runtime is the manager's image at the moment the pod was made:
+the `tools` init container copies cxz out of it. After a manager update,
+existing pods still run the previous runtime. cxz carries the new one down to
+them the way a Deployment replaces its pods when its template changes. The
+version is still the one a person declared.
+
+- **When:** a pod is replaced once every session in it has been idle for five
+  minutes (`CXZ_UPDATE_IDLE` in the project, as for Docker). The check runs
+  under the runtime's maintenance lease, so no turn can start between the check
+  and the replacement.
+- **One at a time:** at most one pod is replaced per minute, so a manager update
+  does not restart every project at once.
+- **Sessions:** the workspace and conversations are on the project's volume.
+  Sessions that were running before are resumed afterwards. A session someone
+  stopped stays stopped. Agent CLIs are refreshed as on any start.
+- **Busy projects:** a project with work in flight (a turn, a tool, a pending
+  approval, input being typed) is asked again on the next pass.
+- **Visible:** the pod is labelled `app.kubernetes.io/managed-by: cxz` and
+  annotated with its runtime's `cxz.revision`. A replacement leaves an Event
+  (`RuntimeReplaced`) on the pod, shown by `kubectl describe` and
+  `kubectl get events`. Until it is replaced, the project reports
+  `runtime_outdated` (`cxz project ls --format json`), and the web UI marks its
+  state icon.
+
+Set `"runtime_rollout": "manual"` in the settings to only report outdated pods.
+A person then replaces them with `cxz project stop` and `cxz project start`, or
+`kubectl delete pod`. The default is `"idle"`.
+
+A pod is outdated when its `tools` image differs from the manager's own. That
+image is compared by digest when the node reports one, and by reference
+otherwise. A moving tag such as `edge` that is pulled again without a digest
+looks unchanged, which is one more reason to pin `sha-` tags.
+
+**Compatibility.** A manager talks to runtimes of other builds as long as they
+share its protocol (`cxzupdate.Protocol`, recorded on the pod as
+`cxz.protocol`), so an outdated pod keeps working until it is replaced. A
+release that changes the protocol makes the manager replace older pods without
+waiting for idle, because it cannot be relied on to talk to them. A pod made
+before these annotations existed is taken to speak the current protocol.
+
 ## What does not work yet
 
 - **No devcontainer.json.** An image is either prebuilt or
@@ -366,8 +426,6 @@ background; creating a session waits for it.
   not readable until it starts.
 - **Auxiliary AI** (summaries, suggestions, titles) is off: it runs in containers
   of a Docker engine.
-- **Updates.** A project's runtime is the manager's image, taken when its pod
-  starts; agent CLIs are fetched at start. Nothing updates a running pod.
 - GitHub credential sync and host git configuration are Docker's: mount your
   own with a [pod template](#git-credentials).
 - The browser editor, file attachments, workspace downloads and copying memory

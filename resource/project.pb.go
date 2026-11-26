@@ -342,6 +342,7 @@ type ProjectStatus struct {
 	xxx_hidden_Error            string                 `protobuf:"bytes,8,opt,name=error"`
 	xxx_hidden_ContainerState   ContainerState         `protobuf:"varint,9,opt,name=container_state,json=containerState,enum=cxz.ContainerState"`
 	xxx_hidden_ContainerName    string                 `protobuf:"bytes,10,opt,name=container_name,json=containerName"`
+	xxx_hidden_RuntimeOutdated  bool                   `protobuf:"varint,11,opt,name=runtime_outdated,json=runtimeOutdated"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -434,6 +435,13 @@ func (x *ProjectStatus) GetContainerName() string {
 	return ""
 }
 
+func (x *ProjectStatus) GetRuntimeOutdated() bool {
+	if x != nil {
+		return x.xxx_hidden_RuntimeOutdated
+	}
+	return false
+}
+
 func (x *ProjectStatus) SetContainerId(v string) {
 	x.xxx_hidden_ContainerId = v
 }
@@ -470,6 +478,10 @@ func (x *ProjectStatus) SetContainerName(v string) {
 	x.xxx_hidden_ContainerName = v
 }
 
+func (x *ProjectStatus) SetRuntimeOutdated(v bool) {
+	x.xxx_hidden_RuntimeOutdated = v
+}
+
 type ProjectStatus_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -483,6 +495,10 @@ type ProjectStatus_builder struct {
 	ContainerState   ContainerState
 	// Observed Docker name, without its leading slash; empty if unobserved.
 	ContainerName string
+	// Observed: the project runs an older cxz runtime than the manager. It is
+	// replaced on the project's next start, and on Kubernetes once its sessions
+	// are idle unless the installation's runtime_rollout is "manual".
+	RuntimeOutdated bool
 }
 
 func (b0 ProjectStatus_builder) Build() *ProjectStatus {
@@ -498,6 +514,7 @@ func (b0 ProjectStatus_builder) Build() *ProjectStatus {
 	x.xxx_hidden_Error = b.Error
 	x.xxx_hidden_ContainerState = b.ContainerState
 	x.xxx_hidden_ContainerName = b.ContainerName
+	x.xxx_hidden_RuntimeOutdated = b.RuntimeOutdated
 	return m0
 }
 
@@ -532,7 +549,7 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref 2(\xc8\x01:\x00*\x00J\x04\b\n" +
 	"\x10\vJ\x04\b\x11\x10\x12R\n" +
-	"runtime_id\"\xfc\x02\n" +
+	"runtime_id\"\xa7\x03\n" +
 	"\rProjectStatus\x12!\n" +
 	"\fcontainer_id\x18\x02 \x01(\tR\vcontainerId\x12\x1f\n" +
 	"\vremote_user\x18\x03 \x01(\tR\n" +
@@ -544,7 +561,8 @@ const file_cxz_project_proto_rawDesc = "" +
 	"\x05error\x18\b \x01(\tR\x05error\x12<\n" +
 	"\x0fcontainer_state\x18\t \x01(\x0e2\x13.cxz.ContainerStateR\x0econtainerState\x12%\n" +
 	"\x0econtainer_name\x18\n" +
-	" \x01(\tR\rcontainerNameJ\x04\b\x01\x10\x02*\xa4\x01\n" +
+	" \x01(\tR\rcontainerName\x12)\n" +
+	"\x10runtime_outdated\x18\v \x01(\bR\x0fruntimeOutdatedJ\x04\b\x01\x10\x02*\xa4\x01\n" +
 	"\x0eContainerState\x12\x1f\n" +
 	"\x1bCONTAINER_STATE_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16CONTAINER_STATE_ABSENT\x10\x01\x12\x1b\n" +

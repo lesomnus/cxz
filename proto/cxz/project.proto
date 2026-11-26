@@ -58,6 +58,10 @@ message ProjectStatus {
   ContainerState container_state = 9;
   // Observed Docker name, without its leading slash; empty if unobserved.
   string container_name = 10;
+  // Observed: the project runs an older cxz runtime than the manager. It is
+  // replaced on the project's next start, and on Kubernetes once its sessions
+  // are idle unless the installation's runtime_rollout is "manual".
+  bool runtime_outdated = 11;
 }
 
 // Derived from the container inventory, every time it is asked. A look that

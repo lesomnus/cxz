@@ -182,6 +182,7 @@ func newRoot(state string) *xli.Command {
 	root.Commands = append(root.Commands, purgeCommand(), selfUpdateCommand(), useCommand())
 	root.Commands = append(root.Commands, releaseCommands()...)
 	root.Commands = append(root.Commands, xli.NewCmdCompletion())
+	refuseOnKubernetes(root)
 	reorganizeCommands(root)
 	bindProjectCompletions(root)
 	bindErrorFlags(root)

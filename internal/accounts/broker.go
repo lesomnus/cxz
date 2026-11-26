@@ -103,6 +103,7 @@ func centralLock(root, account string) (*os.File, error) {
 	}
 	return core.Lock(filepath.Join(Dir(centralRoot(root), account), "broker.lock"))
 }
+
 // loginHolder names the process running a central login, beside broker.lock.
 const loginHolder = "login.pid"
 
