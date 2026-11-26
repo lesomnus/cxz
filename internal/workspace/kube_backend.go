@@ -68,9 +68,6 @@ func loadKubeSettings() (KubeSettings, error) {
 			return s, fmt.Errorf("CXZ_KUBERNETES: %w", err)
 		}
 	}
-	if s.ToolsImage == "" {
-		return s, fmt.Errorf("kubernetes backend needs the manager's image (CXZ_MANAGER_IMAGE or tools_image)")
-	}
 	if _, err := time.ParseDuration(s.ReadyTimeout); err != nil {
 		return s, fmt.Errorf("CXZ_KUBERNETES ready_timeout: %w", err)
 	}
@@ -95,8 +92,50 @@ func (m *Manager) useKubernetes() error {
 	if err != nil {
 		return err
 	}
+	if settings.ToolsImage == "" {
+		if settings.ToolsImage, err = ownImage(context.Background(), client); err != nil {
+			return fmt.Errorf("kubernetes backend needs the manager's own image for project pods (tools_image): %w", err)
+		}
+	}
 	m.kube, m.kubeSettings = client, settings
 	return nil
+}
+
+// ownImage is the image this manager runs from, read from its own pod, so a
+// project copies the same cxz whatever tag an overlay set. By digest when the
+// node reports one.
+func ownImage(ctx context.Context, c *kube.Client) (string, error) {
+	name, err := os.Hostname()
+	if err != nil {
+		return "", err
+	}
+	var pod struct {
+		Spec struct {
+			Containers []struct{ Name, Image string } `json:"containers"`
+		} `json:"spec"`
+		Status struct {
+			ContainerStatuses []struct {
+				Name    string `json:"name"`
+				ImageID string `json:"imageID"`
+			} `json:"containerStatuses"`
+		} `json:"status"`
+	}
+	if err = c.Get(ctx, c.Path("pods", name), &pod); err != nil {
+		return "", err
+	}
+	for _, container := range pod.Spec.Containers {
+		if container.Name != "manager" {
+			continue
+		}
+		for _, s := range pod.Status.ContainerStatuses {
+			// A registry's digest pins it; a locally imported image has none.
+			if s.Name == "manager" && strings.Contains(s.ImageID, "@sha256:") {
+				return strings.TrimPrefix(s.ImageID, "docker-pullable://"), nil
+			}
+		}
+		return container.Image, nil
+	}
+	return "", fmt.Errorf("pod %s has no manager container", name)
 }
 
 // Kubernetes reports whether projects run as pods.

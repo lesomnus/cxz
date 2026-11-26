@@ -2,19 +2,19 @@ WITH points AS (
   SELECT ResourceAttributes AS resource, Attributes AS attributes, MetricName AS metric,
          StartTimeUnix AS started, TimeUnix AS time, AggregationTemporality AS temporality,
          any(Value) AS value
-  FROM telemetry.otel_metrics_sum
+  FROM otel_metrics_sum
   WHERE TimeUnix < fromUnixTimestamp64Milli({to:Int64}) AND (%s)
     AND (startsWith(MetricName,'cxz.') OR MetricName IN ('claude_code.token.usage','claude_code.cost.usage'))
-    AND ResourceAttributes['cxz.session.id'] NOT IN (SELECT session FROM telemetry.erased_sessions)
+    AND ResourceAttributes['cxz.session.id'] NOT IN (SELECT session FROM erased_sessions)
   GROUP BY resource,attributes,metric,started,time,temporality
   UNION ALL
   SELECT ResourceAttributes AS resource, Attributes AS attributes, MetricName AS metric,
          StartTimeUnix AS started, TimeUnix AS time, AggregationTemporality AS temporality,
          any(Sum) AS value
-  FROM telemetry.otel_metrics_histogram
+  FROM otel_metrics_histogram
   WHERE TimeUnix < fromUnixTimestamp64Milli({to:Int64}) AND (%s)
     AND MetricName = 'codex.turn.token_usage'
-    AND ResourceAttributes['cxz.session.id'] NOT IN (SELECT session FROM telemetry.erased_sessions)
+    AND ResourceAttributes['cxz.session.id'] NOT IN (SELECT session FROM erased_sessions)
   GROUP BY resource,attributes,metric,started,time,temporality
 ), changes AS (
   SELECT *, if(temporality=2,

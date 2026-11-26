@@ -111,12 +111,14 @@ func (m *Manager) StartTelemetry(ctx context.Context) {
 	if m.kube != nil {
 		// On Kubernetes the database and collector are declared beside the
 		// manager; it configures and checks them and runs neither.
-		host := os.Getenv("CXZ_TELEMETRY_DB_HOST")
-		if host == "" || m.Owner == "" {
-			fmt.Fprintln(os.Stderr, "telemetry: CXZ_TELEMETRY_DB_HOST is not set; usage is not collected")
+		// The server may be shared by many installations, each with its own
+		// account and database on it; see docs/kubernetes.md.
+		host, httpEndpoint, native := os.Getenv("CXZ_TELEMETRY_DB_HOST"), os.Getenv("CXZ_TELEMETRY_DB_HTTP"), os.Getenv("CXZ_TELEMETRY_DB_NATIVE")
+		if m.Owner == "" || (host == "" && (httpEndpoint == "" || native == "")) {
+			fmt.Fprintln(os.Stderr, "telemetry: no database is configured (CXZ_TELEMETRY_DB_HOST, or CXZ_TELEMETRY_DB_HTTP and CXZ_TELEMETRY_DB_NATIVE); usage is not collected")
 			return
 		}
-		stack = telemetrystack.Stack{Root: m.Root, Owner: m.Owner, Config: config, External: true, DBHost: host, Password: os.Getenv("CXZ_TELEMETRY_PASSWORD"), Listen: os.Getenv("CXZ_TELEMETRY_LISTEN"), Health: os.Getenv("CXZ_TELEMETRY_HEALTH")}
+		stack = telemetrystack.Stack{Root: m.Root, Owner: m.Owner, Config: config, External: true, DBHost: host, DBHTTP: httpEndpoint, DBNative: native, DBUser: os.Getenv("CXZ_TELEMETRY_DB_USER"), DBName: os.Getenv("CXZ_TELEMETRY_DB_NAME"), Password: os.Getenv("CXZ_TELEMETRY_PASSWORD"), Listen: os.Getenv("CXZ_TELEMETRY_LISTEN"), Health: os.Getenv("CXZ_TELEMETRY_HEALTH")}
 	} else {
 		if m.Owner == "" || m.StateVolume == "" {
 			return

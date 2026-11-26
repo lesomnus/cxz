@@ -1,0 +1,57 @@
+# One person's cxz: a namespace, its manager, and the shared services it uses.
+# Copy per installation. Everything marked CHANGE is the installation's own.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cxz-alice # CHANGE
+resources:
+  - namespace.yaml
+  - ../../base
+# - ../../components/... (none needed with a shared usage database)
+
+images:
+  # The manager and every project pod run this image. Pin a sha- tag.
+  - name: ghcr.io/lesomnus/cxz
+    newTag: edge # CHANGE
+
+# The installation's identity and credentials. These literals are
+# placeholders: generate each (openssl rand -hex 12 for owner, -hex 32 for the
+# rest) and keep them in your secret management -- a SealedSecret or an
+# ExternalSecret named cxz-manager in place of this generator.
+secretGenerator:
+  - name: cxz-manager
+    options: {disableNameSuffixHash: true}
+    literals:
+      - owner=000000000000000000000000 # CHANGE, unique per installation
+      - token=CHANGE-to-64-hex-characters-for-the-TUI-relay
+      - web-token=CHANGE-to-64-hex-characters-for-the-browser
+      - telemetry-password=CHANGE-to-this-installation-s-database-password
+
+# This installation's account and database on the shared usage server. The
+# database and the account are created by whoever runs the server; cxz only
+# creates its tables in that database.
+configMapGenerator:
+  - name: cxz-telemetry
+    behavior: replace
+    options: {disableNameSuffixHash: true}
+    literals:
+      - CXZ_TELEMETRY_DB_HTTP=https://clickhouse.example:8443 # CHANGE
+      - CXZ_TELEMETRY_DB_NATIVE=tcp://clickhouse.example:9440?secure=true # CHANGE
+      - CXZ_TELEMETRY_DB_USER=cxz_alice # CHANGE
+      - CXZ_TELEMETRY_DB_NAME=cxz_alice # CHANGE
+
+# How this person's projects run: image, user, volume size, resources and the
+# shared image builder. See docs/kubernetes.md#settings.
+patches:
+  - target: {kind: ConfigMap, name: cxz-kubernetes}
+    patch: |
+      - op: replace
+        path: /data/settings.json
+        value: |
+          {
+            "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+            "user": "vscode",
+            "storage": "20Gi",
+            "requests": {"cpu": "500m", "memory": "1Gi"},
+            "limits": {"memory": "4Gi"},
+            "build": {"buildkit": "tcp://buildkitd.build:1234", "registry": "registry.example/cxz"}
+          }

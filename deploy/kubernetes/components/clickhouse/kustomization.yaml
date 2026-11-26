@@ -1,0 +1,14 @@
+# A ClickHouse server of this installation's own, for a cluster without a
+# shared one -- a small installation or a test. Its database is telemetry and
+# its account cxz, with the cxz-manager Secret's telemetry-password.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - clickhouse.yaml
+patches:
+  - target: {kind: ConfigMap, name: cxz-telemetry}
+    patch: |
+      - op: replace
+        path: /data
+        value:
+          CXZ_TELEMETRY_DB_HOST: cxz-telemetry-db

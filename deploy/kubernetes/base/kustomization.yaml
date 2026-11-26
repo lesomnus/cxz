@@ -1,0 +1,20 @@
+# cxz on Kubernetes: one manager, and a pod with its own volume per project.
+# A base for an overlay per installation -- one namespace each. See
+# docs/kubernetes.md and ../examples.
+#
+# An overlay provides:
+#   - the namespace;
+#   - the cxz-manager Secret: owner (24 hex characters, unique per
+#     installation), token (the TUI relay's), web-token (the browser's) and
+#     telemetry-password;
+#   - the cxz-telemetry ConfigMap: the usage database's connection;
+#   - cxz-kubernetes settings.json, when projects need other than the default
+#     image, user, storage, resources or an image builder;
+#   - the image tag (images:), which both the manager and project pods use.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - cxz.yaml
+labels:
+  - pairs: {app.kubernetes.io/part-of: cxz}
+    includeSelectors: false
