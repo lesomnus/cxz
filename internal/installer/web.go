@@ -152,6 +152,11 @@ func webArgs(v transport.Installation, cfg webconfig.Config, configEditorDir str
 	if cfg.Certificate != "" {
 		args = append(args, "--tls-cert", "/web/certificate.pem", "--tls-key", "/web/key.pem")
 	}
+	// Behind a proxy on this host that ends TLS; still published on loopback
+	// only, which the check above requires of any plaintext gateway.
+	if cfg.TLSProxy {
+		args = append(args, "--tls-proxy")
+	}
 	return args, nil
 }
 

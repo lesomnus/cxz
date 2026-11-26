@@ -27,6 +27,7 @@ func webFlags() flg.Flags {
 		stringFlag("tls-cert", "TLS certificate PEM file", ""),
 		stringFlag("tls-key", "TLS private key PEM file", ""),
 		stringFlag("access-token-file", "Browser access token file", ""),
+		switchFlag("tls-proxy", "Serve an https origin whose TLS a proxy in front ends, such as an Ingress"),
 	}
 }
 
@@ -57,6 +58,9 @@ func overrideWebFlags(c *xli.Command, cfg *webconfig.Config) error {
 		if value := flg.MustGet[string](c, name); value != "" {
 			*target = value
 		}
+	}
+	if flg.MustGet[bool](c, "tls-proxy") {
+		cfg.TLSProxy = true
 	}
 	cwd, err := os.Getwd()
 	if err != nil {

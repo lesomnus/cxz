@@ -6,7 +6,13 @@ namespace: cxz-alice # CHANGE
 resources:
   - namespace.yaml
   - ../../base
-# - ../../components/... (none needed with a shared usage database)
+
+# The browser UI on https://alice.cxz.example through the cluster's Ingress,
+# which terminates TLS with the Secret cxz-web-tls (a wildcard certificate
+# serves every installation). Use ../../components/tls instead for TLS
+# passthrough to the gateway. The DNS name is the installation's own record.
+components:
+  - ../../components/ingress
 
 images:
   # The manager and every project pod run this image. Pin a sha- tag.
@@ -55,3 +61,19 @@ patches:
             "limits": {"memory": "4Gi"},
             "build": {"buildkit": "tcp://buildkitd.build:1234", "registry": "registry.example/cxz"}
           }
+  # The browser's address: the gateway's origin and the Ingress host.
+  - target: {kind: Deployment, name: cxz-manager}
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata: {name: cxz-manager}
+      spec:
+        template:
+          spec:
+            containers:
+              - name: web
+                args: [--state, /var/lib/cxz, -x, _web-serve, --listen, "0.0.0.0:7350", --origin, "https://alice.cxz.example", --tls-proxy, --access-token-file, /web/token] # CHANGE the origin
+  - target: {kind: Ingress, name: cxz-web}
+    patch: |
+      - {op: replace, path: /spec/tls/0/hosts/0, value: alice.cxz.example} # CHANGE
+      - {op: replace, path: /spec/rules/0/host, value: alice.cxz.example} # CHANGE

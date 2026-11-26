@@ -163,9 +163,31 @@ kubectl -n cxz-alice port-forward svc/cxz-web 7350
 # open http://127.0.0.1:7350 and sign in with web-token
 ```
 
-For a reachable HTTPS address, mount a certificate and key into the `web`
-container from a Secret and give it `--origin https://HOST --tls-cert … --tls-key …`.
-The gateway terminates TLS itself; it does not trust a proxy's.
+For a reachable HTTPS address, give each installation a DNS name -- a record
+per installation in the same gitops change that adds it, or one wildcard
+`*.cxz.example` pointing at the ingress controller -- and add one of two
+components to the overlay:
+
+```yaml
+components:
+  - ../../components/ingress   # or ../../components/tls
+```
+
+| Component | Who terminates TLS | The gateway |
+| --- | --- | --- |
+| `ingress` | the Ingress, with the Secret `cxz-web-tls` | plain HTTP on the pod network, `--tls-proxy` |
+| `tls` | the gateway, with the Secret `cxz-web-tls` mounted | `--tls-cert`, `--tls-key`; route it with TLS passthrough or a LoadBalancer Service |
+
+Both replace the `web` container's `--origin` with `https://cxz.example`, and
+`ingress` sets the Ingress host to the same name: patch all of them to the
+installation's name. A wildcard certificate serves every installation from one
+Secret.
+
+`--tls-proxy` trusts the proxy for encryption only. Sign-in, the exact
+`Origin` and the `Host` check are still the gateway's, so the Ingress must pass
+the browser's `Host` through, as every common controller does by default. It
+also means the hop from the controller to the pod is plaintext on the pod
+network: choose `tls` when that network is not trusted.
 
 ## Building images
 

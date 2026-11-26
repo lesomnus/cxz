@@ -1,0 +1,20 @@
+# The browser gateway behind an Ingress that terminates TLS. The gateway serves
+# plain HTTP on the pod network, an https origin to the browser, and trusts the
+# Ingress for the encryption only: sign-in, the exact Origin and the Host check
+# are its own. Set HOST in both places to this installation's DNS name.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+resources:
+  - ingress.yaml
+patches:
+  - target: {kind: Deployment, name: cxz-manager}
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata: {name: cxz-manager}
+      spec:
+        template:
+          spec:
+            containers:
+              - name: web
+                args: [--state, /var/lib/cxz, -x, _web-serve, --listen, "0.0.0.0:7350", --origin, "https://cxz.example", --tls-proxy, --access-token-file, /web/token]

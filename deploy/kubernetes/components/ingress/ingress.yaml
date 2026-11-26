@@ -1,0 +1,22 @@
+# The Host header must reach the gateway unchanged: it is checked against the
+# origin. Every common controller passes it through by default.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cxz-web
+  labels: {app.kubernetes.io/part-of: cxz}
+spec:
+  # ingressClassName: CHANGE to your controller's class, unless it is the default
+  tls:
+    # The certificate, by cert-manager or your own process. A wildcard
+    # (*.cxz.example) serves every installation with one Secret.
+    - hosts: [cxz.example]
+      secretName: cxz-web-tls
+  rules:
+    - host: cxz.example
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: {name: cxz-web, port: {name: web}}
