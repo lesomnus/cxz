@@ -802,6 +802,11 @@ func (s *Server) commandUnlocked(ctx context.Context, id, op string, c core.Comm
 	}
 	var v core.Receipt
 	if e := supervisor.Call(ctx, s.root, id, op, c, &v); e != nil {
+		if supervisor.Unreachable(e) {
+			// No supervisor is listening: the session's agent is not running,
+			// which is a state to explain, not a socket error to relay.
+			return nil, status.Errorf(codes.FailedPrecondition, "session %s is not running; resume it first (cxz session resume %s)", id, id)
+		}
 		return nil, status.Error(codes.FailedPrecondition, e.Error())
 	}
 	return &api.Receipt{ClientId: v.ClientID, Status: v.Status}, nil

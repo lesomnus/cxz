@@ -177,7 +177,7 @@ func (m *Manager) composeOverride(cfg map[string]any, spec projectspec.Spec, fil
 		}
 	}
 	dev["volumes"] = volumes
-	return map[string]any{"name": "cxz-" + m.Owner[:12] + "-" + spec.Project, "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": spec.Network}}, "volumes": external}, nil
+	return map[string]any{"name": composeProjectName(m.Owner, spec.Project), "services": services, "networks": map[string]any{"cxz": map[string]any{"external": true, "name": spec.Network}}, "volumes": external}, nil
 }
 
 // composeServices labels every service of the project's Compose files as
