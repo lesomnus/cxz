@@ -935,6 +935,9 @@ export const messages = {
   Refresh: "Refresh",
   "Recent session": "Recent session",
   "Last activity": "Last activity",
+  "{state}, runtime update pending": "{state}, runtime update pending",
+  "Its cxz runtime is older than the manager's and is replaced when the project next starts.":
+    "Its cxz runtime is older than the manager's and is replaced when the project next starts.",
   "The project container is running.": "The project container is running.",
   "The project container exists and has not been started.":
     "The project container exists and has not been started.",

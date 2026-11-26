@@ -9,3 +9,17 @@
   width: 100%;
   height: var(--ui-icon-size-small);
 }
+.icon {
+  position: relative;
+}
+/* A runtime older than the manager: a dot, explained in the popover. */
+.icon[data-outdated]::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  right: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ui-warning, #caad62);
+}

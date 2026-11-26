@@ -349,6 +349,9 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 		cxzDone := make(chan struct{})
 		go func() { defer close(cxzDone); s.manager.RunCxzUpdates(updatesCtx) }()
 		defer func() { cancelUpdates(); <-cxzDone }()
+		rolloutDone := make(chan struct{})
+		go func() { defer close(rolloutDone); s.manager.RunKubeRollout(updatesCtx) }()
+		defer func() { cancelUpdates(); <-rolloutDone }()
 		defer func() { cancelUpdates(); <-updatesDone }()
 	} else {
 		recoveryCtx, cancelRecovery := context.WithCancel(ctx)

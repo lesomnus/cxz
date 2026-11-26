@@ -34,6 +34,10 @@ Explicit switching allows downgrades. Automatic updating does not.
 
 ## Automatic updates
 
+This section is about Docker installations. On Kubernetes the manager is never
+updated by cxz: its version is its Deployment's image tag. See
+[Kubernetes updates](kubernetes.md#updates).
+
 Unmodified builds descended from published `main` update themselves on the channel
 you selected. Checks are daily; the apply queue re-evaluates safety every 30
 seconds. Modified builds and builds that are not ancestors of published `main` are
