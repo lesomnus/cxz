@@ -76,3 +76,34 @@ func TestExternalStack(t *testing.T) {
 		t.Fatal("the Docker collector configuration changed")
 	}
 }
+
+// Installations that share one server each have an account and a database.
+func TestSharedDatabase(t *testing.T) {
+	s := Stack{Root: t.TempDir(), Owner: strings.Repeat("o", 24), External: true, Password: strings.Repeat("p", 32), Listen: "0.0.0.0:4317",
+		DBHTTP: "https://clickhouse.example:8443", DBNative: "tcp://clickhouse.example:9440?secure=true", DBUser: "cxz_alice", DBName: "cxz_alice"}
+	config := s.CollectorConfig(s.Password)
+	for _, want := range []string{"endpoint: tcp://clickhouse.example:9440?secure=true&dial_timeout=5s", "username: cxz_alice", "database: cxz_alice"} {
+		if !strings.Contains(config, want) {
+			t.Fatalf("collector config lacks %q:\n%s", want, config)
+		}
+	}
+	if err := s.Prepare(); err != nil {
+		t.Fatal(err)
+	}
+	client, err := s.Client()
+	if err != nil || client.Endpoint != "https://clickhouse.example:8443" || client.User != "cxz_alice" || client.Database != "cxz_alice" {
+		t.Fatal(client, err)
+	}
+	for _, bad := range []string{"cxz-alice", "1cxz", "x; DROP"} {
+		b := s
+		b.DBName = bad
+		if b.Prepare() == nil {
+			t.Errorf("database name %q accepted", bad)
+		}
+	}
+	partial := s
+	partial.DBNative = ""
+	if partial.Prepare() == nil {
+		t.Fatal("an HTTP endpoint without a native one, and no host, was accepted")
+	}
+}

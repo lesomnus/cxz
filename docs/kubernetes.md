@@ -13,28 +13,50 @@ translated from one.
 
 ## Install
 
-```sh
-kubectl create namespace cxz
-kubectl -n cxz create secret generic cxz-manager \
-  --from-literal=owner=$(openssl rand -hex 12) \
-  --from-literal=token=$(openssl rand -hex 32) \
-  --from-literal=web-token=$(openssl rand -hex 32) \
-  --from-literal=telemetry-password=$(openssl rand -hex 32)
-kubectl -n cxz apply -f deploy/kubernetes/cxz.yaml
+`deploy/kubernetes` is a [kustomize](https://kustomize.io) base, meant to be
+applied once per installation from an overlay in your own configuration
+repository. One installation is one namespace: a person's, or a team's.
+
+```text
+deploy/kubernetes/
+  base/                   the manager, its Role, volume, Services and settings
+  components/clickhouse/  a usage database of the installation's own
+  examples/alice/         one person's overlay, to copy
 ```
 
-[`deploy/kubernetes/cxz.yaml`](../deploy/kubernetes/cxz.yaml) creates:
+The [example overlay](../deploy/kubernetes/examples/alice/kustomization.yaml)
+marks what each installation provides with `CHANGE`:
 
-- a ServiceAccount whose Role is this namespace's pods, `pods/exec`, volume
-  claims and secrets, and nothing else;
-- a 10 GiB volume claim for the manager's state;
-- the manager Deployment: one replica, `Recreate`, because its databases are
-  SQLite on that one volume. Beside the manager run its token relay (for the
-  TUI) and the browser gateway, both reading only the manager's sockets;
-- the usage store: ClickHouse as its own Deployment with a 10 GiB claim, and
-  the collector beside the manager;
-- a NodePort Service for the relay (30749), and ClusterIP Services for the web,
-  the Codex token broker and the collector.
+- **the namespace**;
+- **the `cxz-manager` Secret**: `owner` (24 hex characters, unique per
+  installation), `token` (the TUI relay's), `web-token` (the browser's) and
+  `telemetry-password`. The example generates it from placeholder literals;
+  keep the real values in your secret management (a SealedSecret or an
+  ExternalSecret named `cxz-manager`) instead;
+- **the `cxz-telemetry` ConfigMap**: the usage database's connection, below;
+- **the image tag**, through `images:`. The manager reads the image it runs from
+  its own pod and project pods copy cxz from that same image, by digest when
+  the node reports one, so the tag is set in one place;
+- **`cxz-kubernetes` settings**, when projects need other than the defaults.
+
+```sh
+kubectl apply -k overlays/alice
+```
+
+The base creates a ServiceAccount whose Role is its namespace's pods,
+`pods/exec`, volume claims and secrets, and nothing else; a 10 GiB claim for the
+manager's state; the manager Deployment (one replica, `Recreate`, because its
+databases are SQLite on that one volume) with its token relay, usage collector
+and browser gateway beside it; a NodePort Service for the relay (30749) and
+ClusterIP Services for the web, the Codex token broker and the collector.
+
+Every pod, volume and secret an installation creates carries its `cxz.owner`
+and `cxz.project` labels, and a manager acts only on objects whose labels are
+its own. Between a manager and its projects every request is authenticated --
+the project token, the broker's capabilities, signed telemetry -- so
+installations sharing a cluster cannot reach into each other. A cluster with
+many installations should still bound each namespace with a ResourceQuota and
+a LimitRange, and keep namespaces apart with NetworkPolicy.
 
 Codex accounts keep their default, brokered login: the manager holds the
 central login and hands each project short-lived access tokens. On Docker the
@@ -44,14 +66,30 @@ the manager also serves it at `CXZ_BROKER_LISTEN` and issues grants naming
 capability issued for that project and account, as on the socket; the Service
 is not published on any node.
 
-The manifest names `ghcr.io/lesomnus/cxz:edge`. Pin a `sha-…` tag for anything
-you rely on; a project pod copies its cxz from the manager's image when it
-starts, so the two always match.
+### The usage database
 
-`owner` identifies this installation's resources: every pod, volume and secret
-it creates carries `cxz.owner` and `cxz.project` labels, and the manager acts
-only on objects whose labels are its own. `token` and `web-token` are what
-clients present.
+Installations share one ClickHouse server; each has its own account and
+database on it, which whoever runs the server creates:
+
+```sql
+CREATE DATABASE cxz_alice;
+CREATE USER cxz_alice IDENTIFIED BY '...';
+GRANT SELECT, INSERT, ALTER, CREATE TABLE ON cxz_alice.* TO cxz_alice;
+```
+
+The installation names them in `cxz-telemetry`, with the password as the
+Secret's `telemetry-password`:
+
+| Key | |
+|---|---|
+| `CXZ_TELEMETRY_DB_HTTP` | the server's HTTP interface, `http[s]://host:port`, for queries and the schema |
+| `CXZ_TELEMETRY_DB_NATIVE` | its native protocol, `tcp://host:port`, `?secure=true` for TLS, for the collector |
+| `CXZ_TELEMETRY_DB_USER`, `CXZ_TELEMETRY_DB_NAME` | the account and database; default `cxz` and `telemetry` |
+| `CXZ_TELEMETRY_DB_HOST` | instead of both endpoints: a host on the default ports, plaintext |
+
+cxz creates its tables in that database and touches nothing else. Without a
+shared server, add `components/clickhouse` to the overlay: it runs one for the
+installation and points `cxz-telemetry` at it.
 
 ## Settings
 
@@ -80,7 +118,7 @@ The `cxz-kubernetes` ConfigMap is how projects run:
 - `requests` are what the scheduler places by; `limits` are the most a project
   may use. Give requests for the usual load and limits for the peak.
 
-Restart the manager after changing it (`kubectl -n cxz rollout restart
+Restart the manager after changing it (`kubectl rollout restart
 deploy/cxz-manager`); projects take it on their next start.
 
 A project may override `image`, `user`, `storage`, `requests` and `limits` when
@@ -100,7 +138,7 @@ or hyphens. Its workspace is `/workspaces/NAME`.
 beside, so run them in the manager's container:
 
 ```sh
-alias kcxz='kubectl -n cxz exec -it deploy/cxz-manager -c manager -- cxz --state /var/lib/cxz'
+alias kcxz='kubectl -n cxz-alice exec -it deploy/cxz-manager -c manager -- cxz --state /var/lib/cxz'
 kcxz project add demo
 kcxz project start demo
 kcxz project exec demo -- git clone https://github.com/you/repo .
@@ -121,7 +159,7 @@ Docker.
 secure without a certificate:
 
 ```sh
-kubectl -n cxz port-forward svc/cxz-web 7350
+kubectl -n cxz-alice port-forward svc/cxz-web 7350
 # open http://127.0.0.1:7350 and sign in with web-token
 ```
 
@@ -170,8 +208,8 @@ asked for, never automatic. The browser UI has no build action yet.
 
 Usage comes from [managed telemetry](managed-telemetry.md) here as on Docker,
 with the same database image, limits and schema. What differs is who runs it:
-the manifest declares ClickHouse (`cxz-telemetry-db`) and runs the collector as
-a container beside the manager, and the manager configures and checks them
+the database is the [shared server](#the-usage-database) and the collector
+runs as a container beside the manager, and the manager configures and checks them
 instead of creating containers. It writes the collector's configuration and the
 per-project ingest registries to its own volume, which the collector reads, and
 creates the schema once the database answers.

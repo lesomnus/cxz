@@ -18,11 +18,14 @@ type Client struct {
 	Endpoint, Password string
 	HTTP               *http.Client
 	RetentionDays      int
+	// User and Database are this installation's: one database per
+	// installation keeps installations that share a server apart.
+	User, Database string
 }
 
 func New(endpoint, password string) *Client {
 	transport := &http.Transport{DialContext: (&net.Dialer{Timeout: 5 * time.Second, KeepAlive: 30 * time.Second}).DialContext, IdleConnTimeout: 30 * time.Second, MaxIdleConns: 8, MaxIdleConnsPerHost: 4, ResponseHeaderTimeout: 15 * time.Second}
-	return &Client{Endpoint: endpoint, Password: password, HTTP: &http.Client{Timeout: 20 * time.Second, Transport: transport}, RetentionDays: 90}
+	return &Client{Endpoint: endpoint, Password: password, HTTP: &http.Client{Timeout: 20 * time.Second, Transport: transport}, RetentionDays: 90, User: "cxz", Database: "telemetry"}
 }
 
 // Query uses ClickHouse typed parameters, never interpolation of caller input.
@@ -33,7 +36,8 @@ func (c *Client) Query(ctx context.Context, sql string, params map[string]string
 		return nil, err
 	}
 	q := u.Query()
-	q.Set("database", "telemetry")
+	// Every statement names its tables without a database: they resolve here.
+	q.Set("database", c.Database)
 	q.Set("max_execution_time", "15")
 	q.Set("max_result_bytes", "8388608")
 	q.Set("max_memory_usage", "268435456")
@@ -45,7 +49,7 @@ func (c *Client) Query(ctx context.Context, sql string, params map[string]string
 	if err != nil {
 		return nil, err
 	}
-	r.SetBasicAuth("cxz", c.Password)
+	r.SetBasicAuth(c.User, c.Password)
 	r.Header.Set("Content-Type", "text/plain")
 	res, err := c.HTTP.Do(r)
 	if err != nil {
@@ -73,10 +77,10 @@ var schema embed.FS
 
 func (c *Client) Initialize(ctx context.Context, days int) error {
 	for _, sql := range []string{
-		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS telemetry.erased_sessions (session String, erased_at DateTime DEFAULT now()) ENGINE=ReplacingMergeTree ORDER BY session TTL erased_at + INTERVAL %d DAY`, days+7),
-		`CREATE TABLE IF NOT EXISTS telemetry.collection (id UInt8, started DateTime64(3)) ENGINE=ReplacingMergeTree ORDER BY id`,
-		`INSERT INTO telemetry.collection SELECT 1,now64(3) WHERE NOT EXISTS (SELECT 1 FROM telemetry.collection WHERE id=1)`,
-		fmt.Sprintf(`ALTER TABLE telemetry.erased_sessions MODIFY TTL erased_at + INTERVAL %d DAY`, days+7),
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS erased_sessions (session String, erased_at DateTime DEFAULT now()) ENGINE=ReplacingMergeTree ORDER BY session TTL erased_at + INTERVAL %d DAY`, days+7),
+		`CREATE TABLE IF NOT EXISTS collection (id UInt8, started DateTime64(3)) ENGINE=ReplacingMergeTree ORDER BY id`,
+		`INSERT INTO collection SELECT 1,now64(3) WHERE NOT EXISTS (SELECT 1 FROM collection WHERE id=1)`,
+		fmt.Sprintf(`ALTER TABLE erased_sessions MODIFY TTL erased_at + INTERVAL %d DAY`, days+7),
 	} {
 		if _, err := c.Query(ctx, sql, nil); err != nil {
 			return err
@@ -88,11 +92,11 @@ func (c *Client) Initialize(ctx context.Context, days int) error {
 			return err
 		}
 		ttl := fmt.Sprintf("TTL toDateTime(TimeUnix) + INTERVAL %d DAY", days)
-		sql := fmt.Sprintf(string(template), "telemetry", "otel_metrics_"+kind, "", "MergeTree()", ttl)
+		sql := fmt.Sprintf(string(template), c.Database, "otel_metrics_"+kind, "", "MergeTree()", ttl)
 		if _, err = c.Query(ctx, sql, nil); err != nil {
 			return err
 		}
-		if _, err = c.Query(ctx, "ALTER TABLE telemetry.otel_metrics_"+kind+" MODIFY "+ttl, nil); err != nil {
+		if _, err = c.Query(ctx, "ALTER TABLE otel_metrics_"+kind+" MODIFY "+ttl, nil); err != nil {
 			return err
 		}
 	}
@@ -114,14 +118,14 @@ func (c *Client) EraseMany(ctx context.Context, sessions []string) error {
 			return fmt.Errorf("invalid telemetry erasure identity")
 		}
 	}
-	_, err := c.Query(ctx, `INSERT INTO telemetry.erased_sessions(session) SELECT arrayJoin({sessions:Array(String)})`, map[string]string{"sessions": "['" + strings.Join(sessions, "','") + "']"})
+	_, err := c.Query(ctx, `INSERT INTO erased_sessions(session) SELECT arrayJoin({sessions:Array(String)})`, map[string]string{"sessions": "['" + strings.Join(sessions, "','") + "']"})
 	if err != nil {
 		return err
 	}
 	return c.CleanErased(ctx)
 }
 func (c *Client) CleanErased(ctx context.Context) error {
-	b, err := c.Query(ctx, "SELECT count() FROM telemetry.erased_sessions", nil)
+	b, err := c.Query(ctx, "SELECT count() FROM erased_sessions", nil)
 	if err != nil {
 		return err
 	}
@@ -129,7 +133,7 @@ func (c *Client) CleanErased(ctx context.Context) error {
 		return nil
 	}
 	for _, table := range []string{"sum", "gauge", "histogram", "exp_histogram", "summary"} {
-		_, err := c.Query(ctx, `ALTER TABLE telemetry.otel_metrics_`+table+` DELETE WHERE ResourceAttributes['cxz.session.id'] IN (SELECT session FROM telemetry.erased_sessions)`, nil)
+		_, err := c.Query(ctx, `ALTER TABLE otel_metrics_`+table+` DELETE WHERE ResourceAttributes['cxz.session.id'] IN (SELECT session FROM erased_sessions)`, nil)
 		if err != nil {
 			return err
 		}

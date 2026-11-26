@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -39,6 +40,33 @@ type Stack struct {
 	Password string
 	// Health is the collector's health check URL; empty is the container's.
 	Health string
+	// DBUser and DBName are this installation's account and database on the
+	// server, which may be shared with other installations: empty is cxz and
+	// telemetry. DBHTTP and DBNative are its endpoints, as the client and the
+	// collector's exporter take them (http[s]://host:port and
+	// tcp://host:port[?secure=true]); empty derives both from DBHost.
+	DBUser, DBName, DBHTTP, DBNative string
+}
+
+var databaseName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,62}$`)
+
+func (s Stack) dbUser() string {
+	if s.DBUser != "" {
+		return s.DBUser
+	}
+	return "cxz"
+}
+func (s Stack) dbName() string {
+	if s.DBName != "" {
+		return s.DBName
+	}
+	return "telemetry"
+}
+func (s Stack) dbNative() string {
+	if s.DBNative != "" {
+		return s.DBNative
+	}
+	return "tcp://" + s.dbHost() + ":9000"
 }
 
 func (s Stack) prefix() string { return "cxz-" + s.Owner[:12] + "-telemetry" }
@@ -48,7 +76,12 @@ func (s Stack) dbHost() string {
 	}
 	return s.prefix() + "-db"
 }
-func (s Stack) Endpoint() string  { return "http://" + s.dbHost() + ":8123" }
+func (s Stack) Endpoint() string {
+	if s.DBHTTP != "" {
+		return s.DBHTTP
+	}
+	return "http://" + s.dbHost() + ":8123"
+}
 func (s Stack) directory() string { return filepath.Join(s.Root, "telemetry") }
 func (s Stack) tools() string {
 	if s.ToolsRoot != "" {
@@ -63,12 +96,19 @@ func (s Stack) Client() (*telemetrystore.Client, error) {
 	}
 	client := telemetrystore.New(s.Endpoint(), string(password))
 	client.RetentionDays = s.Config.Days()
+	client.User, client.Database = s.dbUser(), s.dbName()
 	return client, nil
 }
 func (s Stack) validate() error {
 	if s.External {
-		if len(s.Owner) < 12 || s.DBHost == "" || len(s.Password) < 16 {
-			return fmt.Errorf("an external telemetry stack needs its database host and a password of at least 16 characters")
+		if len(s.Owner) < 12 || (s.DBHost == "" && (s.DBHTTP == "" || s.DBNative == "")) || len(s.Password) < 16 {
+			return fmt.Errorf("an external telemetry stack needs its database's host (or both endpoints) and a password of at least 16 characters")
+		}
+		if !databaseName.MatchString(s.dbName()) {
+			return fmt.Errorf("telemetry database name %q is not a ClickHouse identifier", s.dbName())
+		}
+		if strings.ContainsAny(s.dbUser(), "\"\n\r") || strings.ContainsAny(s.dbNative(), "\"\n\r ") {
+			return fmt.Errorf("invalid telemetry database user or endpoint")
 		}
 		return s.Config.Validate()
 	}
@@ -268,7 +308,7 @@ func (s Stack) initializeSchema(ctx context.Context, client *telemetrystore.Clie
 	var existing stamp
 	file := filepath.Join(s.directory(), "schema.json")
 	if b, err := os.ReadFile(file); err == nil && json.Unmarshal(b, &existing) == nil && existing == expected {
-		b, err := client.Query(ctx, `SELECT count() FROM system.tables WHERE database='telemetry' AND name IN ('otel_metrics_sum','otel_metrics_histogram','otel_metrics_gauge','otel_metrics_exp_histogram','otel_metrics_summary','collection','erased_sessions')`, nil)
+		b, err := client.Query(ctx, `SELECT count() FROM system.tables WHERE database=currentDatabase() AND name IN ('otel_metrics_sum','otel_metrics_histogram','otel_metrics_gauge','otel_metrics_exp_histogram','otel_metrics_summary','collection','erased_sessions')`, nil)
 		if err == nil && strings.TrimSpace(string(b)) == "7" {
 			return nil
 		}
@@ -365,10 +405,10 @@ processors:
     registry_directory: /var/lib/cxz-telemetry/auth
 exporters:
   clickhouse:
-    endpoint: tcp://%s:9000?dial_timeout=5s
-    username: cxz
+    endpoint: %s
+    username: %s
     password: %q
-    database: telemetry
+    database: %s
     create_schema: false
     ttl: %dh
     async_insert: false
@@ -415,7 +455,7 @@ service:
       receivers: [otlp]
       processors: [memory_limiter, cxzidentity]
       exporters: [clickhouse]
-`, receiver, transport, s.dbHost(), password, s.Config.Days()*24, s.Config.QueueBytes(), max(16<<20, s.Config.QueueBytes()*2), max(1, s.Config.QueueBytes()>>21))
+`, receiver, transport, nativeEndpoint(s.dbNative()), s.dbUser(), password, s.dbName(), s.Config.Days()*24, s.Config.QueueBytes(), max(16<<20, s.Config.QueueBytes()*2), max(1, s.Config.QueueBytes()>>21))
 }
 
 var databaseConfig = `<clickhouse>
@@ -437,4 +477,12 @@ func disableSystemLogs() string {
 		fmt.Fprintf(&b, "<%s remove=\"1\"/>\n", name)
 	}
 	return b.String()
+}
+
+// nativeEndpoint adds the exporter's dial timeout to the endpoint's query.
+func nativeEndpoint(endpoint string) string {
+	if strings.Contains(endpoint, "?") {
+		return endpoint + "&dial_timeout=5s"
+	}
+	return endpoint + "?dial_timeout=5s"
 }

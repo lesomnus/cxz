@@ -1,0 +1,4 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cxz-alice # CHANGE, the same as the kustomization's namespace
