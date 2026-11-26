@@ -299,6 +299,13 @@ Use a certificate for that exact hostname. `0.0.0.0:7350` listens on every
 interface and requires firewall rules restricting access to the VPN. cxz does
 not issue certificates or install them into any trust store.
 
+- **Behind a TLS-terminating proxy**, such as a Kubernetes Ingress. Set
+  `"tls_proxy": true` (or `--tls-proxy`) with an `https` origin and no
+  certificate: the gateway serves plain HTTP to the proxy, and sends HSTS and
+  its `Secure` cookie as if it terminated TLS. The proxy must keep the browser's
+  `Host` header, and the gateway's listen address must be reachable only by
+  the proxy. See [Kubernetes](kubernetes.md).
+
 ## What `web up` creates
 
 `<manager-container>-web`, using the installed Manager's image, with Docker's
@@ -333,7 +340,7 @@ cxz web serve --config /path/to/web.json
 - Default file: `STATE/web.json`, where `STATE` follows `--state`, `CXZ_STATE`,
   `$XDG_STATE_HOME/cxz`, then `~/.local/state/cxz`.
 - `--config` selects a different JSON file. Unknown keys are rejected.
-- Explicit `--listen`, `--origin`, `--tls-cert`, `--tls-key` and
+- Explicit `--listen`, `--origin`, `--tls-cert`, `--tls-key`, `--tls-proxy` and
   `--access-token-file` override file values.
 - Relative file paths in JSON resolve against the JSON file's directory;
   relative command-line paths resolve against the current directory. Use absolute

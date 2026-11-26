@@ -126,8 +126,8 @@ spec:
         # The browser UI. Its origin is a loopback address, which a browser
         # treats as secure without a certificate: reach it with
         #   kubectl -n NAMESPACE port-forward svc/cxz-web 7350
-        # and open http://127.0.0.1:7350. For https, give it tls-cert and
-        # tls-key from a Secret and an https origin instead.
+        # and open http://127.0.0.1:7350. For https on a DNS name, add the
+        # ingress or the tls component (docs/kubernetes.md).
         - name: web
           image: ghcr.io/lesomnus/cxz:edge
           args: [--state, /var/lib/cxz, -x, _web-serve, --listen, "0.0.0.0:7350", --origin, "http://127.0.0.1:7350", --access-token-file, /web/token]

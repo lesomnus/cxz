@@ -29,7 +29,12 @@ const lifetime = 12 * time.Hour
 
 type Config struct {
 	Listen, Origin, Certificate, Key, Token string
-	ConfigurationEditor                     http.Handler
+	// TLSProxy is a gateway behind a proxy that ends TLS for its https
+	// origin -- an Ingress with the organisation's certificate. It listens in
+	// plaintext and tells the browser what the proxy's TLS lets it: HSTS and
+	// Secure cookies, as for its own certificate.
+	TLSProxy            bool
+	ConfigurationEditor http.Handler
 }
 
 // Loopback reports a host the browser can only reach on this machine. It is the
@@ -56,7 +61,14 @@ func (c Config) Validate() error {
 	// Whether the listener is reachable from a network is not visible here: the
 	// installed gateway binds every interface inside its own namespace and is
 	// published to one host address. Each caller gates the address it owns.
-	if u.Scheme == "http" {
+	if c.TLSProxy {
+		if u.Scheme != "https" {
+			return fmt.Errorf("a gateway behind a TLS proxy serves an https origin, not %q", c.Origin)
+		}
+		if c.Certificate != "" || c.Key != "" {
+			return fmt.Errorf("behind a TLS proxy the proxy holds the certificate; drop tls-cert and tls-key")
+		}
+	} else if u.Scheme == "http" {
 		if !Loopback(u.Hostname()) {
 			return fmt.Errorf("origin %q must use https; http is accepted only for a loopback address", c.Origin)
 		}
@@ -114,7 +126,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Han
 		})
 	}
 	mux.Handle(configeditor.Prefix, configuration)
-	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext(), token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
+	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext() || c.TLSProxy, token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if pdweb.Rpc(r) {
 			rpc.ServeHTTP(w, r)

@@ -1,0 +1,23 @@
+# The browser gateway terminating TLS itself, with the certificate in the
+# Secret cxz-web-tls (kubernetes.io/tls). Route it with TLS passthrough -- a
+# controller's passthrough route or a LoadBalancer Service -- so no proxy sees
+# the plaintext. Set the origin to this installation's DNS name.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+patches:
+  - target: {kind: Deployment, name: cxz-manager}
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata: {name: cxz-manager}
+      spec:
+        template:
+          spec:
+            containers:
+              - name: web
+                args: [--state, /var/lib/cxz, -x, _web-serve, --listen, "0.0.0.0:7350", --origin, "https://cxz.example", --tls-cert, /web-tls/tls.crt, --tls-key, /web-tls/tls.key, --access-token-file, /web/token]
+                volumeMounts:
+                  - {name: web-tls, mountPath: /web-tls, readOnly: true}
+            volumes:
+              - name: web-tls
+                secret: {secretName: cxz-web-tls}

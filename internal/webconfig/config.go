@@ -20,6 +20,8 @@ type Config struct {
 	Certificate string `json:"tls_cert,omitempty"`
 	Key         string `json:"tls_key,omitempty"`
 	TokenFile   string `json:"access_token_file,omitempty"`
+	// TLSProxy serves an https origin whose TLS a proxy in front ends.
+	TLSProxy bool `json:"tls_proxy,omitempty"`
 }
 
 func Load(path string, optional bool) (Config, error) {
@@ -58,7 +60,7 @@ func (c Config) Runtime() (webui.Config, error) {
 	if err != nil {
 		return webui.Config{}, err
 	}
-	v := webui.Config{Listen: c.Listen, Origin: c.Origin, Certificate: c.Certificate, Key: c.Key, Token: token}
+	v := webui.Config{Listen: c.Listen, Origin: c.Origin, Certificate: c.Certificate, Key: c.Key, Token: token, TLSProxy: c.TLSProxy}
 	if err = v.Validate(); err != nil {
 		return v, err
 	}
