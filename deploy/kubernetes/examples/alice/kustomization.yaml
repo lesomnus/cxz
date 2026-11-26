@@ -5,6 +5,7 @@ kind: Kustomization
 namespace: cxz-alice # CHANGE
 resources:
   - namespace.yaml
+  - git.yaml # a PodTemplate: see docs/kubernetes.md#pod-templates
   - ../../base
 
 # The browser UI on https://alice.cxz.example through the cluster's Ingress,
@@ -59,6 +60,7 @@ patches:
             "storage": "20Gi",
             "requests": {"cpu": "500m", "memory": "1Gi"},
             "limits": {"memory": "4Gi"},
+            "pod_templates": ["git"],
             "build": {"buildkit": "tcp://buildkitd.build:1234", "registry": "registry.example/cxz"}
           }
   # The browser's address: the gateway's origin and the Ingress host.
