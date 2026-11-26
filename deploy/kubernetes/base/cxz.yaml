@@ -11,6 +11,10 @@ rules:
   - apiGroups: [""]
     resources: [pods, persistentvolumeclaims, secrets]
     verbs: [get, list, watch, create, update, patch, delete]
+  # Read only: PodTemplates are the installation's, merged into project pods.
+  - apiGroups: [""]
+    resources: [podtemplates]
+    verbs: [get, list]
   - apiGroups: [""]
     resources: [pods/exec]
     verbs: [get, create]

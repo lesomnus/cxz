@@ -121,8 +121,8 @@ The `cxz-kubernetes` ConfigMap is how projects run:
 Restart the manager after changing it (`kubectl rollout restart
 deploy/cxz-manager`); projects take it on their next start.
 
-A project may override `image`, `user`, `storage`, `requests` and `limits` when
-it is added, as JSON or just an image reference:
+A project may override `image`, `user`, `storage`, `requests` and `limits`, and
+add [pod templates](#pod-templates), when it is added, as JSON or just an image reference:
 
 ```sh
 cxz project add web --config '{"image": "node:24", "limits": {"memory": "8Gi"}}'
@@ -131,6 +131,87 @@ cxz project add api --config golang:1.27
 
 A project's name is its identity in the cluster: 1–40 lowercase letters, digits
 or hyphens. Its workspace is `/workspaces/NAME`.
+
+## Pod templates
+
+What cxz has no setting for -- a credential from a Secret, a node selector, a
+GPU, a sidecar, a CA bundle -- is added to project pods with the cluster's own
+`PodTemplate`. cxz merges them over the pod it builds, in order:
+
+1. the settings' `pod_templates`, for every project;
+2. the project's `pod_templates`;
+3. the project's inline `pod_template`, a template without a resource.
+
+```json
+{"pod_templates": ["git"]}
+```
+
+```sh
+cxz project add --config '{"pod_templates": ["gpu"], "pod_template": {"spec": {"containers": [{"name": "runtime", "env": [{"name": "NODE_ENV", "value": "test"}]}]}}}' ml
+```
+
+A template's `runtime` container is merged into the project's own container;
+any other name is a sidecar. The API requires an `image` on every container of a
+PodTemplate: on `runtime` it is ignored -- the project's image comes from its
+settings and builds -- so write anything, such as `"-"`.
+
+Merging follows kubectl's strategic merge: `containers`, `initContainers`,
+`volumes`, `env` and `imagePullSecrets` merge by `name`, `volumeMounts` by
+`mountPath`, `ports` by `containerPort`; `tolerations`, `envFrom` and
+`topologySpreadConstraints` are appended, so templates compose; maps merge and
+other values replace.
+
+A template may not change what cxz runs the project with, and a start that
+would is refused, naming the template: the runtime container's command, args,
+image, working directory, ports, probes and lifecycle; its environment and
+mounts from cxz and anything under `/cxz`; the `tools` and `prepare` init
+containers; cxz's volumes; `cxz.*` labels; `restartPolicy` and
+`shareProcessNamespace`. The runtime starts as root and drops to the project's
+user itself, so leave `runAsUser` and `runAsNonRoot` alone.
+
+Templates are read when a project's pod is created: a change applies on the
+project's next start, and a missing one fails it. The manager reads
+PodTemplates (its Role allows `get` and `list`); who writes them is the
+installation's choice. The built-in `admin` and `edit` roles do not include
+`podtemplates`, so grant it to whoever should, or keep them in gitops.
+
+### Git credentials
+
+Docker installations copy the host's GitHub login into projects. On Kubernetes
+the credential is the person's own Secret, mounted with a template:
+
+```yaml
+apiVersion: v1
+kind: PodTemplate
+metadata: {name: git}
+template:
+  spec:
+    containers:
+      - name: runtime
+        image: "-"   # required by the API; ignored
+        env:
+          # The token, for gh and for git through the helper below.
+          - name: GH_TOKEN
+            valueFrom: {secretKeyRef: {name: alice-github, key: token}}
+          # git's configuration from the environment: a helper that answers
+          # with the token for github.com. Nothing is written to the home.
+          - {name: GIT_CONFIG_COUNT, value: "1"}
+          - {name: GIT_CONFIG_KEY_0, value: credential.https://github.com.helper}
+          - name: GIT_CONFIG_VALUE_0
+            value: '!f() { test "$1" = get && echo username=x-access-token && echo "password=$GH_TOKEN"; }; f'
+```
+
+A file works the same way, from a Secret volume:
+
+```yaml
+        volumeMounts: [{name: gh, mountPath: /home/vscode/.config/gh, readOnly: true}]
+    volumes: [{name: gh, secret: {secretName: alice-gh}}]   # its key: hosts.yml
+```
+
+Secret files are root's, mode 0644 by default: readable by the project user,
+which suits a token. Prefer an HTTPS token to an SSH key, which `ssh` refuses
+when others can read it. A Secret's contents are the installation's to manage
+(an ExternalSecret, a SealedSecret); cxz only names it.
 
 ## Using it
 
@@ -287,6 +368,7 @@ background; creating a session waits for it.
   of a Docker engine.
 - **Updates.** A project's runtime is the manager's image, taken when its pod
   starts; agent CLIs are fetched at start. Nothing updates a running pod.
-- GitHub credential sync, host git configuration, the browser editor, file
-  attachments, workspace downloads and copying memory between projects still
-  use Docker and are not available.
+- GitHub credential sync and host git configuration are Docker's: mount your
+  own with a [pod template](#git-credentials).
+- The browser editor, file attachments, workspace downloads and copying memory
+  between projects still use Docker and are not available.

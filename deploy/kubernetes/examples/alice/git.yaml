@@ -1,0 +1,18 @@
+# Alice's GitHub token in every project: GH_TOKEN, and git's credential helper
+# for github.com, from the environment. The Secret alice-github (key: token)
+# is hers to create -- an ExternalSecret or a SealedSecret, never in git.
+apiVersion: v1
+kind: PodTemplate
+metadata: {name: git}
+template:
+  spec:
+    containers:
+      - name: runtime
+        image: "-" # required by the API; cxz ignores it
+        env:
+          - name: GH_TOKEN
+            valueFrom: {secretKeyRef: {name: alice-github, key: token}}
+          - {name: GIT_CONFIG_COUNT, value: "1"}
+          - {name: GIT_CONFIG_KEY_0, value: credential.https://github.com.helper}
+          - name: GIT_CONFIG_VALUE_0
+            value: '!f() { test "$1" = get && echo username=x-access-token && echo "password=$GH_TOKEN"; }; f'

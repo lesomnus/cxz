@@ -184,6 +184,7 @@ cxz#372와 cxz#377은 선행이 없어 병렬로 시작할 수 있다. cxz#376�
 - **프로젝트 정의를 번역하지 않는다.** devcontainer를 프런트엔드로 일반화하는 대신 k8s 백엔드는 자기 설정(이미지·사용자·볼륨 크기·requests/limits)을 쓴다. `projectspec.Spec`은 cxz 자신의 요구(env, state·tools 마운트, 기동, 소유 라벨)로만 남고, 마운트를 무엇으로 채우는지는 백엔드가 정한다.
 - **매니저는 클러스터 안에서 돈다.** pod IP의 7348에 바로 닿는다. 클라이언트는 기존 토큰 relay(TUI)와 웹 게이트웨이(port-forward)로 붙는다.
 - **워크스페이스는 빈 PVC다.** 프로젝트 볼륨 하나에 `state/`·`tools/`·`workspace/` subPath를 둔다.
+- **기능별 연동 대신 PodTemplate.** Docker의 GitHub 자격 동기화 같은 호스트 연동을 k8s에 옮기지 않는다. credential·노드 선택·GPU·사이드카는 namespace의 `PodTemplate`을 설정과 프로젝트가 이름으로 골라 cxz의 pod 위에 순서대로 병합하고, cxz가 소유한 필드를 바꾸는 템플릿은 거부한다.
 - **exec는 번역층 하나로.** `docker exec`의 인자를 그대로 `cxz _kube-exec`(websocket exec)로 옮기고, pod 안의 사용자·디렉터리·env는 `cxz _run-as`가 적용한다. 이미지에 su나 sudo가 없어도 된다.
 
 서브이슈와의 관계:

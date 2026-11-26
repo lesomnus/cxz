@@ -46,6 +46,10 @@ type KubeSettings struct {
 	Build KubeBuild `json:"build,omitempty"`
 	// ReadyTimeout bounds waiting for a pod: image pull, volume and runtime.
 	ReadyTimeout string `json:"ready_timeout"`
+	// PodTemplates name PodTemplates in the namespace merged into every
+	// project's pod, in order: a credential, a node selector. See
+	// kube_podtemplate.go.
+	PodTemplates []string `json:"pod_templates,omitempty"`
 }
 
 // KubeProject is one project's choices, over the installation's.
@@ -59,6 +63,10 @@ type KubeProject struct {
 	Storage  string            `json:"storage,omitempty"`
 	Requests map[string]string `json:"requests,omitempty"`
 	Limits   map[string]string `json:"limits,omitempty"`
+	// PodTemplates follow the installation's; PodTemplate, a PodTemplate's
+	// template inline, is merged last.
+	PodTemplates []string       `json:"pod_templates,omitempty"`
+	PodTemplate  map[string]any `json:"pod_template,omitempty"`
 }
 
 func loadKubeSettings() (KubeSettings, error) {
@@ -188,6 +196,9 @@ func (m *Manager) kubeRegister(ctx context.Context, name, config string) (*Proje
 		}
 	} else if config != "" {
 		k.Image = config
+	}
+	if err := validPodTemplate(k.PodTemplate); err != nil {
+		return nil, err
 	}
 	if len(m.Owner) < 12 {
 		return nil, fmt.Errorf("invalid manager owner")
@@ -394,7 +405,15 @@ func (m *Manager) kubeUp(ctx context.Context, p *Project) error {
 		if err != nil {
 			return err
 		}
-		if err = m.kube.Apply(ctx, m.kube.Path("pods", name), m.kubePodObject(p, spec, image, user, requests, limits), nil); err != nil {
+		templates, err := m.kubePodTemplates(ctx, p)
+		if err != nil {
+			return err
+		}
+		obj, err := applyPodTemplates(m.kubePodObject(p, spec, image, user, requests, limits), templates)
+		if err != nil {
+			return err
+		}
+		if err = m.kube.Apply(ctx, m.kube.Path("pods", name), obj, nil); err != nil {
 			return err
 		}
 	}
