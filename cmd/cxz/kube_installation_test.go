@@ -2,6 +2,7 @@ package main
 
 import (
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -9,6 +10,11 @@ import (
 )
 
 func TestInstallationCommandsRefuseOnKubernetes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// A Kubernetes manager is a Linux pod; the Windows frontend has its
+		// own command tree and never runs as one.
+		t.Skip("Kubernetes managers run on Linux")
+	}
 	t.Setenv("CXZ_BACKEND", "kubernetes")
 	root := filepath.Join(t.TempDir(), "state")
 	for _, args := range [][]string{{"install"}, {"uninstall"}, {"use", "edge"}, {"self-update"}, {"self-update", "status", "--server"}, {"purge", "--dry-run"}} {
