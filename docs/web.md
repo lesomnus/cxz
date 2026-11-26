@@ -245,6 +245,23 @@ then `~/.local/state/cxz`, like the CLI. To explicitly select another configurat
 CXZ_WEB_CONFIG=/absolute/path/to/web.json npm run dev
 ```
 
+To develop against several installations at once, list them as connections
+and the dev server serves each under `/c/NAME/`, signing in to each itself and
+keeping their sessions out of the browser. The first one is also served at the
+unprefixed paths, so the UI as it stands keeps working. See
+[web connections](plans/web-connections.md#허브-게이트웨이가-연결을-든다-6단계-대신-택한-길).
+
+```sh
+CXZ_WEB_CONNECTIONS=/absolute/path/to/connections.json npm run dev
+```
+
+```json
+{"connections": [
+  {"name": "dev", "config": "/home/me/.local/state/cxz/web-installation.json"},
+  {"name": "k8s", "config": "k8s/web.json"}
+]}
+```
+
 The default token file is `STATE/web-token`; `access_token_file` in the selected
 configuration can point elsewhere, including a path relative to that JSON file.
 On the initial browser authentication check, Vite reuses an existing gateway
