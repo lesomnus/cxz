@@ -3,6 +3,11 @@ import { devices, expect, test } from "@playwright/test";
 
 test.use({ ...devices["Desktop Chrome"] });
 
+const defaultKubeConfig = {
+  image: "ghcr.io/lesomnus/dev-golang:1.27",
+  user: "hypnos",
+};
+
 test("project creation uses the chosen installation and a stable modal", async ({
   page,
 }) => {
@@ -72,11 +77,14 @@ test("project creation uses the chosen installation and a stable modal", async (
   const addRequests: string[] = [];
   await page.route("**/cxz.ProjectService/Add", (route) => {
     addRequests.push(new URL(route.request().url()).pathname);
-    expect(route.request().postDataJSON()).toEqual({
+    const submitted = route.request().postDataJSON();
+    expect(submitted).toMatchObject({
       workspace: "cluster-app",
       name: "Cluster app",
-      config: "node:24",
     });
+    if (addRequests.length === 1)
+      expect(JSON.parse(submitted.config)).toEqual(defaultKubeConfig);
+    else expect(submitted.config).toBe("node:24");
     return route.fulfill(
       addRequests.length === 1
         ? {
@@ -95,7 +103,7 @@ test("project creation uses the chosen installation and a stable modal", async (
   const dialog = page.getByRole("dialog", { name: "Add project", exact: true });
   const workspace = dialog.getByLabel("Workspace path");
   await expect(workspace).toBeVisible();
-  await expect(dialog.getByLabel("Devcontainer configuration")).toBeVisible();
+  await expect(dialog.getByLabel("Devcontainer configuration")).toHaveValue("");
   await workspace.focus();
   const ringClearance = await workspace.evaluate((input) => {
     let viewport = input.parentElement;
@@ -135,17 +143,17 @@ test("project creation uses the chosen installation and a stable modal", async (
   const projectName = dialog.getByLabel("Project name", { exact: true });
   await expect(projectName).toBeVisible();
   await expect(dialog.getByLabel("Workspace path")).toHaveCount(0);
+  const config = dialog.getByLabel("Image or Kubernetes settings (JSON)");
+  await expect(config).toHaveValue(JSON.stringify(defaultKubeConfig, null, 2));
   expect(await height()).toBe(initial);
   await projectName.fill("cluster-app");
   await dialog.getByLabel("Display name").fill("Cluster app");
-  await dialog
-    .getByLabel("Image or Kubernetes settings (JSON)")
-    .fill("node:24");
   await confirm.click();
   await expect(
     dialog.getByText("Test registration failure", { exact: false }),
   ).toBeVisible();
   expect(await height()).toBe(initial);
+  await config.fill("node:24");
   await confirm.click();
   await expect(page).toHaveURL(/\/c\/@cluster\/project\/cluster-app$/);
   await expect(

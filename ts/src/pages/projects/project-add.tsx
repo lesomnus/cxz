@@ -24,7 +24,19 @@ import { projectAddClient } from "./project-add-target";
 import { validateProjectField } from "./project-edit";
 import styles from "./project-add.module.css";
 
-const emptyDraft = { workspace: "", config: "", name: "", alias: "" };
+type ProjectDraft = {
+  workspace: string;
+  name: string;
+  alias: string;
+  config?: string;
+};
+
+const emptyDraft: ProjectDraft = { workspace: "", name: "", alias: "" };
+const defaultKubeConfig = JSON.stringify(
+  { image: "ghcr.io/lesomnus/dev-golang:1.27", user: "hypnos" },
+  null,
+  2,
+);
 const kubeName = /^[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?$/;
 
 export function ProjectAdd({
@@ -63,6 +75,7 @@ export function ProjectAdd({
   const backend = active?.backend;
   const docker = backend === "docker";
   const kubernetes = backend === "kubernetes";
+  const config = draft.config ?? (kubernetes ? defaultKubeConfig : "");
   const workspace = draft.workspace.trim();
   const valid = !!active && !!workspace && (docker || kubernetes);
   const set = (field: keyof typeof emptyDraft, value: string) =>
@@ -98,7 +111,7 @@ export function ProjectAdd({
           workspace,
           name,
           alias: alias ? parseAlias(alias) : "",
-          config: draft.config.trim(),
+          config: config.trim(),
         },
         { signal: controller.signal, timeoutMs: 30000 },
       );
@@ -219,15 +232,14 @@ export function ProjectAdd({
                       <input
                         id={`${id}-config`}
                         placeholder=".devcontainer/devcontainer.json"
-                        value={draft.config}
+                        value={config}
                         onChange={(event) => set("config", event.target.value)}
                       />
                     ) : (
                       <textarea
                         id={`${id}-config`}
-                        rows={3}
-                        placeholder="node:24"
-                        value={draft.config}
+                        rows={4}
+                        value={config}
                         onChange={(event) => set("config", event.target.value)}
                       />
                     )}
