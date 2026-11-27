@@ -260,6 +260,7 @@ export function SessionTable({
                   s.account?.alias ||
                   "—";
                 const checked = selected.has(s.runtimeId);
+                const inactive = resumableStates.has(s.status?.state ?? "");
                 const projectResource =
                   s.project &&
                   (projectsById.get(key(s.project.id)) || s.project);
@@ -274,6 +275,7 @@ export function SessionTable({
                         {...projectLocation(project)}
                         name={projectName || project}
                         alias={projectResource?.alias}
+                        inactive={inactive}
                       />
                     ) : (
                       "—"
@@ -294,11 +296,8 @@ export function SessionTable({
                 return (
                   <TableRow
                     key={s.runtimeId}
-                    className={resourceTableStyles.row}
                     selected={checked}
-                    data-inactive={
-                      resumableStates.has(s.status?.state ?? "") || undefined
-                    }
+                    data-inactive={inactive || undefined}
                   >
                     <TableCell className={styles.selectionCell}>
                       <Checkbox
@@ -322,6 +321,7 @@ export function SessionTable({
                           session={s}
                           navigationIcon={navigationIcon}
                           unread={completed.has(s.runtimeId)}
+                          inactive={inactive}
                         />
                       </TableCell>
                     ) : (
@@ -366,6 +366,7 @@ export function SessionTable({
                             {...accountLocation(accountAlias)}
                             name={accountName}
                             alias={accountAlias}
+                            inactive={inactive}
                           />
                         ) : (
                           accountName

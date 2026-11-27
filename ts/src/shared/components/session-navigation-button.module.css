@@ -21,12 +21,12 @@
   position: absolute;
   z-index: 2;
   inset-block-start: calc(
-    var(--resource-link-radius) - var(--session-badge-size) / 2 +
-      var(--session-badge-corner-inset)
+    var(--ui-table-link-radius, var(--ui-space)) - var(--session-badge-size) /
+      2 + var(--session-badge-corner-inset)
   );
   inset-inline-end: calc(
-    var(--resource-link-radius) - var(--session-badge-size) / 2 +
-      var(--session-badge-corner-inset)
+    var(--ui-table-link-radius, var(--ui-space)) - var(--session-badge-size) /
+      2 + var(--session-badge-corner-inset)
   );
   width: var(--session-badge-size);
   height: var(--session-badge-size);
