@@ -7,7 +7,7 @@ test.use({
 test("expanded code ends at the session panel and editor, and tracks split resizing", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/session/session-1");
+  await page.goto("/sandbox.html#/c/@local/session/session-1");
   const panel = page.getByRole("complementary", { name: "Session list" });
   const editor = page.getByRole("complementary", { name: "Workspace editor" });
   const pre = page.locator(".transcript pre").first(),

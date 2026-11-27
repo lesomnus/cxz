@@ -14,7 +14,7 @@ export async function connectWorkspaceEditor(
   const errorKey = JSON.stringify([c.baseUrl, "editor/connect", id]);
   let status: number | undefined;
   try {
-    const response = await fetch(new URL("/editor/connect", c.baseUrl), {
+    const response = await fetch(`${c.baseUrl}/editor/connect`, {
       method: "POST",
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },

@@ -7,8 +7,8 @@ import type { Project } from "#gen/cxz/project_pb";
 import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import {
-  projectLocation,
   resourceHandle,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
@@ -104,6 +104,7 @@ export function TaskMetadata({
   project?: Project;
   source?: Session;
 }) {
+  const { projectLocation } = useResourceRoutes();
   return (
     <>
       <ResourceFields

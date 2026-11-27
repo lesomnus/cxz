@@ -19,7 +19,8 @@ import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { projectAddClient, projectAddTargets } from "./project-add-target";
+import { useRouteConnections } from "#src/app/router.tsx";
+import { projectAddClient } from "./project-add-target";
 import { validateProjectField } from "./project-edit";
 import styles from "./project-add.module.css";
 
@@ -44,11 +45,12 @@ export function ProjectAdd({
   const [draft, setDraft] = useState(emptyDraft);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const targets = useRemote((signal) => projectAddTargets(c, signal), [c]);
-  const target =
-    targets.data?.find((item) => item.connection === selected) ??
-    targets.data?.find((item) => item.baseUrl === c.baseUrl) ??
-    targets.data?.[0];
+  const connections = useRouteConnections();
+  const entry =
+    connections.find((item) => item.handle === selected) ??
+    connections.find((item) => item.baseUrl === c.baseUrl) ??
+    connections[0];
+  const target = entry && { ...entry, baseUrl: entry.baseUrl || c.baseUrl };
   const runtime = useRemote(
     (signal) => projectAddClient(c, target!, signal),
     [c, target?.baseUrl],
@@ -103,7 +105,7 @@ export function ProjectAdd({
       if (controller.signal.aborted) return;
       if (target.baseUrl === c.baseUrl)
         c.store.apply("cxz.Project", [{ id: project.id, value: project }]);
-      dialog.complete(() => added(project, target.connection));
+      dialog.complete(() => added(project, target.handle));
     } catch (error) {
       if (!controller.signal.aborted) setError(String(error));
     } finally {
@@ -138,33 +140,27 @@ export function ProjectAdd({
               <FormField label={t("Connection")}>
                 <ValueMenu
                   label={t("Connection")}
-                  value={target?.connection ?? ""}
-                  disabled={busy || !targets.data?.length}
-                  options={
-                    targets.data?.map((item) => ({
-                      value: item.connection,
-                      label: item.name,
-                    })) ?? []
-                  }
+                  value={target?.handle ?? ""}
+                  disabled={busy || !connections.length}
+                  options={connections.map((item) => ({
+                    value: item.handle,
+                    label: item.alias,
+                  }))}
                   choose={(value) => {
-                    if (target?.connection === value) return;
+                    if (target?.handle === value) return;
                     setSelected(value);
                     setDraft(emptyDraft);
                     setError("");
                   }}
                 />
               </FormField>
-              {((!target && targets.loading) ||
-                (target && !active && runtime.loading)) && (
+              {target && !active && runtime.loading && (
                 <small role="status">{t("Loading…")}</small>
               )}
-              {(targets.error || (!active && runtime.error)) && (
+              {!active && runtime.error && (
                 <div className={styles.error}>
-                  <ErrorNotice error={targets.error || runtime.error} local />
-                  <Button
-                    type="button"
-                    onClick={targets.error ? targets.reload : runtime.reload}
-                  >
+                  <ErrorNotice error={runtime.error} local />
+                  <Button type="button" onClick={runtime.reload}>
                     {t("Retry")}
                   </Button>
                 </div>

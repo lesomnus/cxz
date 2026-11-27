@@ -31,7 +31,7 @@ test("random assignment uses a live project session and preserves edits and the 
   });
   await expect(group.getByRole("link")).toHaveAttribute(
     "href",
-    "/c/_/session/oak",
+    "/c/@local/session/oak",
   );
   const inactive = group.getByRole("button", {
     name: "No assignment action",

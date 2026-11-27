@@ -86,8 +86,8 @@ for (const view of ["sessions", "projects"] as const) {
     try {
       await page.goto(
         view === "projects"
-          ? `/c/_/project/${projectFixture(3).uuid}`
-          : "/c/_/session",
+          ? `/c/@local/project/${projectFixture(3).uuid}`
+          : "/c/@local/session",
       );
       const selector =
         view === "projects"

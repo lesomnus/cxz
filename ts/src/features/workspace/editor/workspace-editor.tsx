@@ -484,7 +484,7 @@ export function WorkspaceEditor({
                 className={styles.ide}
                 key={frame}
                 title={t("VS Code workspace")}
-                src={`/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
+                src={`${c.baseUrl}/editor/${encodeURIComponent(id)}/?folder=${encodeURIComponent(value.workspace)}`}
               />
             </div>
           </div>

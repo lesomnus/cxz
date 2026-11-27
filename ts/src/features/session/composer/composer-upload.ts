@@ -36,8 +36,7 @@ export async function uploadFile(
   if (file.size > MAX_UPLOAD_BYTES)
     throw new Error("Files are limited to 1 GiB.");
   const url = new URL(
-    `/attachments/${encodeURIComponent(sessionId)}`,
-    c.baseUrl,
+    `${c.baseUrl}/attachments/${encodeURIComponent(sessionId)}`,
   );
   url.search = new URLSearchParams({
     run: runId,

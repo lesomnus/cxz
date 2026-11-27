@@ -152,7 +152,7 @@ test("unread response uses the left indicator and Sessions icon count clears whe
     });
   });
   try {
-    await page.goto("/c/_/session");
+    await page.goto("/c/@local/session");
     const entry = page.locator("[data-session-navigation]").first();
     const row = page.locator(".tree-session").first();
     const unread = row

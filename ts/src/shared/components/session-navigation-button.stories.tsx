@@ -40,7 +40,7 @@ function Samples() {
           </div>
         ),
       },
-      createMemoryHistory({ initialEntries: ["/c/_/session"] }),
+      createMemoryHistory({ initialEntries: ["/c/@local/session"] }),
     ),
   );
   return <RouterProvider router={router} />;

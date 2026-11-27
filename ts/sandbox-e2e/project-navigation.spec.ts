@@ -23,17 +23,17 @@ async function choose(page: Page, name: string) {
 test("the viewed session carries its project into other pages and picks up later project changes", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/session/session-8");
+  await page.goto("/sandbox.html#/c/@local/session/session-8");
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toBeVisible({ timeout: 45000 });
   await visit(page, "Projects view");
   await expect(picker(page)).toHaveText("Secondary project");
-  await expect(page).toHaveURL(/#\/c\/_\/project\/project-2$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/project\/project-2$/);
   await visit(page, "Tasks");
   await expect(picker(page)).toHaveText("Secondary project");
   await expect(page).toHaveURL(
-    /#\/c\/_\/project\/project-2\/task\?assignee=session-8$/,
+    /#\/c\/@local\/project\/project-2\/task\?assignee=session-8$/,
   );
 
   await visit(page, "Accounts");
@@ -48,11 +48,11 @@ test("the viewed session carries its project into other pages and picks up later
 
   // Returning to the existing conversation makes its project current again.
   await visit(page, "Sessions view");
-  await expect(page).toHaveURL(/#\/c\/_\/session\/session-8$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session\/session-8$/);
   await visit(page, "Tasks");
   await expect(picker(page)).toHaveText("Secondary project");
   await visit(page, "Memory");
-  await expect(page).toHaveURL(/#\/c\/_\/project\/project-2\/memory$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/project\/project-2\/memory$/);
   await expect(picker(page)).toHaveText("Secondary project");
   await expect(
     page.getByRole("main", { name: "Shared memory workspace", exact: true }),
@@ -62,7 +62,7 @@ test("the viewed session carries its project into other pages and picks up later
 test("explicit routes, browser history and reload retain the displayed project", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project/project-2");
+  await page.goto("/sandbox.html#/c/@local/project/project-2");
   await expect(picker(page)).toHaveText("Secondary project", {
     timeout: 45000,
   });
@@ -82,7 +82,7 @@ test("explicit routes, browser history and reload retain the displayed project",
   await expect(picker(page)).toHaveText("Secondary project");
 
   // The unscoped project index does not change the remembered project.
-  await page.evaluate(() => (location.hash = "/c/_/project"));
+  await page.evaluate(() => (location.hash = "/c/@local/project"));
   await expect(
     page.getByRole("table", { name: "Projects", exact: true }),
   ).toBeVisible();
@@ -94,18 +94,18 @@ test("explicit routes, browser history and reload retain the displayed project",
 test("remembered scope does not override an explicit missing project or guess an unscoped task's project", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project/project-2");
+  await page.goto("/sandbox.html#/c/@local/project/project-2");
   await expect(picker(page)).toHaveText("Secondary project", {
     timeout: 45000,
   });
-  await page.evaluate(() => (location.hash = "/c/_/task/missing-task"));
+  await page.evaluate(() => (location.hash = "/c/@local/task/missing-task"));
   await expect(
     page.getByText("Choose a project to open this task.", { exact: true }),
   ).toBeVisible();
   await visit(page, "Projects view");
   await expect(picker(page)).toHaveText("Secondary project");
   await page.evaluate(
-    () => (location.hash = "/c/_/project/missing-project/task"),
+    () => (location.hash = "/c/@local/project/missing-project/task"),
   );
   await expect(
     page.getByText("Project not found. Choose another project.", {
@@ -117,12 +117,12 @@ test("remembered scope does not override an explicit missing project or guess an
 test("reselecting Projects opens the project table and keeps list URLs and history distinct from details", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project/project-2");
+  await page.goto("/sandbox.html#/c/@local/project/project-2");
   await expect(picker(page)).toHaveText("Secondary project", {
     timeout: 45000,
   });
   await visit(page, "Projects view");
-  await expect(page).toHaveURL(/#\/c\/_\/project$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/project$/);
   const table = page.getByRole("table", { name: "Projects", exact: true });
   await expect(table).toBeVisible();
   await expect(table.getByRole("columnheader")).toHaveText([
@@ -144,37 +144,37 @@ test("reselecting Projects opens the project table and keeps list URLs and histo
   await expect(table).toBeVisible();
   await page.reload();
   await expect(table).toBeVisible({ timeout: 45000 });
-  await expect(page).toHaveURL(/#\/c\/_\/project$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/project$/);
   await table
     .getByRole("link", { name: "Secondary project project-2", exact: true })
     .click();
-  await expect(page).toHaveURL(/#\/c\/_\/project\/project-2$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/project\/project-2$/);
   await expect(picker(page)).toHaveText("Secondary project");
 });
 
 test("reselecting Sessions opens its existing list without forgetting the last conversation or draft", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/session/session-8");
+  await page.goto("/sandbox.html#/c/@local/session/session-8");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(input).toBeVisible({ timeout: 45000 });
   await input.fill("Keep my draft while browsing the session list");
   await visit(page, "Sessions view");
-  await expect(page).toHaveURL(/#\/c\/_\/session$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session$/);
   await expect(
     page.getByRole("main", { name: "Sessions", exact: true }),
   ).toBeVisible();
   const list = page.getByRole("main");
   await expect(list.getByRole("link", { name: /session-8/ })).toHaveAttribute(
     "href",
-    "/sandbox.html#/c/_/session/session-8",
+    "/sandbox.html#/c/@local/session/session-8",
   );
   await visit(page, "Sessions view");
-  await expect(page).toHaveURL(/#\/c\/_\/session$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session$/);
   await visit(page, "Projects view");
   await expect(picker(page)).toHaveText("Secondary project");
   await visit(page, "Sessions view");
-  await expect(page).toHaveURL(/#\/c\/_\/session\/session-8$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session\/session-8$/);
   await expect(input).toHaveValue(
     "Keep my draft while browsing the session list",
   );
@@ -189,7 +189,7 @@ test("the project table scrolls inside its viewport on narrow screens", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 700 });
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/@local/project");
   const table = page.getByRole("table", { name: "Projects", exact: true });
   await expect(table).toBeVisible({ timeout: 45000 });
   await expect(
@@ -218,7 +218,7 @@ test("the project table scrolls inside its viewport on narrow screens", async ({
 test("project row menus confirm lifecycle actions and affect only their project", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project");
+  await page.goto("/sandbox.html#/c/@local/project");
   const table = page.getByRole("table", { name: "Projects", exact: true });
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(2, { timeout: 45000 });
@@ -282,5 +282,5 @@ test("project row menus confirm lifecycle actions and affect only their project"
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/#\/c\/_\/project$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/project$/);
 });

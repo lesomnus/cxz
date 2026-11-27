@@ -62,15 +62,18 @@ async function connected(signal?: AbortSignal, prefix = "") {
   await vi.waitFor(() => expect(Socket.instances[index]?.sent).toHaveLength(2));
   return { response, socket: Socket.instances[index] };
 }
-it("keeps a hub connection prefix on the WebSocket path", async () => {
-  const { response, socket } = await connected(undefined, "/c/cluster");
-  expect(String(socket.url)).toBe(
-    "ws://127.0.0.1:5173/c/cluster/rpc-stream/cxz.SessionService/Events",
-  );
-  socket.head();
-  socket.done();
-  await (await response).arrayBuffer();
-});
+it.each(["@cluster", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"])(
+  "keeps the hub connection %s on the WebSocket path",
+  async (handle) => {
+    const { response, socket } = await connected(undefined, `/c/${handle}`);
+    expect(String(socket.url)).toBe(
+      `ws://127.0.0.1:5173/c/${handle}/rpc-stream/cxz.SessionService/Events`,
+    );
+    socket.head();
+    socket.done();
+    await (await response).arrayBuffer();
+  },
+);
 it("keeps unary calls and HTTPS streams on authenticated fetch", async () => {
   const fetch = vi.fn(
     async (_input: RequestInfo | URL, _init?: RequestInit) =>

@@ -22,16 +22,16 @@ test("resource addresses prefer aliases with UUID fallback and explicit self sco
   expect(resourceHandle({ ...resource, alias: "" })).toBe(id);
   expect(sessionLocation(resource)).toEqual({
     to: "/c/$connection/session/$sessionId",
-    params: { connection: "_", sessionId: "oak" },
+    params: { connection: "@local", sessionId: "oak" },
   });
   expect(projectLocation(id)).toMatchObject({
-    params: { connection: "_", projectId: id },
+    params: { connection: "@local", projectId: id },
   });
   expect(
     taskLocation({ project: "cxz", task: "fix-login", run: "run-1" }),
   ).toMatchObject({
     to: "/c/$connection/project/$projectId/task/$taskId",
-    params: { connection: "_", projectId: "cxz", taskId: "fix-login" },
+    params: { connection: "@local", projectId: "cxz", taskId: "fix-login" },
     search: { run: "run-1" },
   });
 });
@@ -88,12 +88,12 @@ test("old JSON-quoted sequence links retain the exact sequence value", async () 
 test("Memory document links keep their document ID and accept explicit project references", () => {
   expect(memoryLocation(id)).toEqual({
     to: "/c/$connection/project/$projectId/memory",
-    params: { connection: "_", projectId: id },
+    params: { connection: "@local", projectId: id },
   });
   expect(memoryLocation(id, "00000000-0000-8000-8007-000000000200")).toEqual({
     to: "/c/$connection/project/$projectId/memory/$memoryId",
     params: {
-      connection: "_",
+      connection: "@local",
       projectId: id,
       memoryId: "00000000-0000-8000-8007-000000000200",
     },
@@ -120,7 +120,7 @@ test("Task links nest under their project, preferring both aliases with UUID fal
     }),
   ).toEqual({
     to: "/c/$connection/project/$projectId/task/$taskId",
-    params: { connection: "_", projectId: "oak", taskId: "fix-login" },
+    params: { connection: "@local", projectId: "oak", taskId: "fix-login" },
     search: { assignee: "oak", run: "run-1" },
   });
   expect(
@@ -134,7 +134,7 @@ test("Task links nest under their project, preferring both aliases with UUID fal
   });
   expect(taskLocation({ project: resource })).toEqual({
     to: "/c/$connection/project/$projectId/task",
-    params: { connection: "_", projectId: "oak" },
+    params: { connection: "@local", projectId: "oak" },
     search: {},
   });
 });

@@ -1,6 +1,6 @@
 import {
-  sessionLocation,
   matchesResource,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import { ThemeProvider } from "#src/shared/theme/theme.tsx";
 import { t, translateKnown } from "#src/shared/i18n/i18n.ts";
@@ -45,6 +45,7 @@ const scenarios = [
   "Other project",
 ];
 function SandboxApp({ children }: PropsWithChildren) {
+  const { sessionLocation } = useResourceRoutes();
   useLocale();
   const [seed, setSeed] = useState("42");
   const [delay, setDelay] = useState("400");
@@ -255,7 +256,7 @@ function SandboxApp({ children }: PropsWithChildren) {
   );
 }
 const history = createHashHistory();
-if (!location.hash) history.replace("/c/_/session/session-1");
+if (!location.hash) history.replace("/c/@local/session/session-1");
 const router = createWorkspaceRouter(
   { shell: SandboxApp, view: WorkspaceView },
   history,

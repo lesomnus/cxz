@@ -146,7 +146,11 @@ test("title reserves two lines and metadata groups assignment, activity and fina
     await links.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute("href")),
     ),
-  ).toEqual(["/c/_/session/elm", "/c/_/project/workspace", "/c/_/session/oak"]);
+  ).toEqual([
+    "/c/@local/session/elm",
+    "/c/@local/project/workspace",
+    "/c/@local/session/oak",
+  ]);
   const sidebar = (await information.locator("..").boundingBox())!;
   const description = (await detail(page)
     .getByRole("region", { name: "Task description", exact: true })
@@ -925,7 +929,7 @@ test("saving keeps the detail page open and updates the alias route", async ({
       name: "Open task: Updated task title",
       exact: true,
     }),
-  ).toHaveAttribute("href", "/c/_/project/workspace/task/renamed-task");
+  ).toHaveAttribute("href", "/c/@local/project/workspace/task/renamed-task");
 });
 
 test("single-task boundaries remain stable and Add still opens a dialog", async ({

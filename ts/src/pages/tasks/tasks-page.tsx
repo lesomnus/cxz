@@ -9,9 +9,9 @@ import { useResourceSelection } from "#src/shared/api/resource-selection.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { TasksView } from "#src/features/tasks/tasks-view.tsx";
 import {
-  taskLocation,
   matchesResource,
   resourceHandle,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 
 export function TasksPage(props: {
@@ -21,6 +21,7 @@ export function TasksPage(props: {
   projectsLoading?: boolean;
   sessionsLoading?: boolean;
 }) {
+  const { taskLocation } = useResourceRoutes();
   const navigate = useNavigate();
   const { tasks } = useWorkspaceRoute();
   const stored = useResourceSelection(props.c);

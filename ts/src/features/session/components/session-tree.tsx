@@ -3,10 +3,9 @@ import { useEffect, useRef } from "react";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { projectIconName } from "#src/shared/components/project-icon.ts";
 import {
-  sessionLocation,
   matchesResource,
-  projectLocation,
   resourceHandle,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -42,6 +41,7 @@ export function SessionTreeGroup({
   errors?: ReadonlySet<string>;
   background?: ReadonlySet<string>;
 }) {
+  const { projectLocation, sessionLocation } = useResourceRoutes();
   useLocale();
   const navigate = useNavigate();
   const expanded = !collapsible || open;

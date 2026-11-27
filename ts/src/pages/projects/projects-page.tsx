@@ -58,9 +58,9 @@ import {
 import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
 import pageStyles from "#src/shared/components/resource-page.module.css";
 import {
-  projectLocation,
   resourceHandle,
   uuid,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 
 export function ProjectsPage({
@@ -78,6 +78,7 @@ export function ProjectsPage({
   sessionsLoading?: boolean;
   error?: string;
 }) {
+  const { projectLocation } = useResourceRoutes();
   useLocale();
   const navigate = useNavigate();
   const [saved, setSaved] = useState<Project>();
@@ -96,7 +97,7 @@ export function ProjectsPage({
   const accounts = useRemote((signal) => listAccounts(c, signal), [c], {
     cache: { store: c.reads, key: ACCOUNT_LIST_KEY, ttl: ACCOUNT_INFO_TTL },
   });
-  const { connection, project: selected } = useWorkspaceRoute();
+  const { project: selected } = useWorkspaceRoute();
   const resolved = useProject(c, visibleProjects, selected);
   const project = selected ? resolved : undefined;
   return (
@@ -121,7 +122,6 @@ export function ProjectsPage({
                 resourceHandle(
                   visibleProjects.find((p) => projectId(p) === project)!,
                 ),
-                connection,
               ),
             )
           }
@@ -140,7 +140,6 @@ export function ProjectsPage({
               {error && <ErrorNotice error={error} />}
               <ProjectTable
                 c={c}
-                connection={connection}
                 projects={visibleProjects}
                 sessions={sessions}
                 loading={projectsLoading}
@@ -171,10 +170,7 @@ export function ProjectsPage({
                         updated.alias !== project.alias
                       )
                         void navigate({
-                          ...projectLocation(
-                            resourceHandle(updated),
-                            connection,
-                          ),
+                          ...projectLocation(resourceHandle(updated)),
                           replace: true,
                         });
                     }}
@@ -184,10 +180,7 @@ export function ProjectsPage({
                         (p) => key(p.id) !== key(project.id),
                       );
                       void navigate(
-                        projectLocation(
-                          next && resourceHandle(next),
-                          connection,
-                        ),
+                        projectLocation(next && resourceHandle(next)),
                       );
                     }}
                     sessions={sessions.filter(

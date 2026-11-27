@@ -44,7 +44,7 @@ test("Search opens with the shared bar and only filter controls below it", async
   await query(page).press("Enter");
   await expect(
     page.getByRole("link", { name: /Keep the search bar consistent/ }),
-  ).toHaveAttribute("href", "/c/_/session/oak?seq=42");
+  ).toHaveAttribute("href", "/c/@local/session/oak?seq=42");
 });
 test("search modes are toggles and project filters include an all-projects scope", async ({
   page,
@@ -147,7 +147,7 @@ test("pagination appends matches to the existing conversation", async ({
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: /The follow-up keeps/ }),
-  ).toHaveAttribute("href", "/c/_/session/oak?seq=200");
+  ).toHaveAttribute("href", "/c/@local/session/oak?seq=200");
   await expect(
     page.getByRole("button", { name: "Load more results", exact: true }),
   ).toHaveCount(0);

@@ -399,7 +399,7 @@ function Preview({
           ),
       },
       createMemoryHistory({
-        initialEntries: [page ? "/c/_/errors" : "/c/_/account"],
+        initialEntries: [page ? "/c/@local/errors" : "/c/@local/account"],
       }),
     ),
   );

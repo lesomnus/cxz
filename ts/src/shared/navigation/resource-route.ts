@@ -1,6 +1,8 @@
 import { Id } from "@lesomnus/payday/pdid";
+import { createContext, useContext, useMemo } from "react";
+import { standaloneConnection } from "#src/shared/api/routable-connections.ts";
 
-export const selfConnection = { connection: "_" } as const;
+export const ConnectionScope = createContext(standaloneConnection);
 
 // Sequence numbers can exceed JavaScript's safe integer range.
 export function parseRouteSearch(search: string) {
@@ -72,63 +74,77 @@ export const resourcePaths = {
   errors: "/c/$connection/errors",
 } as const;
 
-export function resourceLocation(resource: keyof typeof resourcePaths) {
-  return { to: resourcePaths[resource], params: selfConnection };
+export function resourceLocation(
+  resource: keyof typeof resourcePaths,
+  connection = standaloneConnection,
+) {
+  return { to: resourcePaths[resource], params: { connection } };
 }
 export function sessionLocation(
   session: string | Parameters<typeof resourceHandle>[0],
+  connection = standaloneConnection,
 ) {
   return {
     to: "/c/$connection/session/$sessionId" as const,
     params: {
-      ...selfConnection,
+      connection,
       sessionId:
         typeof session === "string" ? session : resourceHandle(session),
     },
   };
 }
-export function projectLocation(project?: string, connection: string = "_") {
+export function projectLocation(
+  project?: string,
+  connection = standaloneConnection,
+) {
   return project
     ? {
         to: "/c/$connection/project/$projectId" as const,
         params: { connection, projectId: project },
       }
-    : { ...resourceLocation("projects"), params: { connection } };
+    : resourceLocation("projects", connection);
 }
 export function memoryLocation(
   project: string | Parameters<typeof resourceHandle>[0],
   memory?: string,
+  connection = standaloneConnection,
 ) {
   const projectId =
     typeof project === "string" ? project : resourceHandle(project);
   return memory
     ? {
         to: "/c/$connection/project/$projectId/memory/$memoryId" as const,
-        params: { ...selfConnection, projectId, memoryId: memory },
+        params: { connection, projectId, memoryId: memory },
       }
     : {
         to: "/c/$connection/project/$projectId/memory" as const,
-        params: { ...selfConnection, projectId },
+        params: { connection, projectId },
       };
 }
-export function accountLocation(account?: string) {
+export function accountLocation(
+  account?: string,
+  connection = standaloneConnection,
+) {
   return account
     ? {
         to: "/c/$connection/account/$accountId" as const,
-        params: { ...selfConnection, accountId: account },
+        params: { connection, accountId: account },
       }
-    : resourceLocation("accounts");
+    : resourceLocation("accounts", connection);
 }
-export function taskLocation({
-  task,
-  project,
-  ...search
-}: {
-  task?: string | Parameters<typeof resourceHandle>[0];
-  project?: string | Parameters<typeof resourceHandle>[0];
-  assignee?: string;
-  run?: string;
-}) {
+export function taskLocation(
+  {
+    task,
+    project,
+    ...search
+  }: {
+    task?: string | Parameters<typeof resourceHandle>[0];
+    project?: string | Parameters<typeof resourceHandle>[0];
+    assignee?: string;
+    run?: string;
+  },
+  connection = standaloneConnection,
+) {
   const projectId =
     typeof project === "string" ? project : project && resourceHandle(project);
   const taskId = typeof task === "string" ? task : task && resourceHandle(task);
@@ -136,20 +152,43 @@ export function taskLocation({
     return taskId
       ? {
           to: "/c/$connection/project/$projectId/task/$taskId" as const,
-          params: { ...selfConnection, projectId, taskId },
+          params: { connection, projectId, taskId },
           search,
         }
       : {
           to: "/c/$connection/project/$projectId/task" as const,
-          params: { ...selfConnection, projectId },
+          params: { connection, projectId },
           search,
         };
   }
   return taskId
     ? {
         to: "/c/$connection/task/$taskId" as const,
-        params: { ...selfConnection, taskId },
+        params: { connection, taskId },
         search,
       }
-    : { ...resourceLocation("tasks"), search };
+    : { ...resourceLocation("tasks", connection), search };
+}
+
+export function useResourceRoutes() {
+  const connection = useContext(ConnectionScope);
+  return useMemo(
+    () => ({
+      resourceLocation: (resource: keyof typeof resourcePaths) =>
+        resourceLocation(resource, connection),
+      sessionLocation: (session: Parameters<typeof sessionLocation>[0]) =>
+        sessionLocation(session, connection),
+      projectLocation: (project?: string, target = connection) =>
+        projectLocation(project, target),
+      memoryLocation: (
+        project: Parameters<typeof memoryLocation>[0],
+        memory?: string,
+      ) => memoryLocation(project, memory, connection),
+      accountLocation: (account?: string) =>
+        accountLocation(account, connection),
+      taskLocation: (task: Parameters<typeof taskLocation>[0]) =>
+        taskLocation(task, connection),
+    }),
+    [connection],
+  );
 }

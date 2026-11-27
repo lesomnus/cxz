@@ -36,11 +36,7 @@ import { resumableStates } from "#src/features/session/model/session-actions.ts"
 import { useSettings } from "#src/shared/settings/settings.ts";
 import {
   matchesResource,
-  memoryLocation,
-  projectLocation,
-  resourceLocation,
-  sessionLocation,
-  taskLocation,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 type WorkspaceProps = {
   connection: Connection;
@@ -74,6 +70,13 @@ function WorkspaceContent({
   exitLabel = t("Sign out"),
   children,
 }: WorkspaceProps) {
+  const {
+    projectLocation,
+    resourceLocation,
+    sessionLocation,
+    taskLocation,
+    memoryLocation,
+  } = useResourceRoutes();
   useLocale();
   useScrollbars();
   useEffect(() => c.conversations.mount(), [c]);
@@ -197,7 +200,6 @@ function WorkspaceContent({
       view === "projects"
         ? projectLocation(
             route.resource === "projects" ? undefined : currentProject,
-            route.connection,
           )
         : view === "sessions"
           ? route.resource === view

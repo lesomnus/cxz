@@ -87,7 +87,7 @@ function AccountPreview({
           />
         ),
       },
-      createMemoryHistory({ initialEntries: ["/c/_/account"] }),
+      createMemoryHistory({ initialEntries: ["/c/@local/account"] }),
     ),
   );
   return <RouterProvider router={router} />;
@@ -175,7 +175,7 @@ function MemoryPreview({
           />
         ),
       },
-      createMemoryHistory({ initialEntries: ["/c/_/project/web/memory"] }),
+      createMemoryHistory({ initialEntries: ["/c/@local/project/web/memory"] }),
     ),
   );
   return <RouterProvider router={router} />;

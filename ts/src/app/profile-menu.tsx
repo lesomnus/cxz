@@ -6,7 +6,7 @@ import { ResourceIcon } from "#src/shared/navigation/resource-icon.tsx";
 import { SidebarAccounts } from "#src/features/accounts/sidebar-accounts.tsx";
 import type { Connection } from "#src/shared/api/connection.ts";
 import type { Session } from "#gen/cxz/session_pb";
-import { accountLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import { sidebarPopupGap } from "#src/shared/navigation/sidebar-popup.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import {
@@ -29,6 +29,7 @@ export function ProfileMenu({
   openSettings: () => void;
   errors?: ClientErrors;
 }) {
+  const { accountLocation } = useResourceRoutes();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);

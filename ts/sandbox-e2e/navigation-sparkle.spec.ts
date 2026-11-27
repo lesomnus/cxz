@@ -37,7 +37,7 @@ test("sidebar and session links render ink while preserving routing and new tabs
   page,
   context,
 }) => {
-  await page.goto("/sandbox.html#/c/_/session/session-1");
+  await page.goto("/sandbox.html#/c/@local/session/session-1");
   const projects = page.getByRole("link", {
     name: "Projects view",
     exact: true,
@@ -57,7 +57,7 @@ test("sidebar and session links render ink while preserving routing and new tabs
   await visibleInk(projects);
   expect(await projects.boundingBox()).toEqual(box);
   await page.mouse.up();
-  await expect(page).toHaveURL(/#\/c\/_\/project\/project-1$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/project\/project-1$/);
   await expect(projects.locator("canvas[data-ink-sparkle]")).toHaveCount(0);
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   const panel = page.getByRole("complementary", { name: "Session list" });
@@ -68,15 +68,17 @@ test("sidebar and session links render ink while preserving routing and new tabs
   await page.mouse.down();
   await visibleInk(session);
   await page.mouse.up();
-  await expect(page).toHaveURL(/#\/c\/_\/session\/session-2$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session\/session-2$/);
   await expect(session.locator("canvas[data-ink-sparkle]")).toHaveCount(0);
 
   const next = panel.locator('.tree-session[href$="/session-3"]');
   const opened = context.waitForEvent("page");
   await next.click({ modifiers: ["Control"] });
   const tab = await opened;
-  await tab.waitForURL(/#\/c\/_\/session\/session-3$/, { waitUntil: "commit" });
-  expect(tab.url()).toMatch(/#\/c\/_\/session\/session-3$/);
-  await expect(page).toHaveURL(/#\/c\/_\/session\/session-2$/);
+  await tab.waitForURL(/#\/c\/@local\/session\/session-3$/, {
+    waitUntil: "commit",
+  });
+  expect(tab.url()).toMatch(/#\/c\/@local\/session\/session-3$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session\/session-2$/);
   await tab.close();
 });

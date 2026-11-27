@@ -2,6 +2,30 @@ import { createMemoryHistory } from "@tanstack/react-router";
 import { expect, test } from "vitest";
 import { createWorkspaceRouter } from "./router";
 
+test("the entry route chooses the named default connection", async () => {
+  const history = createMemoryHistory({ initialEntries: ["/"] });
+  const router = createWorkspaceRouter(
+    {
+      shell: () => null,
+      view: () => null,
+      loadConnections: async () => [
+        { alias: "local", handle: "@local", baseUrl: "", primary: false },
+        { alias: "west", handle: "@west", baseUrl: "", primary: true },
+      ],
+    },
+    history,
+  );
+  try {
+    await router.load();
+    const result = router._serverResult;
+    expect(result?.type).toBe("redirect");
+    if (result?.type === "redirect")
+      expect(result.redirect.headers.get("Location")).toBe("/c/@west/session");
+  } finally {
+    history.destroy();
+  }
+});
+
 test.each(["/log", "/setting/logs"])(
   "Logs are a standalone page: %s",
   async (path) => {
@@ -28,7 +52,7 @@ test.each(["/log", "/setting/logs"])(
   },
 );
 
-test.each(["/c/_/activity", "/activity"])(
+test.each(["/c/@local/activity", "/activity"])(
   "a removed Activity bookmark shows the not-found page: %s",
   async (path) => {
     const history = createMemoryHistory({ initialEntries: [path] });
@@ -49,7 +73,7 @@ test.each(["/c/_/activity", "/activity"])(
 );
 
 const project = "00000000-0000-8000-8007-000000000001";
-test.each(["/auxiliary", "/c/_/auxiliary", "/settings/auxiliary"])(
+test.each(["/auxiliary", "/c/@local/auxiliary", "/settings/auxiliary"])(
   "old Auxiliary AI addresses redirect into Settings: %s",
   async (path) => {
     const history = createMemoryHistory({ initialEntries: [path] });
@@ -90,17 +114,17 @@ test("Auxiliary AI is a settings topic", async () => {
 });
 const memory = "00000000-0000-8000-8007-000000000200";
 test.each([
-  ["/c/_/errors", "errors", {}],
-  [`/c/_/project/${project}/memory`, "memory", { projectId: project }],
+  ["/c/@local/errors", "errors", {}],
+  [`/c/@local/project/${project}/memory`, "memory", { projectId: project }],
   [
-    `/c/_/project/${project}/memory/${memory}`,
+    `/c/@local/project/${project}/memory/${memory}`,
     "memory",
     { projectId: project, memoryId: memory },
   ],
-  [`/c/_/project/${project}`, "projects", { projectId: project }],
-  ["/c/_/project/oak/memory", "memory", { projectId: "oak" }],
+  [`/c/@local/project/${project}`, "projects", { projectId: project }],
+  ["/c/@local/project/oak/memory", "memory", { projectId: "oak" }],
   [
-    `/c/_/project/oak/memory/${memory}`,
+    `/c/@local/project/oak/memory/${memory}`,
     "memory",
     { projectId: "oak", memoryId: memory },
   ],
@@ -123,8 +147,8 @@ test.each([
   },
 );
 test.each([
-  "/c/_/memory",
-  `/c/_/memory?project=${project}`,
+  "/c/@local/memory",
+  `/c/@local/memory?project=${project}`,
   `/memory?project=${project}`,
 ])("removed Memory addresses are not redirected: %s", async (path) => {
   const history = createMemoryHistory({ initialEntries: [path] });
@@ -142,13 +166,13 @@ test.each([
 });
 
 test.each([
-  ["/c/_/project/cxz/task", { projectId: "cxz" }],
+  ["/c/@local/project/cxz/task", { projectId: "cxz" }],
   [
-    "/c/_/project/cxz/task/fix-login",
+    "/c/@local/project/cxz/task/fix-login",
     { projectId: "cxz", taskId: "fix-login" },
   ],
   [
-    `/c/_/project/${project}/task/${memory}`,
+    `/c/@local/project/${project}/task/${memory}`,
     { projectId: project, taskId: memory },
   ],
 ])(
@@ -172,7 +196,7 @@ test.each([
 
 test("Errors accepts old bookmarks without filtering the unified list", async () => {
   const history = createMemoryHistory({
-    initialEntries: ["/c/_/errors?tab=history"],
+    initialEntries: ["/c/@local/errors?tab=history"],
   });
   const router = createWorkspaceRouter(
     { shell: () => null, view: () => null },
@@ -181,7 +205,7 @@ test("Errors accepts old bookmarks without filtering the unified list", async ()
   try {
     await router.load();
     expect(router.state.matches.at(-1)?.staticData.resource).toBe("errors");
-    expect(router.state.location.href).toBe("/c/_/errors?tab=history");
+    expect(router.state.location.href).toBe("/c/@local/errors?tab=history");
   } finally {
     history.destroy();
   }

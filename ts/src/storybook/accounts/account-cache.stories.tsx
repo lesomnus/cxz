@@ -47,7 +47,7 @@ function CachePreview({ usageDelayMs = 0 }: { usageDelayMs?: number }) {
           />
         ),
       },
-      createMemoryHistory({ initialEntries: ["/c/_/account"] }),
+      createMemoryHistory({ initialEntries: ["/c/@local/account"] }),
     ),
   );
   return (

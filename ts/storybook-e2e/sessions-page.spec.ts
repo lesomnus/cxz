@@ -402,7 +402,7 @@ test("Sessions hide projects without containers and follow container lifecycle u
     "/iframe.html?id=pages-sessions--container-lifecycle&viewMode=story",
   );
   const rows = table(page).locator("tbody tr");
-  const api = table(page).locator('tbody a[href="/c/_/project/api"]');
+  const api = table(page).locator('tbody a[href="/c/@local/project/api"]');
   await expect(rows).toHaveCount(5);
   await expect(api).toHaveCount(0);
   await page

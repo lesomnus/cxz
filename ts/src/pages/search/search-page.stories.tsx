@@ -175,7 +175,7 @@ function Preview({
         ),
         view: () => <SearchPage c={c} projects={projects} />,
       },
-      createMemoryHistory({ initialEntries: ["/c/_/search"] }),
+      createMemoryHistory({ initialEntries: ["/c/@local/search"] }),
     );
   });
   return <RouterProvider router={router} />;

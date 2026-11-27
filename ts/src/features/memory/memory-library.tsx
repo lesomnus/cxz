@@ -13,7 +13,10 @@ import type { Session } from "#gen/cxz/session_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { projectRef } from "#src/shared/api/project-id.ts";
-import { memoryLocation, uuid } from "#src/shared/navigation/resource-route.ts";
+import {
+  uuid,
+  useResourceRoutes,
+} from "#src/shared/navigation/resource-route.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { publicUUID } from "#src/shared/logs/rpc-diagnostics.ts";
 import { memoryListKey } from "#src/shared/api/read-cache.ts";
@@ -68,6 +71,7 @@ export function MemoryLibrary({
   memoryId?: string;
   onMemoryChange?: (id?: string, replace?: boolean) => void;
 }) {
+  const { memoryLocation } = useResourceRoutes();
   const [trash, setTrash] = useState(false),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState(""),

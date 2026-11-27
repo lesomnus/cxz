@@ -27,7 +27,7 @@ test("Memory counters list the same created notes and link to their detail pages
   await expect(items.first()).toContainText("Memory note 1");
   await expect(items.first()).toHaveAttribute(
     "href",
-    /\/c\/_\/project\/web\/memory\//,
+    /\/c\/@local\/project\/web\/memory\//,
   );
   await expect(items.first().locator("svg")).toHaveCount(0);
   const delta = items

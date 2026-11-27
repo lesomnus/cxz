@@ -110,7 +110,7 @@ function Preview({
             );
           },
         },
-        createMemoryHistory({ initialEntries: ["/c/_/session"] }),
+        createMemoryHistory({ initialEntries: ["/c/@local/session"] }),
       ),
     [kind, dialog, live],
   );

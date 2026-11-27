@@ -18,7 +18,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { TaskPriority, TaskStatusIcon, TaskTime } from "./task-indicators";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { taskLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import {
   ownerIssue,
   tableTasks,
@@ -46,6 +46,7 @@ export function TaskTable({
   run?: string;
   project: Project;
 }) {
+  const { taskLocation } = useResourceRoutes();
   const ordered = useMemo(
     () => tableTasks(tasks, assignee, run),
     [tasks, assignee, run],

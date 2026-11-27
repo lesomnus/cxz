@@ -129,7 +129,7 @@ test("WorkSummary opens created Tasks above the trigger without shifting the con
     .first();
   await expect(link).toHaveAttribute(
     "href",
-    "/c/_/project/workspace/task/task-4",
+    "/c/@local/project/workspace/task/task-4",
   );
   await link.click();
   await expect(page.getByRole("menu", menuName)).toHaveCount(0);

@@ -11,7 +11,7 @@ test("pending input pulls down without fading and a failed send springs back wit
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
-  await page.goto("/c/_/session/session");
+  await page.goto("/c/@local/session/session");
   let release!: () => void;
   const held = new Promise<void>((resolve) => {
     release = resolve;

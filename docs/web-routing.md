@@ -9,16 +9,16 @@ components; the router does not preload session data or restore transcript scrol
 
 | Route                                  | View                                     |
 | -------------------------------------- | ---------------------------------------- |
-| `/c/_/session`                         | Session catalog                          |
-| `/c/_/session/$sessionId`              | Conversation identified by alias or UUID |
-| `/c/_/project`                         | Project catalog                          |
-| `/c/_/project/$projectId`              | Project dashboard                        |
-| `/c/_/project/$projectId/task`         | Project task table                       |
-| `/c/_/project/$projectId/task/$taskId` | Task details                             |
+| `/c/@local/session`                         | Session catalog                          |
+| `/c/@local/session/$sessionId`              | Conversation identified by alias or UUID |
+| `/c/@local/project`                         | Project catalog                          |
+| `/c/@local/project/$projectId`              | Project dashboard                        |
+| `/c/@local/project/$projectId/task`         | Project task table                       |
+| `/c/@local/project/$projectId/task/$taskId` | Task details                             |
 | `/setting/general`                     | General settings                         |
 | `/setting/editor`                      | Editor settings                          |
 
-`/` redirects to `/c/_/session`, and `/setting` redirects to `/setting/general`.
+`/` redirects to the default connection’s session list, and `/setting` redirects to `/setting/general`.
 Unknown routes show a recoverable page within the workspace. Signing in preserves
 the requested deep link. General and Editor share their parent view so changing the
 settings topic keeps the JSON editor, unsaved text and Undo history mounted.
@@ -43,7 +43,7 @@ builds; Vite also provides the SPA fallback during local development.
 
 The WASM sandbox shares the same route tree through hash history, preserving its
 `/sandbox.html` entry point without requiring a separate server fallback. For
-example, `/sandbox.html#/c/_/session/session-2` opens that scenario directly. The
+example, `/sandbox.html#/c/@local/session/session-2` opens that scenario directly. The
 scenario selector follows navigation history, and selecting a scenario navigates
 to the corresponding session route.
 

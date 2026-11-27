@@ -27,9 +27,8 @@ import {
 } from "#src/shared/components/resource-navigation-button.tsx";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import {
-  projectLocation,
-  accountLocation,
   resourceHandle,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import type { SessionControlConnection } from "#src/features/session/model/session-control-batch.ts";
 import {
@@ -86,6 +85,7 @@ export function SessionTable({
   scroll?: "bounded" | "page";
   variant?: "default" | "compact" | "overview";
 }) {
+  const { projectLocation, accountLocation } = useResourceRoutes();
   const compact = variant !== "default";
   const overview = variant === "overview";
   const pageScroll = scroll === "page";

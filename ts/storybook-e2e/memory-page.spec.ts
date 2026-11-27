@@ -116,7 +116,7 @@ test("the collection replaces old panels and controls with rectangular memory ca
   const item = card(page, "Architecture notes");
   await expect(item).toHaveAttribute(
     "href",
-    /\/c\/_\/project\/web\/memory\/[\da-f-]{36}$/,
+    /\/c\/@local\/project\/web\/memory\/[\da-f-]{36}$/,
   );
   await expect(
     item.getByText("Design decisions", { exact: true }),

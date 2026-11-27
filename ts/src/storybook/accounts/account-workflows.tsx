@@ -109,10 +109,10 @@ function WorkflowPreview({
       createMemoryHistory({
         initialEntries: [
           scenario === "send" || scenario === "expired"
-            ? "/c/_/session/seal"
+            ? "/c/@local/session/seal"
             : scenario === "create-session"
-              ? "/c/_/session"
-              : "/c/_/account",
+              ? "/c/@local/session"
+              : "/c/@local/account",
         ],
       }),
     );

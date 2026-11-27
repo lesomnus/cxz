@@ -170,22 +170,22 @@ if e.Scheme == "local" {
 연결을 모른다. 원격 쪽 게이트웨이(사내 k8s의 web 컨테이너 등)도 바뀌지 않는다.
 
 ```
-브라우저 ──> 허브 (한 origin) ──/c/dev/──> 로컬 게이트웨이 ──> 로컬 매니저
-                              └─/c/k8s/──> k8s 게이트웨이  ──> k8s 매니저
+브라우저 ──> 허브 (한 origin) ──/c/@dev/──> 로컬 게이트웨이 ──> 로컬 매니저
+                              └─/c/@k8s/──> k8s 게이트웨이  ──> k8s 매니저
 ```
 
 ### 계약
 
-- **경로.** 연결 `NAME`의 게이트웨이 경로 `P`는 허브의 `/c/NAME` + `P`다.
-  `/c/k8s/cxz.ProjectService/List`, `/c/k8s/rpc-stream/cxz.SessionService/Events`,
-  `/c/k8s/terminal/<project>?…`, `/c/k8s/auth/status`. 게이트웨이가 받는 모든
+- **경로.** 연결의 게이트웨이 경로 `P`에는 `/c/@alias` 또는 `/c/<UUID>`를 앞에 붙인다.
+  `/c/@k8s/cxz.ProjectService/List`, `/c/@k8s/rpc-stream/cxz.SessionService/Events`,
+  `/c/@k8s/terminal/<project>?…`, `/c/@k8s/auth/status`. 게이트웨이가 받는 모든
   경로(Connect, `rpc-stream`, 터미널·로그인·에디터 WebSocket, 첨부, `auth`)가 같은
   규칙이다. 그래서 UI의 연결 하나는 `baseUrl = origin + "/c/" + name`인
   `Connection` 하나다.
 - **이름.** 소문자·숫자·`-`, 1~40자(`^[a-z0-9][a-z0-9-]{0,39}$`). 경로에 그대로 들어간다.
 - **접두어 없는 경로**는 기본 연결(목록의 첫째)이다. 연결을 모르는 UI는 그대로 동작한다.
 - **목록.** `ConnectionService.List`는 허브가 답한다. 어느 연결을 거쳐 물어도
-  (`/cxz.ConnectionService/List`, `/c/NAME/cxz.ConnectionService/List`) 같은 답이다.
+  (`/cxz.ConnectionService/List`, `/c/@NAME/cxz.ConnectionService/List`) 같은 답이다.
 
   ```json
   {"items": [
@@ -200,8 +200,8 @@ if e.Scheme == "local" {
   즉 연결이 자기 자신 하나인 경우의 답으로 남는다.
 - **세션.** 연결의 게이트웨이 세션(쿠키)은 **허브가 서버 쪽에 든다.** 브라우저에는
   가지 않는다. 두 게이트웨이의 쿠키가 모두 `__Host-cxz`(Path=/ 강제)라서 한 origin
-  안에서 둘을 나눠 둘 수 없기도 하다. `/c/NAME/auth/status`가 허브의 세션을 확인하고
-  없거나 만료됐으면 그 연결의 토큰으로 로그인한다. `/c/NAME/auth/logout`은 그
+  안에서 둘을 나눠 둘 수 없기도 하다. `/c/@NAME/auth/status`가 허브의 세션을 확인하고
+  없거나 만료됐으면 그 연결의 토큰으로 로그인한다. `/c/@NAME/auth/logout`은 그
   연결의 세션만 버린다. 연결마다 `Payday-Identity`가 따로라서 UI의 읽기 캐시가
   섞이지 않는다.
 - **보안.** 허브는 자기 origin의 요청만 받는다(loopback, `Origin`이 자기 자신,
@@ -225,7 +225,7 @@ if e.Scheme == "local" {
   파일 기준이다. 없으면 지금처럼 게이트웨이 하나가 `dev`라는 연결 하나다.
   `ConnectionService.List`는 Connect JSON으로만 답한다(UI가 쓰는 형식).
 - **게이트웨이(Go)**: 남음. 같은 계약을 `internal/webui`에 -- 연결 설정(원격 게이트웨이
-  origin과 웹 토큰 파일), `/c/NAME` 프록시, 서버 쪽 세션, `List`. 연결 설정을 TUI의
+  origin과 웹 토큰 파일), `/c/@NAME` 프록시, 서버 쪽 세션, `List`. 연결 설정을 TUI의
   `settings.jsonc` `connections`에 웹 항목으로 더할지 따로 둘지는 그때 정한다
   (TUI 연결은 relay 주소·relay 토큰이라 웹과 다르다).
 - **UI**: 남음. 목록을 허브의 `List`에서 받아 연결마다 `Connection`을 만들고 전환한다.

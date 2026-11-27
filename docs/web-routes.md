@@ -1,10 +1,15 @@
 # Web addresses
 
-Connection-owned pages live under `/c/<connection>/`. The reserved connection
-reference `_` means the installation serving the current web origin. It does
-not follow a mutable default connection selection. The browser currently
-supports only this self connection; other names show an unavailable page and
-never resolve against the local installation.
+Connection-owned pages live under `/c/@alias/` or `/c/<connection UUID>/`.
+Generated links use the connection alias. The UUID survives an alias rename.
+Opening `/` selects the current default connection, then redirects to its
+explicit address. Unavailable aliases and UUIDs show an unavailable page,
+including the retired `/c/_/` form.
+
+A directly served installation defaults to `@local`. Set `connection_alias`
+and `connection_id` in the Web gateway configuration to assign an explicit
+identity. The development hub lists its configured connections and accepts both
+forms on its scoped API paths.
 
 Resource path segments use singular names. Generated links prefer a resource's
 alias and fall back to its UUID. The same segment accepts either form; a UUID is
@@ -13,18 +18,18 @@ used for conversation state, drafts, subscriptions or mutations.
 
 | Page                  | Address                                                 |
 | --------------------- | ------------------------------------------------------- |
-| Session library       | `/c/_/session`                                          |
-| Session               | `/c/_/session/oak`                                      |
-| Session by UUID       | `/c/_/session/00000000-0000-8000-8007-000000000001`     |
-| Conversation position | `/c/_/session/oak?seq=120`                              |
-| Project dashboard     | `/c/_/project/cxz`                                      |
-| Account               | `/c/_/account/work1`                                    |
-| Project task table    | `/c/_/project/cxz/task`                                 |
-| Project task          | `/c/_/project/cxz/task/fix-login`                       |
-| Project memories      | `/c/_/project/{project alias or ID}/memory`             |
-| Memory document       | `/c/_/project/{project alias or ID}/memory/{memory ID}` |
-| Search                | `/c/_/search`                                           |
-| Auxiliary AI          | `/c/_/auxiliary`                                        |
+| Session library       | `/c/@local/session`                                          |
+| Session               | `/c/@local/session/oak`                                      |
+| Session by UUID       | `/c/@local/session/00000000-0000-8000-8007-000000000001`     |
+| Conversation position | `/c/@local/session/oak?seq=120`                              |
+| Project dashboard     | `/c/@local/project/cxz`                                      |
+| Account               | `/c/@local/account/work1`                                    |
+| Project task table    | `/c/@local/project/cxz/task`                                 |
+| Project task          | `/c/@local/project/cxz/task/fix-login`                       |
+| Project memories      | `/c/@local/project/{project alias or ID}/memory`             |
+| Memory document       | `/c/@local/project/{project alias or ID}/memory/{memory ID}` |
+| Search                | `/c/@local/search`                                           |
+| Auxiliary AI          | `/c/@local/auxiliary`                                        |
 
 Memory paths accept project aliases or UUIDs. Generated links prefer the project
 alias and fall back to its UUID; the document segment always uses its UUID.
@@ -32,7 +37,7 @@ The project collection shows its document list without automatically selecting a
 updates the address; deep links, reload and browser Back/Forward restore that
 document. Unsaved edits require confirmation before leaving. Unknown projects or
 documents show an unavailable state instead of opening another document. The old
-`/memory` and `/c/_/memory` addresses have been removed.
+`/memory` and `/c/@local/memory` addresses have been removed.
 
 Conversation usage reports are available on the project and account pages.
 
@@ -52,8 +57,7 @@ still determine the displayed selection. An unscoped task detail still requires
 a project choice when several projects exist.
 
 Browser-wide settings live at `/setting/general`, `/setting/editor` and
-`/setting/connection`, outside the connection namespace. `/` opens
-`/c/_/session`.
+`/setting/connection`, outside the connection namespace.
 
 Old plural paths and project/account/task query selections redirect to the new
 addresses. Existing runtime session handles remain readable for old bookmarks.

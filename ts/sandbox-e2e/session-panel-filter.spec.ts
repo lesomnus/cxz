@@ -13,7 +13,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
     if (!localStorage.getItem("settings"))
       localStorage.setItem("settings", JSON.stringify({ "editor.tabSize": 3 }));
   });
-  await page.goto("/sandbox.html#/c/_/session/session-1");
+  await page.goto("/sandbox.html#/c/@local/session/session-1");
   const panel = page.getByRole("complementary", { name: "Session list" });
   const stopped = panel.locator('.tree-session[href$="/session-7"]');
   await expect(stopped).toBeVisible({ timeout: 45000 });
@@ -51,7 +51,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
 
   // A direct link remains usable even when its row is hidden. Resume and Stop
   // must update the filtered panel through the ordinary session subscription.
-  await page.goto("/sandbox.html#/c/_/session/session-7");
+  await page.goto("/sandbox.html#/c/@local/session/session-7");
   const editor = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(editor).toBeVisible();
   await expect(stopped).toHaveCount(0);
@@ -70,7 +70,7 @@ test("the panel hides inactive sessions persistently and follows stop/resume upd
     .click();
   await expect(stopped).toHaveCount(0);
   await expect(editor).toBeVisible();
-  await expect(page).toHaveURL(/#\/c\/_\/session\/session-7$/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session\/session-7$/);
 
   await menu.click();
   await show.click();
@@ -88,7 +88,7 @@ test("project collapse can be disabled persistently without losing the current c
     if (!localStorage.getItem("settings"))
       localStorage.setItem("settings", JSON.stringify({ "editor.tabSize": 3 }));
   });
-  await page.goto("/sandbox.html#/c/_/session/session-1");
+  await page.goto("/sandbox.html#/c/@local/session/session-1");
   const panel = page.getByRole("complementary", { name: "Session list" });
   await expect(panel.locator(".tree-session")).toHaveCount(SANDBOX_SESSIONS, {
     timeout: 45000,

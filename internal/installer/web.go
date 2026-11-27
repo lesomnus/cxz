@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lesomnus/cxz/internal/configeditor"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -46,6 +47,16 @@ func InstallWeb(ctx context.Context, root string, cfg webconfig.Config, out io.W
 	v.Image = manager.Config.Image
 	if !manager.State.Running {
 		return fmt.Errorf("start the Manager with cxz install first")
+	}
+	if cfg.ConnectionID == "" {
+		saved, err := webconfig.Load(filepath.Join(root, "web-installation.json"), true)
+		if err != nil {
+			return err
+		}
+		cfg.ConnectionID = saved.ConnectionID
+		if cfg.ConnectionID == "" {
+			cfg.ConnectionID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(cfg.Origin)).String()
+		}
 	}
 	if err = replaceWeb(ctx, root, v, cfg, out); err != nil {
 		return err
@@ -149,6 +160,12 @@ func webArgs(v transport.Installation, cfg webconfig.Config, configEditorDir str
 			"-e", configeditor.SocketEnv+"=/web/configuration-editor/host.sock")
 	}
 	args = append(args, v.Image, "--state", "/var/lib/cxz", "-x", "_web-serve", "--listen", "0.0.0.0:7350", "--origin", cfg.Origin, "--access-token-file", "/web/token")
+	if cfg.ConnectionAlias != "" {
+		args = append(args, "--connection-alias", cfg.ConnectionAlias)
+	}
+	if cfg.ConnectionID != "" {
+		args = append(args, "--connection-id", cfg.ConnectionID)
+	}
 	if cfg.Certificate != "" {
 		args = append(args, "--tls-cert", "/web/certificate.pem", "--tls-key", "/web/key.pem")
 	}

@@ -5,7 +5,7 @@ for (const width of [1440, 390]) {
     page,
   }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/sandbox.html#/c/_/project");
+    await page.goto("/sandbox.html#/c/@local/project");
     const profile = page.getByRole("button", { name: "Profile", exact: true });
     await expect(profile).toBeVisible({ timeout: 45000 });
     const button = (await profile.boundingBox())!;

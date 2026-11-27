@@ -10,17 +10,22 @@ test("project creation uses the chosen installation and a stable modal", async (
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
   });
+  const clusterId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const clusterRPC = `/c/${clusterId}`;
   await page.route("**/cxz.ConnectionService/List", (route) =>
     route.fulfill({
       json: {
         items: [
           {
             name: "local",
-            target: "https://local.example",
-            transport: "gateway",
+            target: new URL(route.request().url()).origin,
+            transport: "origin",
             isDefault: true,
           },
           {
+            id: Buffer.from(clusterId.replaceAll("-", ""), "hex").toString(
+              "base64",
+            ),
             name: "cluster",
             target: "https://cluster.example",
             transport: "gateway",
@@ -36,16 +41,16 @@ test("project creation uses the chosen installation and a stable modal", async (
   );
   await page.route("**/cxz.InstallationService/Version", (route) => {
     const path = new URL(route.request().url()).pathname;
-    if (path.startsWith("/c/legacy/")) return route.fulfill({ json: {} });
+    if (path.startsWith("/c/@legacy/")) return route.fulfill({ json: {} });
     return route.fulfill({
       json: {
-        projectBackend: path.startsWith("/c/cluster/")
+        projectBackend: path.startsWith(`${clusterRPC}/`)
           ? "kubernetes"
           : "docker",
       },
     });
   });
-  await page.route("**/c/{cluster,legacy}/auth/status", (route) =>
+  await page.route(`**/c/{${clusterId},@legacy}/auth/status`, (route) =>
     route.fulfill({ status: 204 }),
   );
   const project = {
@@ -55,13 +60,13 @@ test("project creation uses the chosen installation and a stable modal", async (
     workspace: "/workspaces/cluster-app",
     status: { containerState: "CONTAINER_STATE_ABSENT" },
   };
-  await page.route("**/c/cluster/cxz.ProjectService/List", (route) =>
+  await page.route(`**${clusterRPC}/cxz.ProjectService/List`, (route) =>
     route.fulfill({ json: { items: [project] } }),
   );
-  await page.route("**/c/cluster/cxz.ProjectService/Get", (route) =>
+  await page.route(`**${clusterRPC}/cxz.ProjectService/Get`, (route) =>
     route.fulfill({ json: project }),
   );
-  await page.route("**/c/cluster/cxz.SessionService/List", (route) =>
+  await page.route(`**${clusterRPC}/cxz.SessionService/List`, (route) =>
     route.fulfill({ json: { items: [] } }),
   );
   const addRequests: string[] = [];
@@ -85,7 +90,7 @@ test("project creation uses the chosen installation and a stable modal", async (
     );
   });
 
-  await page.goto("/c/_/project");
+  await page.goto("/c/@local/project");
   await page.getByRole("button", { name: "Add project", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Add project", exact: true });
   await expect(dialog.getByLabel("Workspace path")).toBeVisible();
@@ -125,14 +130,18 @@ test("project creation uses the chosen installation and a stable modal", async (
   ).toBeVisible();
   expect(await height()).toBe(initial);
   await confirm.click();
-  await expect(page).toHaveURL(/\/c\/cluster\/project\/cluster-app$/);
+  await expect(page).toHaveURL(/\/c\/@cluster\/project\/cluster-app$/);
   await expect(
     page.getByRole("combobox", { name: "Select project", exact: true }),
   ).toHaveText("Cluster app");
   expect(addRequests).toEqual([
-    "/c/cluster/cxz.ProjectService/Add",
-    "/c/cluster/cxz.ProjectService/Add",
+    `${clusterRPC}/cxz.ProjectService/Add`,
+    `${clusterRPC}/cxz.ProjectService/Add`,
   ]);
+  await page.goto(`${clusterRPC}/project/cluster-app`);
+  await expect(
+    page.getByRole("combobox", { name: "Select project", exact: true }),
+  ).toHaveText("Cluster app");
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
-  await expect(page).toHaveURL(/\/c\/cluster\/project$/);
+  await expect(page).toHaveURL(/\/c\/@cluster\/project$/);
 });

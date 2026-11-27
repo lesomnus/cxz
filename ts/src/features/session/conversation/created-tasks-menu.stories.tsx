@@ -111,7 +111,7 @@ function CreatedTasksPreview({
           );
         },
       },
-      createMemoryHistory({ initialEntries: ["/c/_/session/oak"] }),
+      createMemoryHistory({ initialEntries: ["/c/@local/session/oak"] }),
     ),
   );
   return <RouterProvider router={router} />;

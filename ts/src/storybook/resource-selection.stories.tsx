@@ -110,7 +110,9 @@ function Preview() {
     }
     return createWorkspaceRouter(
       { shell: Shell, view: View },
-      createMemoryHistory({ initialEntries: ["/c/_/project/workspace/task"] }),
+      createMemoryHistory({
+        initialEntries: ["/c/@local/project/workspace/task"],
+      }),
     );
   });
   return <RouterProvider router={router} />;

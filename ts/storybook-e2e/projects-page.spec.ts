@@ -9,7 +9,7 @@ test("project list stories show resource links, activity, states and empty/loadi
   await expect(table.locator("tbody tr")).toHaveCount(2);
   await expect(
     table.getByRole("link", { name: "Web workspace web", exact: true }),
-  ).toHaveAttribute("href", "/c/_/project/web");
+  ).toHaveAttribute("href", "/c/@local/project/web");
   await expect(
     table
       .locator("tbody tr")
@@ -403,7 +403,7 @@ test("project activity favors unread completed turns over work, and questions do
     .locator("tbody tr");
   const unread = rows.first().locator("td").nth(3).getByRole("link");
   await expect(unread).toHaveText("Unread completed conversationsession-3");
-  await expect(unread).toHaveAttribute("href", "/c/_/session/session-3");
+  await expect(unread).toHaveAttribute("href", "/c/@local/session/session-3");
   await expect(rows.first().locator("time")).toHaveText("30 minutes ago");
   await expect(rows.last().locator("td").nth(3)).toHaveText(
     "Working conversationelm",
@@ -633,16 +633,16 @@ test("project sessions use the index column layout with bounded resource links a
   const account = rows
     .first()
     .getByRole("link", { name: "Work account work", exact: true });
-  await expect(session).toHaveAttribute("href", "/c/_/session/oak");
+  await expect(session).toHaveAttribute("href", "/c/@local/session/oak");
   await expect(session.locator('[data-icon="open-external"]')).toHaveCount(1);
   await expect(session.locator('[data-icon="open-project"]')).toHaveCount(0);
-  await expect(account).toHaveAttribute("href", "/c/_/account/work");
+  await expect(account).toHaveAttribute("href", "/c/@local/account/work");
   await expect(
     rows.first().locator("td").nth(1).locator(".session-indicator"),
   ).toBeVisible();
   await expect(
     rows.first().locator("td").nth(2).getByRole("link"),
-  ).toHaveAttribute("href", "/c/_/session/oak");
+  ).toHaveAttribute("href", "/c/@local/session/oak");
   const linkWidth = await table.evaluate((element) =>
     parseFloat(
       getComputedStyle(element).getPropertyValue(

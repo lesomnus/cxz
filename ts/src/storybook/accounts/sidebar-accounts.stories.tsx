@@ -175,7 +175,7 @@ function SidebarPreview({
           </div>
         ),
       },
-      createMemoryHistory({ initialEntries: ["/c/_/account"] }),
+      createMemoryHistory({ initialEntries: ["/c/@local/account"] }),
     ),
   );
   useEffect(() => () => c.dispose(), [c]);

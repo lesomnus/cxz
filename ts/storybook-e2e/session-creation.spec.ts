@@ -161,7 +161,7 @@ for (const width of [1280, 390]) {
       await expect(selected).toContainText(name);
       await expect(selected).toHaveAttribute(
         "href",
-        `/c/_/session/new-${index}`,
+        `/c/@local/session/new-${index}`,
       );
       await page
         .getByRole("navigation", { name: "Preview history" })

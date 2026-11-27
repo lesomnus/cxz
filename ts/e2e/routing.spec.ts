@@ -21,13 +21,13 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await signIn(page);
-  const response = await page.goto("/c/_/session/demo-chat");
+  const response = await page.goto("/c/@local/session/demo-chat");
   expect(response!.status()).toBe(200);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(input).toBeVisible();
   await input.fill("Draft across routes");
   const session = page.getByRole("link", { name: /demo-chat/ });
-  await expect(session).toHaveAttribute("href", "/c/_/session/demo-chat");
+  await expect(session).toHaveAttribute("href", "/c/@local/session/demo-chat");
   await expect(session).toHaveClass(/active/);
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Settings", exact: true }).click();
@@ -42,13 +42,13 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await expect(input).toHaveValue("Draft across routes");
   await page.reload();
-  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/demo-chat$/);
   await expect(input).toBeVisible();
   const popupPromise = context.waitForEvent("page");
   await session.click({ modifiers: ["Control"] });
   const popup = await popupPromise;
   await popup.waitForLoadState();
-  await expect(popup).toHaveURL(/\/c\/_\/session\/demo-chat$/);
+  await expect(popup).toHaveURL(/\/c\/@local\/session\/demo-chat$/);
   await expect(
     popup.getByRole("textbox", { name: "Message", exact: true }),
   ).toBeVisible();
@@ -58,9 +58,9 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
     .getByRole("button", { name: "Demo project", exact: true });
   await projectHeading.click();
   await expect(projectHeading).toHaveAttribute("aria-expanded", "false");
-  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/demo-chat$/);
   await projectHeading.dblclick();
-  await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
+  await expect(page).toHaveURL(/\/c\/@local\/project\/demo$/);
   // Row selection keeps the project dashboard open.
   const workspace = page.getByRole("main", { name: "Project workspace" });
   await expect(workspace).toBeVisible();
@@ -73,7 +73,7 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
     .first()
     .getByRole("checkbox")
     .click();
-  await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
+  await expect(page).toHaveURL(/\/c\/@local\/project\/demo$/);
   await expect(
     workspace.getByRole("checkbox", {
       name: "Select all sessions",
@@ -81,14 +81,14 @@ test("direct routes, reload, browser history and new tabs preserve workspace nav
     }),
   ).toBeChecked();
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
-  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/demo-chat$/);
   await page.getByRole("button", { name: "Session panel options" }).click();
   await page
     .getByRole("menuitem", { name: "Disable project collapse" })
     .click();
   await expect(session).toBeVisible();
   await projectHeading.dblclick();
-  await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
+  await expect(page).toHaveURL(/\/c\/@local\/project\/demo$/);
   expect(errors).toEqual([]);
 });
 
@@ -109,31 +109,31 @@ test("a deep link survives sign-in, redirects and unknown routes stay navigable"
   await page.goto("/setting");
   await expect(page).toHaveURL(/\/setting\/general$/);
   await page.goto("/");
-  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session$/);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/unknown/page");
   await expect(
     page.getByRole("heading", { name: "Page not found" }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Back to sessions" }).click();
-  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session$/);
   expect((await page.request.get("/assets/missing.js")).status()).toBe(404);
   expect((await page.request.get("/auth/missing")).status()).toBe(404);
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/c/_/session/demo-chat");
+  await page.goto("/c/@local/session/demo-chat");
   await page.getByRole("button", { name: "Profile", exact: true }).click();
   await page.getByRole("menuitem", { name: "Sign out", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Connect", exact: true }),
   ).toBeVisible();
-  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/demo-chat$/);
 });
 
 test("profile sign out failures stay visible and can be retried", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/c/_/account");
+  await page.goto("/c/@local/account");
   await page.route("**/auth/logout", (route) => route.fulfill({ status: 500 }));
   const profile = page.getByRole("button", { name: "Profile", exact: true });
   await profile.click();
@@ -196,7 +196,7 @@ test("alias and UUID URLs open the same session and preserve its draft", async (
   page,
 }) => {
   await signIn(page);
-  await page.goto("/c/_/session/demo-chat");
+  await page.goto("/c/@local/session/demo-chat");
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("Same session, two readable locators");
   const response = await page.request.post("/cxz.SessionService/Get", {
@@ -207,14 +207,23 @@ test("alias and UUID URLs open the same session and preserve its draft", async (
     data: { ref: { alias: "demo-chat" } },
   });
   expect(response.ok(), await response.text()).toBe(true);
-  const hex = Buffer.from((await response.json()).id, "base64").toString("hex");
-  const id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-  await page.goto(`/c/_/session/${id}`);
+  const fromWire = (id: string) =>
+    Buffer.from(id, "base64")
+      .toString("hex")
+      .replace(/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/, "$1-$2-$3-$4-$5");
+  const id = fromWire((await response.json()).id);
+  const catalog = await page.request.post("/cxz.ConnectionService/List", {
+    headers: { Origin: "https://127.0.0.1:18081" },
+    data: {},
+  });
+  expect(catalog.ok(), await catalog.text()).toBe(true);
+  const connection = fromWire((await catalog.json()).items[0].id);
+  await page.goto(`/c/${connection}/session/${id}`);
   await expect(input).toHaveValue("Same session, two readable locators");
-  await expect(page).toHaveURL(new RegExp(`/c/_/session/${id}$`));
+  await expect(page).toHaveURL(new RegExp(`/c/${connection}/session/${id}$`));
   const link = page.getByRole("link", { name: /demo-chat/ });
   await expect(link).toHaveClass(/active/);
-  await expect(link).toHaveAttribute("href", "/c/_/session/demo-chat");
+  await expect(link).toHaveAttribute("href", "/c/@local/session/demo-chat");
   await link.click();
   await expect(input).toHaveValue("Same session, two readable locators");
 });
@@ -224,14 +233,14 @@ test("legacy bookmarks redirect to singular scoped routes without losing convers
 }) => {
   await signIn(page);
   await page.goto("/sessions/session?seq=2");
-  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat\?seq=2$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/demo-chat\?seq=2$/);
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toBeVisible();
   await page.goto("/sessions/session?seq=%222%22");
-  await expect(page).toHaveURL(/\/c\/_\/session\/demo-chat\?seq=2$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/demo-chat\?seq=2$/);
   await page.goto("/projects?project=demo");
-  await expect(page).toHaveURL(/\/c\/_\/project\/demo$/);
+  await expect(page).toHaveURL(/\/c\/@local\/project\/demo$/);
   await expect(
     page.getByRole("combobox", { name: "Select project", exact: true }),
   ).toHaveText("Demo project");
@@ -242,21 +251,22 @@ test("legacy bookmarks redirect to singular scoped routes without losing convers
   ).toBeVisible();
 });
 
-test("an unknown connection never opens the local session with the same alias", async ({
-  page,
-}) => {
-  await signIn(page);
-  await page.goto("/c/other/session/demo-chat");
-  await expect(
-    page.getByRole("heading", { name: "Page not found", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("This connection is unavailable.", { exact: false }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("textbox", { name: "Message", exact: true }),
-  ).toHaveCount(0);
-});
+for (const handle of ["@other", "_", "00000000-0000-4000-8000-000000000001"])
+  test(`unavailable connection ${handle} never opens a local session`, async ({
+    page,
+  }) => {
+    await signIn(page);
+    await page.goto(`/c/${handle}/session/demo-chat`);
+    await expect(
+      page.getByRole("heading", { name: "Page not found", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("This connection is unavailable.", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("textbox", { name: "Message", exact: true }),
+    ).toHaveCount(0);
+  });
 
 test("client logs are reachable from Profile and without an authenticated or reachable Manager", async ({
   page,

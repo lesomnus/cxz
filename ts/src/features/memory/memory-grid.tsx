@@ -8,8 +8,8 @@ import type { MemoryCatalog } from "./memory-catalog";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
 import {
-  memoryLocation,
   resourceHandle,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import styles from "./memory-grid.module.css";
@@ -39,6 +39,7 @@ function MemoryCard({
   sessions: readonly Session[];
   prefix: string;
 }) {
+  const { memoryLocation } = useResourceRoutes();
   const owning = owner(memory, sessions);
   const id = resourceHandle({ id: memory.id });
   return (

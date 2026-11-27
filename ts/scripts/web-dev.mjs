@@ -5,6 +5,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { devRPCStreams } from "./rpc-stream.mjs";
 import {
   answerList,
+  connectionIDs,
   connectionName,
   connectionOf,
   connectionPrefix,
@@ -65,7 +66,10 @@ export async function loadDevGateway(env = process.env, home = homedir()) {
 // only connection, named "dev".
 export async function loadDevConnections(env = process.env, home = homedir()) {
   if (!env.CXZ_WEB_CONNECTIONS) {
-    return [{ name: "dev", ...(await loadDevGateway(env, home)) }];
+    const gateway = await loadDevGateway(env, home);
+    return connectionIDs([
+      { name: gateway.alias ?? "dev", id: gateway.id, ...gateway },
+    ]);
   }
   const path = resolve(env.CXZ_WEB_CONNECTIONS);
   let file;
@@ -91,11 +95,12 @@ export async function loadDevConnections(env = process.env, home = homedir()) {
       throw new Error(`Connection ${entry.name} names no config in ${path}`);
     }
     out.push({
-      name: entry.name,
       ...(await readGatewayConfig(resolve(dirname(path), entry.config))),
+      name: entry.name,
+      id: entry.id,
     });
   }
-  return out;
+  return connectionIDs(out);
 }
 
 async function readGatewayConfig(path, optional = false) {
@@ -139,7 +144,13 @@ async function readGatewayConfig(path, optional = false) {
     }
     const tokenFile = resolve(dirname(path), config.access_token_file);
     await readToken(tokenFile);
-    return { origin: url.origin, tokenFile, configFile: path };
+    return {
+      origin: url.origin,
+      tokenFile,
+      configFile: path,
+      id: config.connection_id,
+      alias: config.connection_alias,
+    };
   }
 }
 
@@ -157,14 +168,14 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // devGatewayPlugin serves the UI against one gateway or, given connections,
 // as a hub of several: the first is reached at unprefixed paths exactly as a
-// single gateway was, and every connection at /c/<name>/. See web-hub.mjs.
+// single gateway was, and every connection at its scoped path.
 export function devGatewayPlugin(input) {
-  const connections = Array.isArray(input)
-    ? input
-    : [{ name: "dev", ...input }];
+  const connections = connectionIDs(
+    Array.isArray(input) ? input : [{ name: input.alias ?? "dev", ...input }],
+  );
   const gateway = connections[0];
   const sessions = new Sessions();
-  // A path a gateway answers, once its /c/<name> prefix is taken off.
+  // A path a gateway answers after removing the connection prefix.
   const gatewayPath = (url) => {
     const route = connectionOf(url, connections);
     return route !== undefined && isGatewayPath(route.path);
@@ -174,7 +185,7 @@ export function devGatewayPlugin(input) {
     changeOrigin: true,
     headers: { Origin: c.origin },
     ws: true,
-    rewrite: (path) => path.slice(connectionPrefix.length + c.name.length),
+    rewrite: (path) => connectionOf(path, connections).path,
     // The connection's session goes upstream; the browser's cookie does not,
     // and the gateway's Set-Cookie stays here.
     configure(proxy) {
@@ -186,6 +197,10 @@ export function devGatewayPlugin(input) {
       proxy.on("proxyReq", withSession);
       proxy.on("proxyReqWs", withSession);
       proxy.on("proxyRes", (proxyRes) => {
+        const location = proxyRes.headers.location;
+        if (location?.startsWith("/editor/")) {
+          proxyRes.headers.location = `${connectionPrefix}${c.id}${location}`;
+        }
         const setCookie = proxyRes.headers["set-cookie"];
         if (setCookie) {
           sessions.take(c.name, setCookie);
@@ -228,10 +243,16 @@ export function devGatewayPlugin(input) {
               ]),
             ),
             ...Object.fromEntries(
-              connections.map((c) => [
-                `^${escapeRegExp(connectionPrefix + c.name)}(${routes.map(escapeRegExp).join("|")})`,
-                hubProxy(c),
-              ]),
+              connections.map((c) => {
+                const uuid = c.id.replace(
+                  /[a-f]/g,
+                  (letter) => `[${letter}${letter.toUpperCase()}]`,
+                );
+                return [
+                  `^${connectionPrefix}(?:@${c.name}|%40${c.name}|${uuid})(${routes.map(escapeRegExp).join("|")})`,
+                  hubProxy(c),
+                ];
+              }),
             ),
           },
         },
@@ -274,7 +295,7 @@ export function devGatewayPlugin(input) {
       });
       for (const c of connections) {
         server.config.logger.info(
-          `cxz dev: ${connectionPrefix}${c.name} -> ${c.origin}${c === gateway ? " (default)" : ""} (automatic local sign-in)`,
+          `cxz dev: ${connectionPrefix}@${c.name} -> ${c.origin}${c === gateway ? " (default)" : ""} (automatic local sign-in)`,
         );
       }
 

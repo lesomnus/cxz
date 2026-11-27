@@ -837,7 +837,7 @@ test("conversation search uses loaded messages immediately without a Search requ
 }) => {
   const requests = await fixture(page);
   await page
-    .locator('[data-session-navigation][href="/c/_/session/oak"]')
+    .locator('[data-session-navigation][href="/c/@local/session/oak"]')
     .click();
   await expect(page.locator(".transcript")).toContainText("Current response");
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
@@ -960,7 +960,7 @@ test("local session search Enter visits loaded responses before wrapping without
 }) => {
   const requests = await fixture(page);
   await page
-    .locator('[data-session-navigation][href="/c/_/session/oak"]')
+    .locator('[data-session-navigation][href="/c/@local/session/oak"]')
     .click();
   await expect(page.locator(".transcript")).toContainText("Current response");
   await page.getByRole("textbox", { name: "Message", exact: true }).focus();
@@ -1109,7 +1109,7 @@ test("project picker supports fuzzy search, keyboard selection and dark form bac
   await expect(create).toBeVisible();
 });
 
-const memoryProjectPath = "/c/_/project/project/memory";
+const memoryProjectPath = "/c/@local/project/project/memory";
 function memoryFixtureUUID(name) {
   const hex = Buffer.from(name.padEnd(16, "0")).toString("hex");
   return [
@@ -1387,7 +1387,7 @@ for (const [name, path, message] of [
   ],
   [
     "wrong project",
-    `/c/_/project/${projectFixture(2).uuid}/memory/${memoryFixtureUUID("memory")}`,
+    `/c/@local/project/${projectFixture(2).uuid}/memory/${memoryFixtureUUID("memory")}`,
     "Memory not found",
   ],
 ])
@@ -1410,7 +1410,7 @@ for (const document of [false, true])
   test(`Memory UUID ${document ? "document" : "collection"} bookmarks stay valid while links prefer aliases`, async ({
     page,
   }) => {
-    const path = `/c/_/project/${projectFixture().uuid}/memory${document ? `/${memoryFixtureUUID("memory")}` : ""}`;
+    const path = `/c/@local/project/${projectFixture().uuid}/memory${document ? `/${memoryFixtureUUID("memory")}` : ""}`;
     const requests = await fixture(page, false, false, path);
     const research = page.getByRole("link", { name: /Research notes/ });
     await expect(
@@ -1449,7 +1449,7 @@ for (const document of [false, true])
 test("Memory links fall back to project UUIDs without an alias", async ({
   page,
 }) => {
-  const path = `/c/_/project/${projectFixture().uuid}/memory`;
+  const path = `/c/@local/project/${projectFixture().uuid}/memory`;
   await fixture(page, false, false, path, "");
   await expect(
     page.getByRole("link", { name: "Memory", exact: true }),
@@ -1475,10 +1475,12 @@ test("Memory project picker navigates using the chosen project's alias", async (
   await page
     .getByRole("option", { name: "Docs playground", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/c\/_\/project\/docs-playground\/memory$/);
+  await expect(page).toHaveURL(
+    /\/c\/@local\/project\/docs-playground\/memory$/,
+  );
   await expect(
     page.getByRole("link", { name: "Memory", exact: true }),
-  ).toHaveAttribute("href", "/c/_/project/docs-playground/memory");
+  ).toHaveAttribute("href", "/c/@local/project/docs-playground/memory");
   await expect
     .poll(
       () =>
@@ -1525,7 +1527,7 @@ test("conversation menu Erase confirms, cancels and removes the session by stabl
   ).toBeVisible();
   await openErase();
   await dialog.getByRole("button", { name: "Erase", exact: true }).click();
-  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session$/);
   await expect(
     page
       .getByRole("table", { name: "Sessions", exact: true })
@@ -1564,13 +1566,13 @@ test("failed conversation menu Erase preserves the session and draft for retry",
   await dialog.getByRole("button", { name: "Erase", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText("Action failed");
   await expect(input).toHaveValue("Keep this draft");
-  await expect(page).toHaveURL(/\/c\/_\/session\/oak$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/oak$/);
   expect(
     requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
   ).toHaveLength(0);
   await page.unroute(eraseEndpoint);
   await dialog.getByRole("button", { name: "Erase", exact: true }).click();
-  await expect(page).toHaveURL(/\/c\/_\/session$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session$/);
   expect(
     requests.filter((r) => r.path === "/cxz.SessionService/Erase"),
   ).toHaveLength(1);
@@ -1579,7 +1581,7 @@ test("failed conversation menu Erase preserves the session and draft for retry",
 test("Errors page loads directly and shows all statuses after a dialog handoff and reload", async ({
   page,
 }) => {
-  await fixture(page, false, false, "/c/_/errors");
+  await fixture(page, false, false, "/c/@local/errors");
   const main = page.getByRole("main", { name: "Errors", exact: true });
   await expect(
     main.getByRole("table", { name: "Errors", exact: true }),
@@ -1591,10 +1593,10 @@ test("Errors page loads directly and shows all statuses after a dialog handoff a
     name: "Open errors page",
     exact: true,
   });
-  await expect(link).toHaveAttribute("href", "/c/_/errors");
+  await expect(link).toHaveAttribute("href", "/c/@local/errors");
   await link.click();
   await expect(dialog).toHaveCount(0);
-  await expect(page).toHaveURL(/\/c\/_\/errors$/);
+  await expect(page).toHaveURL(/\/c\/@local\/errors$/);
   await expect(
     main.getByRole("table", { name: "Errors", exact: true }),
   ).toBeVisible();

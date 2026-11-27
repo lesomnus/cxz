@@ -17,6 +17,12 @@ import {
   parseRouteSearch,
   stringifyRouteSearch,
 } from "#src/shared/navigation/resource-route.ts";
+import {
+  defaultConnection,
+  localConnection,
+  standaloneConnection,
+  type RoutableConnection,
+} from "#src/shared/api/routable-connections.ts";
 
 export type ResourceView =
   | "sessions"
@@ -33,6 +39,7 @@ export type SettingsTopic = "general" | "editor" | "auxiliary" | "connections";
 type WorkspaceRouterContext = {
   shell: ComponentType<PropsWithChildren>;
   view: ComponentType;
+  loadConnections?: () => Promise<RoutableConnection[]>;
 };
 declare module "@tanstack/react-router" {
   interface StaticDataRouteOption {
@@ -45,7 +52,25 @@ declare module "@tanstack/react-router" {
 }
 const rootRoute = createRootRouteWithContext<WorkspaceRouterContext>()({
   component: RouterShell,
+  beforeLoad: async ({ context, location }) => {
+    try {
+      return {
+        connections: (await context.loadConnections?.()) ?? [
+          localConnection(""),
+        ],
+      };
+    } catch (error) {
+      if (
+        location.pathname !== "/log" &&
+        location.pathname !== "/settings/logs"
+      )
+        throw error;
+      return { connections: [localConnection("")] };
+    }
+  },
 });
+export const useRouteConnections = () =>
+  rootRoute.useRouteContext().connections;
 function RouterShell() {
   const { shell: Shell } = rootRoute.useRouteContext();
   return (
@@ -61,8 +86,13 @@ function RouteView() {
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  beforeLoad: () => {
-    throw redirect({ ...resourceLocation("sessions"), replace: true });
+  beforeLoad: ({ context }) => {
+    const connection =
+      defaultConnection(context.connections)?.handle ?? standaloneConnection;
+    throw redirect({
+      ...resourceLocation("sessions", connection),
+      replace: true,
+    });
   },
 });
 const connectionRoute = createRoute({
@@ -242,8 +272,10 @@ const notFoundRoute = createRoute({
   path: "$",
   component: RouteView,
   staticData: { resource: "not-found" },
-  beforeLoad: ({ location }) => {
+  beforeLoad: ({ location, context }) => {
     const parts = location.pathname.split("/").filter(Boolean);
+    const connection =
+      defaultConnection(context.connections)?.handle ?? standaloneConnection;
     const query = location.search as Record<string, unknown>;
     let handle: string | undefined;
     try {
@@ -254,7 +286,9 @@ const notFoundRoute = createRoute({
     if (parts.length > 2) return;
     if (parts[0] === "sessions")
       throw redirect({
-        ...(handle ? sessionLocation(handle) : resourceLocation("sessions")),
+        ...(handle
+          ? sessionLocation(handle, connection)
+          : resourceLocation("sessions", connection)),
         search: { seq: typeof query.seq === "string" ? query.seq : undefined },
         replace: true,
       });
@@ -262,6 +296,7 @@ const notFoundRoute = createRoute({
       throw redirect({
         ...projectLocation(
           typeof query.project === "string" ? query.project : undefined,
+          connection,
         ),
         replace: true,
       });
@@ -269,22 +304,26 @@ const notFoundRoute = createRoute({
       throw redirect({
         ...accountLocation(
           typeof query.account === "string" ? query.account : undefined,
+          connection,
         ),
         replace: true,
       });
     if (parts[0] === "tasks" && !handle)
       throw redirect({
-        ...taskLocation({
-          ...taskSearch(query),
-          task: typeof query.task === "string" ? query.task : undefined,
-        }),
+        ...taskLocation(
+          {
+            ...taskSearch(query),
+            task: typeof query.task === "string" ? query.task : undefined,
+          },
+          connection,
+        ),
         replace: true,
       });
     if (parts[0] === "auxiliary" && !handle)
       throw redirect({ to: "/setting/auxiliary", replace: true });
     if (parts[0] === "search" && !handle)
       throw redirect({
-        ...resourceLocation("search"),
+        ...resourceLocation("search", connection),
         replace: true,
       });
     if (
@@ -348,6 +387,7 @@ export function createWorkspaceRouter(
     history,
     parseSearch: parseRouteSearch,
     stringifySearch: stringifyRouteSearch,
+    pathParamsAllowedCharacters: ["@"],
     defaultPreload: false,
     trailingSlash: "never",
     scrollRestoration: false,

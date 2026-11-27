@@ -116,7 +116,7 @@ async function openConversation(page, largePayload = false) {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await page
-    .locator('[data-session-navigation][href="/c/_/session/fixture"]')
+    .locator('[data-session-navigation][href="/c/@local/session/fixture"]')
     .click();
   await expect(page.locator(".virtual-messages")).toBeVisible();
   await page.waitForFunction(

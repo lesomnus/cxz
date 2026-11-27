@@ -53,7 +53,7 @@ for (const empty of [false, true]) {
           },
         });
       });
-      await page.goto("/c/_/session/session");
+      await page.goto("/c/@local/session/session");
       const pane = page.locator(".transcript");
       await expect(
         page.getByRole("status").filter({ hasText: "Loading session…" }),
@@ -101,7 +101,7 @@ test("initial load failures stay local and automatic retries recover", async ({
       await retry.promise;
       await route.fulfill({ json: { snapshotSeq: "4" } });
     });
-    await page.goto("/c/_/session/session");
+    await page.goto("/c/@local/session/session");
     const status = page
       .getByRole("status")
       .filter({ hasText: "Retrying conversation…" });
@@ -199,7 +199,7 @@ for (const resolved of [true, false]) {
         },
       });
     });
-    await page.goto("/c/_/session/session");
+    await page.goto("/c/@local/session/session");
     await expect(page.locator(".transcript")).toHaveAttribute(
       "aria-busy",
       "false",
