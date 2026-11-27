@@ -93,11 +93,28 @@ test("project creation uses the chosen installation and a stable modal", async (
   await page.goto("/c/@local/project");
   await page.getByRole("button", { name: "Add project", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Add project", exact: true });
-  await expect(dialog.getByLabel("Workspace path")).toBeVisible();
+  const workspace = dialog.getByLabel("Workspace path");
+  await expect(workspace).toBeVisible();
   await expect(dialog.getByLabel("Devcontainer configuration")).toBeVisible();
+  await workspace.focus();
+  const ringClearance = await workspace.evaluate((input) => {
+    let viewport = input.parentElement;
+    while (viewport && getComputedStyle(viewport).overflowY !== "auto")
+      viewport = viewport.parentElement;
+    if (!viewport) throw new Error("Missing project form scroll viewport");
+    const { outlineWidth, outlineOffset } = getComputedStyle(input);
+    const ring = parseFloat(outlineWidth) + parseFloat(outlineOffset);
+    const field = input.getBoundingClientRect();
+    const scroll = viewport.getBoundingClientRect();
+    return (
+      Math.min(field.left - scroll.left, scroll.right - field.right) - ring
+    );
+  });
+  expect(ringClearance).toBeGreaterThan(0);
   const height = () =>
     dialog.evaluate((node) => node.getBoundingClientRect().height);
   const initial = await height();
+  expect(initial).toBeGreaterThan(500);
 
   const connection = dialog.getByRole("combobox", {
     name: "Connection",

@@ -129,6 +129,7 @@ export function ProjectAdd({
         <DialogBody className={styles.body}>
           <ScrollArea
             className={styles.scroll}
+            viewportClassName={styles.viewport}
             scrollbarLabel={t("Project details")}
           >
             <Form

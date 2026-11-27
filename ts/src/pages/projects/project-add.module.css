@@ -1,10 +1,11 @@
 .form {
   height: min(
-    480px,
+    540px,
     calc(100dvh - 4 * var(--ui-space) - 2 * var(--card-border-width))
   );
 }
 .form .body.body {
+  --card-body-padding: calc(2 * var(--ui-dialog-padding)) 0px;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -12,6 +13,12 @@
 }
 .scroll {
   --ui-scroll-area-background: transparent;
+}
+.viewport {
+  padding-inline: max(
+    0px,
+    calc(var(--ui-dialog-padding) - var(--ui-control-inset))
+  );
 }
 .error {
   overflow-wrap: anywhere;
