@@ -156,6 +156,7 @@ async function fixture(
   });
   await page.route("**/cxz.*/*", async (route) => {
     const path = new URL(route.request().url()).pathname;
+    if (path === "/cxz.ConnectionService/List") return route.continue();
     const raw = route.request().postDataBuffer();
     const q = raw?.length
       ? JSON.parse((raw[0] === 0 ? raw.subarray(5) : raw).toString())
