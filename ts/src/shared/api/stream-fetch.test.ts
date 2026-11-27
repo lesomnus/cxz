@@ -52,16 +52,25 @@ const init = (signal?: AbortSignal): RequestInit => ({
   body: new Uint8Array([0, 0, 0, 0, 2, 123, 125]),
   signal,
 });
-async function connected(signal?: AbortSignal) {
+async function connected(signal?: AbortSignal, prefix = "") {
   vi.stubGlobal("WebSocket", Socket);
   const index = Socket.instances.length;
   const response = rpcFetch(
-    "http://127.0.0.1:5173/cxz.SessionService/Events",
+    `http://127.0.0.1:5173${prefix}/cxz.SessionService/Events`,
     init(signal),
   );
   await vi.waitFor(() => expect(Socket.instances[index]?.sent).toHaveLength(2));
   return { response, socket: Socket.instances[index] };
 }
+it("keeps a hub connection prefix on the WebSocket path", async () => {
+  const { response, socket } = await connected(undefined, "/c/cluster");
+  expect(String(socket.url)).toBe(
+    "ws://127.0.0.1:5173/c/cluster/rpc-stream/cxz.SessionService/Events",
+  );
+  socket.head();
+  socket.done();
+  await (await response).arrayBuffer();
+});
 it("keeps unary calls and HTTPS streams on authenticated fetch", async () => {
   const fetch = vi.fn(
     async (_input: RequestInfo | URL, _init?: RequestInit) =>

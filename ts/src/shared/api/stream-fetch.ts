@@ -21,7 +21,10 @@ async function streamFetch(url: URL, init: RequestInit, headers: Headers) {
   const body = await new Response(init.body).arrayBuffer();
   init.signal?.throwIfAborted();
   url.protocol = "ws:";
-  url.pathname = "/rpc-stream" + url.pathname;
+  url.pathname = url.pathname.replace(
+    /^(\/c\/[a-z0-9-]+)?\//,
+    "$1/rpc-stream/",
+  );
   const socket = new WebSocket(url);
   socket.binaryType = "arraybuffer";
   return new Promise<Response>((resolve, reject) => {

@@ -194,21 +194,24 @@ function WorkspaceContent({
       projects: t("Projects"),
     }[view];
     const location =
-      view === "sessions" || view === "projects"
-        ? route.resource === view
-          ? resourceLocation(view)
-          : view === "projects"
-            ? projectLocation(currentProject)
+      view === "projects"
+        ? projectLocation(
+            route.resource === "projects" ? undefined : currentProject,
+            route.connection,
+          )
+        : view === "sessions"
+          ? route.resource === view
+            ? resourceLocation(view)
             : lastSession.current
               ? sessionLocation(lastSession.current)
               : resourceLocation("sessions")
-        : view === "tasks"
-          ? taskLocation({ project: currentProject })
-          : view === "memory"
-            ? memoryProject
-              ? memoryLocation(memoryProject)
-              : projectLocation()
-            : resourceLocation(view);
+          : view === "tasks"
+            ? taskLocation({ project: currentProject })
+            : view === "memory"
+              ? memoryProject
+                ? memoryLocation(memoryProject)
+                : projectLocation()
+              : resourceLocation(view);
     return (
       <SidebarHint key={view} label={label}>
         <RouteLink

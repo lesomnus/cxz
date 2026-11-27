@@ -32,6 +32,7 @@ import { SessionNavigationButton } from "#src/shared/components/session-navigati
 
 export function ProjectTable({
   c,
+  connection,
   projects,
   sessions,
   loading,
@@ -39,6 +40,7 @@ export function ProjectTable({
   updated,
 }: {
   c: Connection;
+  connection?: string;
   projects: Project[];
   sessions: Session[];
   loading: boolean;
@@ -145,7 +147,7 @@ export function ProjectTable({
               <TableCell className={styles.nameCell}>
                 <RouteLink
                   rowAware
-                  {...projectLocation(resourceHandle(project))}
+                  {...projectLocation(resourceHandle(project), connection)}
                   className={styles.projectLink}
                 >
                   <span className={styles.identity}>

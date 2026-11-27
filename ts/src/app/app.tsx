@@ -11,6 +11,12 @@ import { LogsPage } from "#src/pages/logs/logs-page.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { recordClientError } from "#src/shared/logs/client-logs.ts";
 import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
+import {
+  namedGatewayStatus,
+  namedGatewayUrl,
+} from "#src/shared/api/named-gateway.ts";
+import { NotFoundPage } from "#src/pages/not-found/not-found-page.tsx";
+import { useNavigate } from "@tanstack/react-router";
 export function App({ children }: PropsWithChildren) {
   useLocale();
   const route = useWorkspaceRoute();
@@ -62,6 +68,12 @@ export function App({ children }: PropsWithChildren) {
     connection?.dispose();
     setConnection(undefined);
   }
+  if (route.connection && route.connection !== "_")
+    return (
+      <NamedWorkspace key={route.connection} name={route.connection}>
+        {children}
+      </NamedWorkspace>
+    );
   if (!connection && route.resource === "logs")
     return (
       <div
@@ -99,6 +111,63 @@ export function App({ children }: PropsWithChildren) {
   return (
     <Provider app={connection}>
       <Workspace connection={connection} logout={logout}>
+        {children}
+      </Workspace>
+    </Provider>
+  );
+}
+
+function NamedWorkspace({
+  name,
+  children,
+}: PropsWithChildren<{ name: string }>) {
+  const navigate = useNavigate();
+  const [connection, setConnection] = useState<Connection>();
+  const [unavailable, setUnavailable] = useState(false);
+  useEffect(() => {
+    const baseUrl = namedGatewayUrl(name);
+    if (!baseUrl) {
+      setUnavailable(true);
+      return;
+    }
+    const request = new AbortController();
+    let active: Connection | undefined;
+    namedGatewayStatus(
+      baseUrl,
+      AbortSignal.any([request.signal, AbortSignal.timeout(10000)]),
+    )
+      .then((identity) => {
+        if (request.signal.aborted) return;
+        active = new Connection(baseUrl, undefined, undefined, identity);
+        setConnection(active);
+      })
+      .catch(() => {
+        if (!request.signal.aborted) setUnavailable(true);
+      });
+    return () => {
+      request.abort();
+      active?.dispose();
+    };
+  }, [name]);
+  if (unavailable) return <NotFoundPage />;
+  if (!connection)
+    return (
+      <main className="empty" role="status">
+        {t("Loading…")}
+      </main>
+    );
+  const active = connection;
+  async function logout() {
+    const response = await fetch(`${active.baseUrl}/auth/logout`, {
+      method: "POST",
+    });
+    if (!response.ok) throw new Error(t("Sign out failed"));
+    await active.forgetCachedTasks();
+    void navigate(resourceLocation("sessions"));
+  }
+  return (
+    <Provider app={active}>
+      <Workspace connection={active} logout={logout}>
         {children}
       </Workspace>
     </Provider>

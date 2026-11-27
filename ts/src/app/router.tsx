@@ -367,10 +367,7 @@ export function useWorkspaceRoute() {
   const connection = connectionRoute.useParams({
     shouldThrow: false,
   })?.connection;
-  const resource =
-    connection && connection !== "_"
-      ? "not-found"
-      : (match?.staticData.resource ?? "sessions");
+  const resource = match?.staticData.resource ?? "sessions";
   return {
     resource,
     connection,

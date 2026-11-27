@@ -87,13 +87,13 @@ export function sessionLocation(
     },
   };
 }
-export function projectLocation(project?: string) {
+export function projectLocation(project?: string, connection: string = "_") {
   return project
     ? {
         to: "/c/$connection/project/$projectId" as const,
-        params: { ...selfConnection, projectId: project },
+        params: { connection, projectId: project },
       }
-    : resourceLocation("projects");
+    : { ...resourceLocation("projects"), params: { connection } };
 }
 export function memoryLocation(
   project: string | Parameters<typeof resourceHandle>[0],

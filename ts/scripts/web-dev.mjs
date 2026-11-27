@@ -312,6 +312,8 @@ export function devGatewayPlugin(input) {
         const url = req.url || "";
         const route = connectionOf(url, connections);
         if (url.startsWith(connectionPrefix) && route === undefined) {
+          const slash = url.indexOf("/", connectionPrefix.length);
+          if (slash < 0 || !isGatewayPath(url.slice(slash))) return next();
           res.writeHead(404);
           res.end("No such connection");
           return;
