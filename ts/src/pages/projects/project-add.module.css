@@ -23,3 +23,12 @@
 .error {
   overflow-wrap: anywhere;
 }
+.yaml {
+  height: 200px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--ui-form-control-radius);
+}
+.hint {
+  color: var(--ui-muted);
+}

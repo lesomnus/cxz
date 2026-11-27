@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   Button,
   Dialog,
@@ -21,6 +28,11 @@ import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useRouteConnections } from "#src/app/router.tsx";
+import { KubernetesProjectFields } from "./kubernetes-project-fields";
+import {
+  defaultKubernetesProjectSettings,
+  readKubernetesProjectSettings,
+} from "./kubernetes-project-settings";
 import { validateProjectField } from "./project-edit";
 import styles from "./project-add.module.css";
 
@@ -32,11 +44,6 @@ type ProjectDraft = {
 };
 
 const emptyDraft: ProjectDraft = { workspace: "", name: "", alias: "" };
-const defaultKubeConfig = JSON.stringify(
-  { image: "ghcr.io/lesomnus/dev-golang:1.27", user: "hypnos" },
-  null,
-  2,
-);
 const kubeName = /^[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?$/;
 
 export function ProjectAdd({
@@ -71,10 +78,15 @@ export function ProjectAdd({
   const backend = active?.backend;
   const docker = backend === "docker";
   const kubernetes = backend === "kubernetes";
-  const config = draft.config ?? (kubernetes ? defaultKubeConfig : "");
+  const config =
+    draft.config ?? (kubernetes ? defaultKubernetesProjectSettings : "");
+  const kubeSettings = useMemo(
+    () => (kubernetes ? readKubernetesProjectSettings(config) : undefined),
+    [config, kubernetes],
+  );
   const workspace = draft.workspace.trim();
-  const valid = !!active && !!workspace && (docker || kubernetes);
-  const set = (field: keyof typeof emptyDraft, value: string) =>
+  const valid = !!active && !!workspace && (docker || !!kubeSettings?.value);
+  const set = (field: keyof ProjectDraft, value: string) =>
     setDraft((old) => ({ ...old, [field]: value }));
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -107,7 +119,10 @@ export function ProjectAdd({
           workspace,
           name,
           alias: alias ? parseAlias(alias) : "",
-          config: config.trim(),
+          // Older managers also accept the JSON representation of these settings.
+          config: kubeSettings
+            ? JSON.stringify(kubeSettings.value)
+            : config.trim(),
         },
         { signal: controller.signal, timeoutMs: 30000 },
       );
@@ -214,6 +229,11 @@ export function ProjectAdd({
                       }
                       onChange={(event) => set("workspace", event.target.value)}
                     />
+                    {kubernetes && (
+                      <small className={styles.hint}>
+                        {t("Used for the workspace path.")}
+                      </small>
+                    )}
                   </FormField>
                   <FormField label={t("Display name")} htmlFor={`${id}-name`}>
                     <input
@@ -230,30 +250,28 @@ export function ProjectAdd({
                       onChange={(event) => set("alias", event.target.value)}
                     />
                   </FormField>
-                  <FormField
-                    label={t(
-                      docker
-                        ? "Devcontainer configuration"
-                        : "Image or Kubernetes settings (JSON)",
-                    )}
-                    htmlFor={`${id}-config`}
-                  >
-                    {docker ? (
+                  {docker ? (
+                    <FormField
+                      label={t("Devcontainer configuration")}
+                      htmlFor={`${id}-config`}
+                    >
                       <input
                         id={`${id}-config`}
                         placeholder=".devcontainer/devcontainer.json"
                         value={config}
                         onChange={(event) => set("config", event.target.value)}
                       />
-                    ) : (
-                      <textarea
-                        id={`${id}-config`}
-                        rows={4}
-                        value={config}
-                        onChange={(event) => set("config", event.target.value)}
+                    </FormField>
+                  ) : (
+                    kubeSettings && (
+                      <KubernetesProjectFields
+                        source={config}
+                        settings={kubeSettings}
+                        onChange={(value) => set("config", value)}
+                        disabled={busy}
                       />
-                    )}
-                  </FormField>
+                    )
+                  )}
                 </>
               )}
               {error && <ErrorNotice error={error} local />}

@@ -2,19 +2,21 @@ package workspace
 
 import (
 	"bytes"
-
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lesomnus/cxz/api"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
+	"github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml/parser"
+	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/dockerx"
@@ -197,18 +199,14 @@ func (m *Manager) kubeProject(p *Project) (image, user, storage string, requests
 
 // kubeRegister records a project by name: there is no host folder to point
 // at, and the workspace is the project's own volume. config, when given, is
-// the project's KubeProject as JSON or just an image reference.
+// the project's KubeProject as YAML, JSON or an image reference.
 func (m *Manager) kubeRegister(ctx context.Context, name, config string) (*Project, error) {
 	if !kubeName.MatchString(name) {
 		return nil, fmt.Errorf("a Kubernetes project name is 1-40 lowercase letters, digits or hyphens")
 	}
-	k := &KubeProject{}
-	if strings.HasPrefix(strings.TrimSpace(config), "{") {
-		if err := json.Unmarshal([]byte(config), k); err != nil {
-			return nil, fmt.Errorf("project settings: %w", err)
-		}
-	} else if config != "" {
-		k.Image = config
+	k, err := parseKubeProject(config)
+	if err != nil {
+		return nil, fmt.Errorf("project settings: %w", err)
 	}
 	if err := validPodTemplate(k.PodTemplate); err != nil {
 		return nil, err
@@ -224,6 +222,47 @@ func (m *Manager) kubeRegister(ctx context.Context, name, config string) (*Proje
 	}
 	p := &Project{ID: projectid.New(), Workspace: "/workspaces/" + name, Name: name, RemoteWorkspace: "/workspaces/" + name, Token: core.ID() + core.ID(), Kube: k}
 	return p, m.save(ctx, p)
+}
+
+func parseKubeProject(config string) (*KubeProject, error) {
+	k := &KubeProject{}
+	raw := []byte(strings.TrimSpace(config))
+	if len(raw) == 0 {
+		return k, nil
+	}
+	if raw[0] == '{' && json.Valid(raw) {
+		return k, json.Unmarshal(raw, k)
+	}
+	file, err := parser.ParseBytes(raw, 0)
+	if err != nil {
+		return nil, err
+	}
+	if len(file.Docs) > 1 {
+		return nil, fmt.Errorf("expected a single YAML document")
+	}
+	if len(file.Docs) == 0 || file.Docs[0].Body == nil {
+		return k, nil
+	}
+	var value any
+	if err := yaml.NodeToValue(file.Docs[0].Body, &value); err != nil {
+		return nil, err
+	}
+	switch value := value.(type) {
+	case string:
+		if strings.IndexFunc(value, unicode.IsSpace) < 0 {
+			k.Image = value
+			return k, nil
+		}
+	case map[string]any:
+		data, err := json.Marshal(value)
+		if err != nil {
+			return nil, err
+		}
+		decoder := json.NewDecoder(bytes.NewReader(data))
+		decoder.DisallowUnknownFields()
+		return k, decoder.Decode(k)
+	}
+	return nil, fmt.Errorf("expected a settings mapping or an image reference")
 }
 
 type kubePod struct {

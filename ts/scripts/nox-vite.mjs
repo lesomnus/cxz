@@ -47,7 +47,13 @@ export function noxConfig(command) {
       // Entries replace discovery rather than adding to it, so the html roots
       // are named too. Reading the list from the editor's source means a new
       // monaco language in nox needs nothing here. See cxz#232.
-      ...(command === "serve" ? { entries: ["*.html", editorEntry] } : {}),
+      ...(command === "serve"
+        ? {
+            entries: ["*.html", editorEntry],
+            // Worker-only imports are not scanned from the HTML entries.
+            include: ["monaco-yaml/yaml.worker.js"],
+          }
+        : {}),
     },
     ...(command === "serve"
       ? {

@@ -9,6 +9,7 @@ const defaultKubeConfig = {
 };
 
 test("project creation uses the chosen installation and a stable modal", async ({
+  baseURL,
   page,
 }) => {
   await page.addInitScript(() => {
@@ -16,7 +17,7 @@ test("project creation uses the chosen installation and a stable modal", async (
       localStorage.setItem("settings", JSON.stringify({ "ui.theme": "dark" }));
   });
   await page.request.post("/auth/login", {
-    headers: { Origin: "https://127.0.0.1:18081" },
+    headers: { Origin: new URL(baseURL!).origin },
     data: { token: "a".repeat(32) },
   });
   const clusterId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
@@ -86,9 +87,17 @@ test("project creation uses the chosen installation and a stable modal", async (
       workspace: "cluster-app",
       name: "Cluster app",
     });
-    if (addRequests.length === 1)
-      expect(JSON.parse(submitted.config)).toEqual(defaultKubeConfig);
-    else expect(submitted.config).toBe("node:24");
+    expect(JSON.parse(submitted.config)).toEqual(
+      addRequests.length === 1
+        ? defaultKubeConfig
+        : {
+            image: "node:24",
+            user: "hypnos",
+            storage: "8Gi",
+            requests: { cpu: "1" },
+            pod_templates: ["gpu"],
+          },
+    );
     return route.fulfill(
       addRequests.length === 1
         ? {
@@ -158,8 +167,11 @@ test("project creation uses the chosen installation and a stable modal", async (
   const projectName = dialog.getByLabel("Project name", { exact: true });
   await expect(projectName).toBeVisible();
   await expect(dialog.getByLabel("Workspace path")).toHaveCount(0);
-  const config = dialog.getByLabel("Image or Kubernetes settings (JSON)");
-  await expect(config).toHaveValue(JSON.stringify(defaultKubeConfig, null, 2));
+  const image = dialog.getByLabel("Container image", { exact: true });
+  const user = dialog.getByLabel("Container user", { exact: true });
+  const mode = dialog.getByRole("radiogroup", { name: "Kubernetes settings" });
+  await expect(image).toHaveValue(defaultKubeConfig.image);
+  await expect(user).toHaveValue(defaultKubeConfig.user);
   expect(await height()).toBe(initial);
   await projectName.fill("cluster-app");
   await dialog.getByLabel("Display name").fill("Cluster app");
@@ -168,7 +180,54 @@ test("project creation uses the chosen installation and a stable modal", async (
     dialog.getByText("Test registration failure", { exact: false }),
   ).toBeVisible();
   expect(await height()).toBe(initial);
-  await config.fill("node:24");
+  await mode.getByRole("radio", { name: "YAML" }).check();
+  const editor = dialog.getByRole("textbox", {
+    name: /Kubernetes project YAML/,
+  });
+  await expect(editor).toBeVisible();
+  await expect(dialog.locator(".view-lines")).toContainText(
+    defaultKubeConfig.image,
+  );
+  await editor.press("Control+End");
+  await page.keyboard.insertText("sto");
+  await editor.press("Control+Space");
+  await expect(dialog.locator(".suggest-widget.visible")).toContainText(
+    "storage",
+  );
+  await editor.press("Escape");
+  await editor.press("Control+a");
+  await page.keyboard.insertText("requests: [");
+  await expect(confirm).toBeDisabled();
+  await expect(
+    dialog.getByText("Invalid Kubernetes settings.", { exact: false }),
+  ).toBeVisible();
+  await mode.getByRole("radio", { name: "Form" }).check();
+  await expect(confirm).toBeDisabled();
+  await mode.getByRole("radio", { name: "YAML" }).check();
+  await expect(dialog.locator(".view-lines")).toContainText("requests:");
+  await editor.press("Control+a");
+  await editor.evaluate((input, text) => {
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", text);
+    input.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }, "# deployment settings\nimage: alpine\nuser: hypnos\nstorage: 8Gi\nrequests:\n  cpu: '1'\npod_templates: [gpu]\n");
+  await expect(confirm).toBeEnabled();
+  await mode.getByRole("radio", { name: "Form" }).check();
+  await expect(image).toHaveValue("alpine");
+  await expect(dialog.getByLabel("CPU request")).toHaveValue("1");
+  await image.fill("node:24");
+  await mode.getByRole("radio", { name: "YAML" }).check();
+  await expect(dialog.locator(".view-lines")).toContainText("node:24");
+  await expect(dialog.locator(".view-lines")).toContainText(
+    "# deployment settings",
+  );
+  expect(await height()).toBe(initial);
   await confirm.click();
   await expect(page).toHaveURL(/\/c\/@cluster\/project\/cluster-app$/);
   await expect(

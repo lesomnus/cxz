@@ -126,15 +126,20 @@ Restart the manager after changing it (`kubectl rollout restart
 deploy/cxz-manager`); projects take it on their next start.
 
 A project may override `image`, `user`, `storage`, `requests` and `limits`, and
-add [pod templates](#pod-templates), when it is added, as JSON or just an image reference:
+add [pod templates](#pod-templates), when it is added. In the web dialog, edit
+these settings in the form or switch to the schema-aware YAML editor. The CLI
+accepts YAML, JSON, or an image reference.
 
 ```sh
-cxz project add web --config '{"image": "node:24", "limits": {"memory": "8Gi"}}'
+cxz project add web --config 'image: node:24
+limits:
+  memory: 8Gi'
 cxz project add api --config golang:1.27
 ```
 
-A project's name is its identity in the cluster: 1–40 lowercase letters, digits
-or hyphens. Its workspace is `/workspaces/NAME`.
+The project name uses 1–40 lowercase letters, digits or hyphens and determines
+the workspace path `/workspaces/NAME`. The display name is the editable label
+shown in the app and defaults to the project name.
 
 ## Pod templates
 

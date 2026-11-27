@@ -72,6 +72,37 @@ func TestKubeRegister(t *testing.T) {
 	if err != nil || q.Kube.Image != "golang:1.27" {
 		t.Fatal(q, err)
 	}
+	y, err := m.kubeRegister(ctx, "yaml", `---
+image: node:24
+user: hypnos
+requests: { cpu: "1" }
+pod_templates: [gpu]
+pod_template:
+  spec:
+    nodeSelector:
+      disk: ssd
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if y.Kube.Image != "node:24" || y.Kube.User != "hypnos" || y.Kube.Requests["cpu"] != "1" ||
+		!reflect.DeepEqual(y.Kube.PodTemplates, []string{"gpu"}) ||
+		!reflect.DeepEqual(y.Kube.PodTemplate, map[string]any{
+			"spec": map[string]any{"nodeSelector": map[string]any{"disk": "ssd"}},
+		}) {
+		t.Fatalf("unexpected YAML settings: %+v", y.Kube)
+	}
+	for _, bad := range []string{
+		"image: [",
+		"image: node:24\n---\nimage: alpine",
+		"imgae: node:24",
+		"requests: {cpu: 1}",
+		"pod_template: {kind: PodTemplate}",
+	} {
+		if _, err := m.kubeRegister(ctx, "invalid", bad); err == nil {
+			t.Errorf("accepted invalid settings %q", bad)
+		}
+	}
 	if image, user, storage, requests, limits := m.kubeProject(p); image != "node:24" || user != "vscode" || storage != "5Gi" || requests["cpu"] != "1" || limits["memory"] != "2Gi" {
 		t.Fatal(image, user, storage, requests, limits)
 	}

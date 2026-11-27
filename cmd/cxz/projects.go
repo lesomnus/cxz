@@ -426,7 +426,7 @@ func projectMetadataCommands() *xli.Command {
 			return writeOutput(c, p)
 		})}
 		if op == "add" {
-			c.Flags = append(c.Flags, &flg.String{Name: "config", Brief: "Devcontainer configuration; on Kubernetes, the project's settings as JSON or an image"})
+			c.Flags = append(c.Flags, &flg.String{Name: "config", Brief: "Devcontainer configuration; on Kubernetes, project settings as YAML, JSON, or an image reference"})
 		}
 		parent.Commands = append(parent.Commands, c)
 	}
