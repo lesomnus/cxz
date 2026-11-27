@@ -3,8 +3,8 @@ import { createConnectTransport } from "@connectrpc/connect-web";
 import { InstallationService } from "#gen/cxz/installation_pb";
 import { ProjectService } from "#gen/cxz/project_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
-import type { RoutableConnection } from "#src/shared/api/routable-connections.ts";
 import { rpcFetch } from "#src/shared/api/stream-fetch.ts";
+import { useRemote } from "#src/shared/api/use-remote.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 
 function unavailable(error: unknown) {
@@ -12,17 +12,17 @@ function unavailable(error: unknown) {
   return code === Code.Unimplemented || code === Code.NotFound;
 }
 
-export async function projectAddClient(
+async function projectConnection(
   c: Connection,
-  target: RoutableConnection,
+  baseUrl: string,
   signal: AbortSignal,
 ) {
   const transport =
-    target.baseUrl === c.baseUrl
+    baseUrl === c.baseUrl
       ? c.transport
-      : createConnectTransport({ baseUrl: target.baseUrl, fetch: rpcFetch });
-  if (target.baseUrl !== c.baseUrl) {
-    const response = await fetch(`${target.baseUrl}/auth/status`, {
+      : createConnectTransport({ baseUrl, fetch: rpcFetch });
+  if (baseUrl !== c.baseUrl) {
+    const response = await fetch(`${baseUrl}/auth/status`, {
       signal: AbortSignal.any([signal, AbortSignal.timeout(10000)]),
     });
     if (
@@ -42,5 +42,26 @@ export async function projectAddClient(
   } catch (error) {
     if (!unavailable(error)) throw error;
   }
-  return { projects, backend: backend ?? "", baseUrl: target.baseUrl };
+  return { projects, backend: backend ?? "", baseUrl };
+}
+
+export function useProjectConnection(
+  c: Connection,
+  baseUrl?: string,
+  { cached = false } = {},
+) {
+  return useRemote(
+    (signal) => projectConnection(c, baseUrl!, signal),
+    [c, baseUrl],
+    {
+      enabled: !!baseUrl,
+      cache: cached
+        ? {
+            store: c.reads,
+            key: `project-connection/${baseUrl}`,
+            ttl: 5 * 60_000,
+          }
+        : undefined,
+    },
+  );
 }

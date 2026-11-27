@@ -14,13 +14,13 @@ import {
 import { parseAlias } from "@lesomnus/payday/slug";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
-import { useRemote } from "#src/shared/api/use-remote.ts";
+import { useProjectConnection } from "#src/shared/api/project-connection.ts";
+import { ConnectionIcon } from "#src/shared/components/connection-icon.tsx";
 import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useRouteConnections } from "#src/app/router.tsx";
-import { projectAddClient } from "./project-add-target";
 import { validateProjectField } from "./project-edit";
 import styles from "./project-add.module.css";
 
@@ -63,11 +63,7 @@ export function ProjectAdd({
     connections.find((item) => item.baseUrl === c.baseUrl) ??
     connections[0];
   const target = entry && { ...entry, baseUrl: entry.baseUrl || c.baseUrl };
-  const runtime = useRemote(
-    (signal) => projectAddClient(c, target!, signal),
-    [c, target?.baseUrl],
-    { enabled: !!target },
-  );
+  const runtime = useProjectConnection(c, target?.baseUrl);
   const active =
     target && runtime.data?.baseUrl === target.baseUrl
       ? runtime.data
@@ -159,6 +155,20 @@ export function ProjectAdd({
                   options={connections.map((item) => ({
                     value: item.handle,
                     label: item.alias,
+                    icon: (
+                      <ConnectionIcon
+                        c={c}
+                        transport={item.entry?.transport}
+                        backend={
+                          item.handle === target?.handle ? backend : undefined
+                        }
+                        baseUrl={
+                          item.handle === target?.handle
+                            ? undefined
+                            : item.baseUrl
+                        }
+                      />
+                    ),
                   }))}
                   choose={(value) => {
                     if (target?.handle === value) return;

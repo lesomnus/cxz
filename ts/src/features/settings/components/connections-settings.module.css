@@ -6,6 +6,16 @@
   width: 25%;
 }
 
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-menu-item-gap);
+}
+
+.name > svg {
+  flex: none;
+}
+
 .transportColumn {
   width: 22%;
 }

@@ -128,9 +128,16 @@ test("project creation uses the chosen installation and a stable modal", async (
     name: "Connection",
     exact: true,
   });
+  await expect(
+    connection.locator('[data-icon="connection-docker"]'),
+  ).toBeVisible();
   const confirm = dialog.getByRole("button", { name: "Confirm", exact: true });
   await connection.click();
-  await page.getByRole("option", { name: "legacy", exact: true }).click();
+  const legacy = page.getByRole("option", { name: "legacy", exact: true });
+  await expect(
+    legacy.locator('[data-icon="connection-gateway"]'),
+  ).toBeVisible();
+  await legacy.click();
   await expect(dialog.getByRole("alert")).toHaveText(
     "Update the connected manager to report its project runtime.",
   );
@@ -139,7 +146,11 @@ test("project creation uses the chosen installation and a stable modal", async (
   expect(await height()).toBe(initial);
 
   await connection.click();
-  await page.getByRole("option", { name: "cluster", exact: true }).click();
+  const cluster = page.getByRole("option", { name: "cluster", exact: true });
+  await expect(
+    cluster.locator('[data-icon="connection-kubernetes"]'),
+  ).toBeVisible();
+  await cluster.click();
   const projectName = dialog.getByLabel("Project name", { exact: true });
   await expect(projectName).toBeVisible();
   await expect(dialog.getByLabel("Workspace path")).toHaveCount(0);
@@ -169,4 +180,25 @@ test("project creation uses the chosen installation and a stable modal", async (
   ).toHaveText("Cluster app");
   await page.getByRole("link", { name: "Projects view", exact: true }).click();
   await expect(page).toHaveURL(/\/c\/@cluster\/project$/);
+
+  await page.goto("/setting/connection");
+  const connections = page.getByRole("table", {
+    name: "Connections",
+    exact: true,
+  });
+  await expect(
+    connections
+      .getByRole("rowheader", { name: /^local/ })
+      .locator('[data-icon="connection-docker"]'),
+  ).toBeVisible();
+  await expect(
+    connections
+      .getByRole("rowheader", { name: "cluster", exact: true })
+      .locator('[data-icon="connection-kubernetes"]'),
+  ).toBeVisible();
+  await expect(
+    connections
+      .getByRole("rowheader", { name: "legacy", exact: true })
+      .locator('[data-icon="connection-gateway"]'),
+  ).toBeVisible();
 });
