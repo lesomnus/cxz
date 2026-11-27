@@ -167,7 +167,11 @@ test("project creation uses the chosen installation and a stable modal", async (
   const logo = cluster.locator('img[data-icon="connection-kubernetes"]');
   await expect(logo).toHaveAttribute("src", /kubernetes-icon-white.*\.svg$/);
   await expect(logo).not.toHaveJSProperty("naturalWidth", 0);
+  await expect(logo).toHaveCSS("width", "20px");
   await cluster.click();
+  await expect(
+    connection.locator('img[data-icon="connection-kubernetes"]'),
+  ).toHaveCSS("width", "20px");
   await expect(dialog.getByLabel("Project name", { exact: true })).toHaveCount(
     0,
   );
@@ -178,14 +182,24 @@ test("project creation uses the chosen installation and a stable modal", async (
   await expect(image).toHaveValue(defaultKubeConfig.image);
   await expect(user).toHaveValue(defaultKubeConfig.user);
   expect(await height()).toBe(initial);
-  await dialog.getByLabel("Display name").fill("Cluster app");
-  await dialog.getByLabel("Alias", { exact: true }).fill("cluster-app");
+  const displayName = dialog.getByLabel("Display name");
+  const alias = dialog.getByLabel("Alias", { exact: true });
+  const nameBox = (await displayName.boundingBox())!;
+  const aliasBox = (await alias.boundingBox())!;
+  expect(aliasBox.y).toBeCloseTo(nameBox.y, 1);
+  expect(aliasBox.x).toBeGreaterThan(nameBox.x);
+  const connectionBox = (await connection.boundingBox())!;
+  const modeBox = (await mode.boundingBox())!;
+  expect(modeBox.x).toBeCloseTo(connectionBox.x, 1);
+  expect(modeBox.width).toBeCloseTo(connectionBox.width, 1);
+  await displayName.fill("Cluster app");
+  await alias.fill("cluster-app");
   await confirm.click();
   await expect(
     dialog.getByText("Test registration failure", { exact: false }),
   ).toBeVisible();
   expect(await height()).toBe(initial);
-  await mode.getByRole("radio", { name: "YAML" }).check();
+  await mode.getByRole("radio", { name: "Edit" }).check();
   const editor = dialog.getByRole("textbox", {
     name: /Kubernetes project YAML/,
   });
@@ -208,7 +222,7 @@ test("project creation uses the chosen installation and a stable modal", async (
   ).toBeVisible();
   await mode.getByRole("radio", { name: "Form" }).check();
   await expect(confirm).toBeDisabled();
-  await mode.getByRole("radio", { name: "YAML" }).check();
+  await mode.getByRole("radio", { name: "Edit" }).check();
   await expect(dialog.locator(".view-lines")).toContainText("requests:");
   await editor.press("Control+a");
   await editor.evaluate((input, text) => {
@@ -227,7 +241,7 @@ test("project creation uses the chosen installation and a stable modal", async (
   await expect(image).toHaveValue("alpine");
   await expect(dialog.getByLabel("CPU request")).toHaveValue("1");
   await image.fill("node:24");
-  await mode.getByRole("radio", { name: "YAML" }).check();
+  await mode.getByRole("radio", { name: "Edit" }).check();
   await expect(dialog.locator(".view-lines")).toContainText("node:24");
   await expect(dialog.locator(".view-lines")).toContainText(
     "# deployment settings",

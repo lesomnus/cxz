@@ -39,14 +39,14 @@ export function KubernetesProjectFields({
   const label = t("Kubernetes settings");
   return (
     <>
-      <FormField label={label}>
+      <FormField label={label} className={styles.settingsMode}>
         <SegmentedControl
           label={label}
           value={mode}
           onChange={setMode}
           options={[
             { value: "form", label: t("Form") },
-            { value: "yaml", label: "YAML" },
+            { value: "yaml", label: t("Edit") },
           ]}
           disabled={disabled}
         />

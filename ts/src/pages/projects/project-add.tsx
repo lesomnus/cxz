@@ -154,9 +154,10 @@ export function ProjectAdd({
               disabled={busy}
               aria-label={t("Project details")}
             >
-              <FormField label={t("Connection")}>
+              <FormField label={t("Connection")} className={styles.connection}>
                 <ValueMenu
                   label={t("Connection")}
+                  menuClassName={styles.connection}
                   value={target?.handle ?? ""}
                   disabled={busy || !connections.length}
                   options={connections.map((item) => ({
@@ -224,21 +225,27 @@ export function ProjectAdd({
                       />
                     </FormField>
                   )}
-                  <FormField label={t("Display name")} htmlFor={`${id}-name`}>
-                    <input
-                      id={`${id}-name`}
-                      value={draft.name}
-                      onChange={(event) => set("name", event.target.value)}
-                    />
-                  </FormField>
-                  <FormField label={t("Alias")} htmlFor={`${id}-alias`}>
-                    <input
-                      id={`${id}-alias`}
-                      autoComplete="off"
-                      value={draft.alias}
-                      onChange={(event) => set("alias", event.target.value)}
-                    />
-                  </FormField>
+                  <Form
+                    as="fieldset"
+                    columns={2}
+                    className={styles.projectNames}
+                  >
+                    <FormField label={t("Display name")} htmlFor={`${id}-name`}>
+                      <input
+                        id={`${id}-name`}
+                        value={draft.name}
+                        onChange={(event) => set("name", event.target.value)}
+                      />
+                    </FormField>
+                    <FormField label={t("Alias")} htmlFor={`${id}-alias`}>
+                      <input
+                        id={`${id}-alias`}
+                        autoComplete="off"
+                        value={draft.alias}
+                        onChange={(event) => set("alias", event.target.value)}
+                      />
+                    </FormField>
+                  </Form>
                   {docker ? (
                     <FormField
                       label={t("Devcontainer configuration")}

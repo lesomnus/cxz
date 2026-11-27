@@ -975,6 +975,7 @@ export const messages = {
   "Kubernetes settings": "Kubernetes settings",
   "Kubernetes project YAML": "Kubernetes project YAML",
   Form: "Form",
+  Edit: "Edit",
   "Container image": "Container image",
   "Container user": "Container user",
   "Storage capacity": "Storage capacity",
