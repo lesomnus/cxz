@@ -150,7 +150,7 @@ test("font settings apply live to file editors and session drafts with independe
   await page.getByRole("link", { name: "Sessions view", exact: true }).click();
   await page
     .locator(
-      '[data-session-navigation][href="/sandbox.html#/c/_/session/session-1"]',
+      '[data-session-navigation][href="/sandbox.html#/c/@local/session/session-1"]',
     )
     .click({ timeout: 5000 });
   await expect(composer).toHaveCSS("font-family", /ui-monospace/);
@@ -571,7 +571,7 @@ test("invalid stored files stay recoverable and mobile settings remain accessibl
   await ready(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => {
-    location.hash = "/c/_/session";
+    location.hash = "/c/@local/session";
   });
   await settings(page);
   await expect(

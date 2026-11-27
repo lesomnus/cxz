@@ -14,7 +14,7 @@ import {
 } from "#src/features/session/model/work-memory-versions.ts";
 import menuStyles from "./created-memories-menu.module.css";
 import { MenuLink } from "#src/shared/navigation/route-link.tsx";
-import { memoryLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "#src/shared/components/anchored-menu.module.css";
@@ -30,6 +30,7 @@ function MemoryList({
   state: WorkMemoryState;
   close: () => void;
 }) {
+  const { memoryLocation } = useResourceRoutes();
   const versions = useWorkMemoryVersions(source, memories);
   return (
     <MenuScrollArea

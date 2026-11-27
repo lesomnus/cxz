@@ -132,7 +132,7 @@ test("Tasks survive reload while List is pending, reconcile remote changes and a
     await route.fulfill({ json: { items: [toJson(TaskSchema, value)] } });
   });
   try {
-    await page.goto("/c/_/project/demo/task");
+    await page.goto("/c/@local/project/demo/task");
     await expect(
       page.getByRole("link", {
         name: "Open task: Task saved before reload",
@@ -247,7 +247,7 @@ test("Tasks remain live when IndexedDB is unavailable", async ({
     });
     await route.fulfill({ json: { items: [toJson(TaskSchema, value)] } });
   });
-  await page.goto("/c/_/project/demo/task");
+  await page.goto("/c/@local/project/demo/task");
   await expect(
     page.getByRole("link", {
       name: "Open task: Live task without browser storage",

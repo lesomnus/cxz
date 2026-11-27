@@ -6,6 +6,7 @@ import { WorkspaceView } from "#src/app/workspace-view.tsx";
 import { LocaleProvider } from "#src/shared/i18n/i18n-react.tsx";
 import { RouterProvider } from "@tanstack/react-router";
 import { createWorkspaceRouter } from "#src/app/router.tsx";
+import { webConnectionCatalog } from "#src/shared/api/routable-connections.ts";
 import { installReactPerformanceBudget } from "#src/shared/browser/react-performance.ts";
 import {
   installClientLogs,
@@ -17,7 +18,11 @@ if (import.meta.env.DEV) {
   const dispose = installReactPerformanceBudget();
   import.meta.hot?.dispose(dispose);
 }
-const router = createWorkspaceRouter({ shell: App, view: WorkspaceView });
+const router = createWorkspaceRouter({
+  shell: App,
+  view: WorkspaceView,
+  loadConnections: webConnectionCatalog(location.origin),
+});
 createRoot(document.getElementById("root")!, {
   onUncaughtError: (error) => recordClientError(error, "Uncaught React error"),
   onCaughtError: (error) => recordClientError(error, "Caught React error"),

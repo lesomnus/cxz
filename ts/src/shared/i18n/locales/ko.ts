@@ -360,8 +360,7 @@ export const messages = {
     "3초 이내 두 번 클릭하거나 Esc 두 번",
   "Provider rejected the interrupt": "에이전트가 중단 요청을 거부했습니다",
   "(path not reported)": "(경로 미제공)",
-  "This connection is unavailable. Use _ to address the server that served this page.":
-    "이 연결을 사용할 수 없습니다. 현재 페이지를 제공하는 서버는 _로 지정할 수 있습니다.",
+  "This connection is unavailable.": "이 연결을 사용할 수 없습니다.",
   "Page not found": "페이지를 찾을 수 없습니다",
   "{count} more files in Details": "상세 정보에서 파일 {count}개 더 보기",
 
@@ -964,6 +963,18 @@ export const messages = {
   "Last seen": "최근 발생",
   "Error details": "오류 상세",
   Connection: "연결",
+  "Add project": "프로젝트 추가",
+  "Project details": "프로젝트 상세 정보",
+  "Unsupported project runtime": "지원하지 않는 프로젝트 런타임입니다.",
+  "Update the connected manager to report its project runtime.":
+    "프로젝트 런타임 정보를 확인하려면 연결된 매니저를 업데이트하세요.",
+  "Workspace path": "워크스페이스 경로",
+  "Project name": "프로젝트 이름",
+  "Display name": "표시 이름",
+  "Devcontainer configuration": "Devcontainer 설정",
+  "Image or Kubernetes settings (JSON)": "이미지 또는 Kubernetes 설정(JSON)",
+  "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.":
+    "영문 소문자, 숫자, 하이픈을 1~40자로 입력하세요. 처음과 끝은 영문 소문자 또는 숫자여야 합니다.",
   "Request ID": "요청 ID",
   Code: "코드",
   Method: "메서드",

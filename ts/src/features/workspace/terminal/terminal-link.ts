@@ -125,7 +125,7 @@ export function openTerminal(
       },
     };
   }
-  const url = new URL(`/terminal/${encodeURIComponent(project)}`, c.baseUrl);
+  const url = new URL(`${c.baseUrl}/terminal/${encodeURIComponent(project)}`);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.search = new URLSearchParams({
     columns: String(columns),

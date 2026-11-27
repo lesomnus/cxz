@@ -246,10 +246,16 @@ CXZ_WEB_CONFIG=/absolute/path/to/web.json npm run dev
 ```
 
 To develop against several installations at once, list them as connections
-and the dev server serves each under `/c/NAME/`, signing in to each itself and
-keeping their sessions out of the browser. The first one is also served at the
-unprefixed paths, so the UI as it stands keeps working. See
+and the dev server serves each under `/c/@NAME/` and `/c/<connection UUID>/`,
+signing in to each itself and keeping their sessions out of the browser. The
+first entry is the default when opening `/`. Unprefixed API paths still reach it
+for existing development clients. See
 [web connections](plans/web-connections.md#허브-게이트웨이가-연결을-든다-6단계-대신-택한-길).
+
+Each entry accepts an optional `id` UUID. When omitted, Vite derives the ID
+from the referenced config file's absolute path. Set `id` explicitly to keep
+UUID bookmarks valid when moving a gateway config or when several entries
+reference the same config file.
 
 ```sh
 CXZ_WEB_CONNECTIONS=/absolute/path/to/connections.json npm run dev

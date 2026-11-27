@@ -82,8 +82,11 @@ test("shared card examples keep logos and alias while truncating names and retai
     );
     expect((await metrics(button)).gap).toBeCloseTo(8, 2);
   }
-  await expect(buttons.first()).toHaveAttribute("href", "/c/_/session/oak");
-  await expect(buttons.nth(1)).toHaveAttribute("href", "/c/_/session/elm");
+  await expect(buttons.first()).toHaveAttribute(
+    "href",
+    "/c/@local/session/oak",
+  );
+  await expect(buttons.nth(1)).toHaveAttribute("href", "/c/@local/session/elm");
   expect(
     await buttons
       .first()

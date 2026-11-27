@@ -26,8 +26,8 @@ import { ConversationLoading } from "#src/features/session/conversation/conversa
 import { Button } from "@lesomnus/nox";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  sessionLocation,
   uuid,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { createFileSizeReader } from "#src/shared/content/file-size.ts";
@@ -42,6 +42,7 @@ export function SessionsPage({
   id: string;
   projects: Project[];
 }) {
+  const { sessionLocation } = useResourceRoutes();
   useLocale();
   const inventory = useResourceInventory(c);
   const resolved = useSession(c, inventory.sessions, id);

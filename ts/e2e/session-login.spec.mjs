@@ -130,6 +130,7 @@ async function fixture(
   });
   await page.route("**/cxz.*/*", async (route) => {
     const path = new URL(route.request().url()).pathname;
+    if (path === "/cxz.ConnectionService/List") return route.continue();
     const raw = route.request().postDataBuffer();
     const q = raw?.length
       ? JSON.parse((raw[0] === 0 ? raw.subarray(5) : raw).toString())
@@ -303,7 +304,7 @@ test("Fork saves the conversation before OAuth and only starts the child after l
     await page.getByRole("menuitem", { name, exact: true }).click();
   };
   await choose("Fork");
-  await expect(page).toHaveURL(/\/c\/_\/session\/forked-seal$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/forked-seal$/);
   await expect(page.locator("article.input .message-body").last()).toHaveText(
     "Please continue",
   );
@@ -327,7 +328,7 @@ test("Fork saves the conversation before OAuth and only starts the child after l
   expect(f.sockets[0].url.searchParams.get("key")).toBe(forks()[0].q.clientId);
   await panel.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(panel).toBeHidden();
-  await expect(page).toHaveURL(/\/c\/_\/session\/forked-seal$/);
+  await expect(page).toHaveURL(/\/c\/@local\/session\/forked-seal$/);
   expect(starts()).toHaveLength(1);
   await expect(send).toBeDisabled();
   await choose("Start");

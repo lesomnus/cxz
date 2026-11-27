@@ -197,7 +197,7 @@ test("switching views retains one native stream and returns cached offscreen res
     }),
   );
   try {
-    await page.goto("/c/_/session/alpha");
+    await page.goto("/c/@local/session/alpha");
     await expect(page.locator(".transcript")).toContainText(
       "Cached alpha response",
     );
@@ -205,7 +205,7 @@ test("switching views retains one native stream and returns cached offscreen res
     await expect(page.locator(".turn-summary")).toContainText(
       "Summary already received",
     );
-    await page.locator('.tree-session[href="/c/_/session/beta"]').click();
+    await page.locator('.tree-session[href="/c/@local/session/beta"]').click();
     await expect(page.locator(".transcript")).toContainText(
       "Cached beta response",
     );
@@ -215,7 +215,7 @@ test("switching views retains one native stream and returns cached offscreen res
     // The mocked stream ends after each frame; its next reconnect delivers an
     // offscreen summary before returning to alpha. No session view owns it.
     await expect.poll(() => deliveredAux).toBeGreaterThan(0);
-    const alpha = page.locator('.tree-session[href="/c/_/session/alpha"]');
+    const alpha = page.locator('.tree-session[href="/c/@local/session/alpha"]');
     await expect(
       alpha.getByRole("img", { name: "Unread response", exact: true }),
     ).toBeVisible();

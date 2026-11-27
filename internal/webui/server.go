@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/lesomnus/cxz/internal/configeditor"
 	"github.com/lesomnus/cxz/resource"
 
@@ -29,6 +30,8 @@ const lifetime = 12 * time.Hour
 
 type Config struct {
 	Listen, Origin, Certificate, Key, Token string
+	ConnectionAlias                         string
+	ConnectionID                            uuid.UUID
 	// TLSProxy is a gateway behind a proxy that ends TLS for its https
 	// origin -- an Ingress with the organisation's certificate. It listens in
 	// plaintext and tells the browser what the proxy's TLS lets it: HSTS and
@@ -51,6 +54,9 @@ func Loopback(host string) bool {
 }
 
 func (c Config) Validate() error {
+	if c.ConnectionAlias != "" && !connectionAlias.MatchString(c.ConnectionAlias) {
+		return fmt.Errorf("connection alias must be 1–40 lowercase letters, digits or hyphens and start with a letter or digit")
+	}
 	u, err := url.Parse(c.Origin)
 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
 		return fmt.Errorf("origin must be https://host[:port], or http://127.0.0.1[:port], without a path")
@@ -92,7 +98,8 @@ type browserSession struct {
 }
 
 type browserAuth struct {
-	origin string
+	origin  string
+	catalog func(http.ResponseWriter)
 	// transport is whether TLS carries this origin. HSTS is a promise about a
 	// host, and a loopback gateway must not make it: it is ignored over
 	// plaintext today, and would outlive this installation if it were not.
@@ -126,7 +133,7 @@ func Handler(c Config, conn grpc.ClientConnInterface, assets fs.FS, rpc http.Han
 		})
 	}
 	mux.Handle(configeditor.Prefix, configuration)
-	auth := &browserAuth{origin: c.Origin, transport: !c.plaintext() || c.TLSProxy, token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
+	auth := &browserAuth{origin: c.Origin, catalog: c.listConnection, transport: !c.plaintext() || c.TLSProxy, token: sha256.Sum256([]byte(c.Token)), sessions: make(map[[32]byte]browserSession)}
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if pdweb.Rpc(r) {
 			rpc.ServeHTTP(w, r)
@@ -167,6 +174,10 @@ func (a *browserAuth) wrap(next http.Handler) http.Handler {
 		}
 		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Header.Get("Origin") != a.origin {
 			http.Error(w, "origin required", http.StatusForbidden)
+			return
+		}
+		if a.catalog != nil && r.Method == http.MethodPost && r.URL.Path == connectionListPath {
+			a.catalog(w)
 			return
 		}
 		if r.URL.Path == "/auth/login" && r.Method == http.MethodPost {

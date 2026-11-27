@@ -18,12 +18,12 @@ test("sidebar highlights only the current resource on project-scoped pages", asy
     exact: true,
   });
   for (const [path, label] of [
-    ["/c/_/project/demo/task", "Tasks"],
-    ["/c/_/project/demo/task/example", "Tasks"],
-    ["/c/_/project/demo/memory", "Memory"],
-    ["/c/_/project/demo/memory/example", "Memory"],
-    ["/c/_/project/demo", "Projects view"],
-    ["/c/_/project", "Projects view"],
+    ["/c/@local/project/demo/task", "Tasks"],
+    ["/c/@local/project/demo/task/example", "Tasks"],
+    ["/c/@local/project/demo/memory", "Memory"],
+    ["/c/@local/project/demo/memory/example", "Memory"],
+    ["/c/@local/project/demo", "Projects view"],
+    ["/c/@local/project", "Projects view"],
   ]) {
     await page.goto(path);
     const current = sidebar.getByRole("link", { name: label, exact: true });

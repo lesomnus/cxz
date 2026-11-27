@@ -14,7 +14,7 @@ test("dialog and independent page share errors while page shows all statuses wit
     name: "Open errors page",
     exact: true,
   });
-  await expect(link).toHaveAttribute("href", "/c/_/errors");
+  await expect(link).toHaveAttribute("href", "/c/@local/errors");
   await link.click();
   const main = page.getByRole("main", { name: "Errors", exact: true });
   await expect(dialog).toHaveCount(0);
@@ -67,7 +67,7 @@ test("one hour without recurrence becomes Stale while closed, persists and opens
     name: "Open errors page",
     exact: true,
   });
-  await expect(link).toHaveAttribute("href", "/c/_/errors");
+  await expect(link).toHaveAttribute("href", "/c/@local/errors");
   await link.click();
   const main = page.getByRole("main", { name: "Errors", exact: true });
   await expect(main.getByRole("radio")).toHaveCount(0);

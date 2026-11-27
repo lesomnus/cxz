@@ -47,7 +47,9 @@ function SessionPanel({
             />
           ),
         },
-        createMemoryHistory({ initialEntries: ["/c/_/session/session-0"] }),
+        createMemoryHistory({
+          initialEntries: ["/c/@local/session/session-0"],
+        }),
       ),
     [count, loading, expanded, collapsible, unread, error, background, states],
   );

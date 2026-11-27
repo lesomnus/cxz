@@ -60,7 +60,7 @@ async function openConversation(page, largePayload = false) {
   const requests = [];
   await page.route("**/auth/status", (route) => route.fulfill({ json: {} }));
   await page.route("**/cxz.*/*", async (route) => {
-    const path = new URL(route.request().url()).pathname;
+    const { origin, pathname: path } = new URL(route.request().url());
     const raw = route.request().postDataBuffer();
     const q = raw?.length
       ? JSON.parse((raw[0] === 0 ? raw.subarray(5) : raw).toString())
@@ -70,6 +70,17 @@ async function openConversation(page, largePayload = false) {
       route.fulfill({
         contentType: "application/connect+json",
         body: stream(rows),
+      });
+    if (path === "/cxz.ConnectionService/List")
+      return send({
+        items: [
+          {
+            name: "local",
+            target: origin,
+            transport: "origin",
+            isDefault: true,
+          },
+        ],
       });
     if (path === "/cxz.ProjectService/List") return send({ items: [project] });
     if (path === "/cxz.ProjectService/Get") return send(project);
@@ -116,7 +127,7 @@ async function openConversation(page, largePayload = false) {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
   await page
-    .locator('[data-session-navigation][href="/c/_/session/fixture"]')
+    .locator('[data-session-navigation][href="/c/@local/session/fixture"]')
     .click();
   await expect(page.locator(".virtual-messages")).toBeVisible();
   await page.waitForFunction(

@@ -555,4 +555,5 @@ message EngineInfo {
 message InstallationVersion {
   string version = 1; string revision = 2; string channel = 3;
   string pin = 4; string error = 5;
+  string project_backend = 6;
 }

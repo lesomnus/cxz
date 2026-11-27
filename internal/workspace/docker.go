@@ -108,7 +108,11 @@ func (m *Manager) GetEngineInfo(ctx context.Context, _ *api.Empty) (*api.EngineI
 // a rebuild. It used to, because it was answered inside the engine's info.
 func (m *Manager) GetInstallationVersion(context.Context, *api.Empty) (*api.InstallationVersion, error) {
 	build := cxzupdate.Current()
-	out := &api.InstallationVersion{Version: build.Version, Revision: build.Revision}
+	backend := "docker"
+	if m.kube != nil {
+		backend = "kubernetes"
+	}
+	out := &api.InstallationVersion{Version: build.Version, Revision: build.Revision, ProjectBackend: backend}
 	channel, err := versionpin.Channel(m.Root)
 	out.Channel = channel
 	if err != nil {

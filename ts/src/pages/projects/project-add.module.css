@@ -1,0 +1,18 @@
+.form {
+  height: min(
+    480px,
+    calc(100dvh - 4 * var(--ui-space) - 2 * var(--card-border-width))
+  );
+}
+.form .body.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+.scroll {
+  --ui-scroll-area-background: transparent;
+}
+.error {
+  overflow-wrap: anywhere;
+}

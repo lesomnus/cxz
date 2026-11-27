@@ -555,7 +555,7 @@ for (const destination of ["conversation", "project"] as const) {
         name: "Account login workflow seal",
         exact: true,
       });
-      await expect(link).toHaveAttribute("href", "/c/_/session/seal");
+      await expect(link).toHaveAttribute("href", "/c/@local/session/seal");
       await link.click();
       await expect(
         page.getByRole("textbox", { name: "Message", exact: true }),
@@ -565,7 +565,7 @@ for (const destination of ["conversation", "project"] as const) {
         name: "Demo workspace workspace",
         exact: true,
       });
-      await expect(link).toHaveAttribute("href", "/c/_/project/workspace");
+      await expect(link).toHaveAttribute("href", "/c/@local/project/workspace");
       await link.focus();
       await page.keyboard.press("Enter");
       await expect(

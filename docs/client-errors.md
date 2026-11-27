@@ -1,7 +1,7 @@
 # Browser error center
 
 The button immediately above Profile opens active errors and their history.
-Its header has an Open errors page link to `/c/_/errors`; the standalone page
+Its header has an Open errors page link to `/c/@local/errors`; the standalone page
 uses the same live store, showing every status together with Active first. It follows the Projects/Tasks resource
 layout: an aligned top toolbar with history controls and a compact Nox table
 with status icon, centered Kind, an unlabeled occurrence count, Operation,
@@ -49,7 +49,7 @@ offset to produce a negative CSS right). Card reveal/body wrappers allow the
 rail through while the scroll viewport clips the rows. The page does
 not embed or stretch the dialog card. Narrow screens keep the status icon and move kind, operation/target and count/time into the
 message cell. Details remains a viewport-limited modal.
-Only the sidebar uses Active/History tabs. Its page link always opens `/c/_/errors`;
+Only the sidebar uses Active/History tabs. Its page link always opens `/c/@local/errors`;
 legacy `?tab=history` links also show the unified list.
 Its plain triangle turns red while there are active alerting errors. The button
 uses the shared sidebar hover background and keeps it while its dialog is open.

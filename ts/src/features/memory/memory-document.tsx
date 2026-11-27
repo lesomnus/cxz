@@ -21,8 +21,8 @@ import { ResourceFields } from "#src/shared/components/resource-fields.tsx";
 import { ResourceNavigationButton } from "#src/shared/components/resource-navigation-button.tsx";
 import { SessionNavigationButton } from "#src/shared/components/session-navigation-button.tsx";
 import {
-  projectLocation,
   resourceHandle,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import {
   MemoryPreview,
@@ -87,6 +87,7 @@ export function MemoryDocument({
   purge: () => unknown;
   sessions: Session[];
 }) {
+  const { projectLocation } = useResourceRoutes();
   const trash = !!memory?.dateDeleted;
   const ownerSession = sessions.find(
     (session) => resourceHandle({ id: session.id }) === memory?.ownerSession,

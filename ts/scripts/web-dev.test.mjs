@@ -510,6 +510,17 @@ describe("Vite as a hub of connections", () => {
       ["dev", "http://127.0.0.1:7350"],
       ["k8s", "https://alice.cxz.example"],
     ]);
+    await writeFile(
+      file,
+      JSON.stringify({
+        connections: [
+          { name: "renamed", config: "k8s/web.json" },
+          { name: "dev", config: "dev/web.json" },
+        ],
+      }),
+    );
+    const reordered = await loadDevConnections({ CXZ_WEB_CONNECTIONS: file });
+    expect(reordered.map((c) => c.id)).toEqual([got[1].id, got[0].id]);
     expect(got[1].tokenFile).toBe(join(dir, "k8s", "web-token"));
     for (const connections of [
       [{ name: "K8s", config: "k8s/web.json" }],
@@ -528,13 +539,13 @@ describe("Vite as a hub of connections", () => {
 
   it("keeps each connection's session server-side and sends it only to its gateway", async () => {
     const f = await hubFixture();
-    const status = await fetch(f.url + "/c/k8s/auth/status", {
+    const status = await fetch(f.url + "/c/@k8s/auth/status", {
       headers: { Origin: f.url },
     });
     expect(status.status).toBe(204);
     expect(status.headers.getSetCookie()).toEqual([]);
     expect(status.headers.get("payday-identity")).toBe("k8s-identity");
-    const list = await fetch(f.url + "/c/k8s/cxz.ProjectService/List", {
+    const list = await fetch(f.url + "/c/@k8s/cxz.ProjectService/List", {
       method: "POST",
       headers: {
         Origin: f.url,
@@ -549,6 +560,25 @@ describe("Vite as a hub of connections", () => {
     expect(call.headers.cookie).toBe(f.k8s.session);
     expect(call.headers.origin).toBe(f.k8s.origin);
     expect(f.dev.calls).toHaveLength(0);
+    const { items } = await (
+      await fetch(f.url + "/cxz.ConnectionService/List", {
+        method: "POST",
+        headers: { Origin: f.url, "Content-Type": "application/json" },
+        body: "{}",
+      })
+    ).json();
+    const id = Buffer.from(items[1].id, "base64")
+      .toString("hex")
+      .replace(/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/, "$1-$2-$3-$4-$5")
+      .toUpperCase();
+    const byId = await fetch(f.url + `/c/${id}/cxz.ProjectService/List`, {
+      method: "POST",
+      headers: { Origin: f.url },
+      body: "{}",
+    });
+    expect(await byId.text()).toBe("k8s answered");
+    expect(f.k8s.calls.at(-1).headers.cookie).toBe(f.k8s.session);
+    expect(f.dev.calls).toHaveLength(0);
     // Unprefixed is the default connection, as a single gateway was.
     expect(
       await (
@@ -560,11 +590,11 @@ describe("Vite as a hub of connections", () => {
       ).text(),
     ).toBe("dev answered");
     // Signing out of one connection forgets its session.
-    await fetch(f.url + "/c/k8s/auth/logout", {
+    await fetch(f.url + "/c/@k8s/auth/logout", {
       method: "POST",
       headers: { Origin: f.url },
     });
-    await fetch(f.url + "/c/k8s/cxz.ProjectService/List", {
+    await fetch(f.url + "/c/@k8s/cxz.ProjectService/List", {
       method: "POST",
       headers: { Origin: f.url },
       body: "{}",
@@ -576,7 +606,7 @@ describe("Vite as a hub of connections", () => {
     const f = await hubFixture();
     for (const path of [
       "/cxz.ConnectionService/List",
-      "/c/k8s/cxz.ConnectionService/List",
+      "/c/@k8s/cxz.ConnectionService/List",
     ]) {
       const r = await fetch(f.url + path, {
         method: "POST",
@@ -587,6 +617,7 @@ describe("Vite as a hub of connections", () => {
       expect(await r.json()).toEqual({
         items: [
           {
+            id: expect.any(String),
             name: "dev",
             target: f.dev.origin,
             transport: "gateway",
@@ -594,6 +625,7 @@ describe("Vite as a hub of connections", () => {
             readOnly: true,
           },
           {
+            id: expect.any(String),
             name: "k8s",
             target: f.k8s.origin,
             transport: "gateway",
@@ -611,7 +643,7 @@ describe("Vite as a hub of connections", () => {
     expect(proto.status).toBe(415);
     expect(
       (
-        await fetch(f.url + "/c/nope/cxz.ProjectService/List", {
+        await fetch(f.url + "/c/@nope/cxz.ProjectService/List", {
           method: "POST",
           headers: { Origin: f.url },
           body: "{}",
@@ -620,7 +652,7 @@ describe("Vite as a hub of connections", () => {
     ).toBe(404);
     expect(
       (
-        await fetch(f.url + "/c/k8s/cxz.ProjectService/List", {
+        await fetch(f.url + "/c/@k8s/cxz.ProjectService/List", {
           method: "POST",
           headers: { Origin: "https://other.example" },
           body: "{}",
@@ -632,10 +664,10 @@ describe("Vite as a hub of connections", () => {
 
   it("carries a connection's streams and sockets with its session", async () => {
     const f = await hubFixture();
-    await fetch(f.url + "/c/k8s/auth/status", { headers: { Origin: f.url } });
+    await fetch(f.url + "/c/@k8s/auth/status", { headers: { Origin: f.url } });
     const socket = new WebSocket(
       f.url.replace("http:", "ws:") +
-        "/c/k8s/rpc-stream/cxz.SessionService/Events",
+        "/c/@k8s/rpc-stream/cxz.SessionService/Events",
       {
         headers: { Origin: f.url, Cookie: "__Host-cxz=browser-cookie" },
       },
@@ -668,7 +700,7 @@ describe("Vite as a hub of connections", () => {
       );
     });
     const opened = await new Promise((resolve) => {
-      const req = request(`${f.url}/c/k8s/terminal/project?cols=80&rows=24`, {
+      const req = request(`${f.url}/c/@k8s/terminal/project?cols=80&rows=24`, {
         headers: {
           Connection: "Upgrade",
           Upgrade: "websocket",

@@ -1,6 +1,6 @@
 # Web conversation search
 
-Search lives at `/c/_/search`. It searches retained conversation messages for the
+Search lives at `/c/@local/search`. It searches retained conversation messages for the
 current cxz installation. It does not search workspace files, Memory documents or
 every configured connection in the browser.
 

@@ -520,13 +520,13 @@ test("account sessions use overview read-only identities and keep selection scop
     rows
       .first()
       .getByRole("link", { name: "Web account layout oak", exact: true }),
-  ).toHaveAttribute("href", "/c/_/session/oak");
+  ).toHaveAttribute("href", "/c/@local/session/oak");
   await expect(
     rows.first().getByRole("link", { name: "Web workspace web", exact: true }),
-  ).toHaveAttribute("href", "/c/_/project/web");
+  ).toHaveAttribute("href", "/c/@local/project/web");
   await expect(
     rows.nth(1).getByRole("link", { name: "API workspace api", exact: true }),
-  ).toHaveAttribute("href", "/c/_/project/api");
+  ).toHaveAttribute("href", "/c/@local/project/api");
   const projectTitle = rows.first().getByText("Web workspace", { exact: true });
   const projectAlias = rows.first().getByText("web", { exact: true });
   const projectTitleBounds = (await projectTitle.boundingBox())!;

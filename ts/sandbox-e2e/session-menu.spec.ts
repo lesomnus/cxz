@@ -4,7 +4,7 @@ test.use({
   viewport: { width: 1440, height: 900 },
 });
 async function ready(page: Page) {
-  await page.goto("/sandbox.html#/c/_/session/session-1");
+  await page.goto("/sandbox.html#/c/@local/session/session-1");
   await expect(
     page.getByRole("heading", { name: "Current status" }),
   ).toBeVisible({ timeout: 45000 });
@@ -122,7 +122,7 @@ test("Fork preserves the conversation and new input stays in the child session",
   );
   const previous = await messages.allTextContents();
   await choose(page, "Fork");
-  await expect(page).toHaveURL(/#\/c\/_\/session\/session-fork-/);
+  await expect(page).toHaveURL(/#\/c\/@local\/session\/session-fork-/);
   await expect(messages).toHaveText(previous);
   const input = page.getByRole("textbox", { name: "Message", exact: true });
   await input.fill("Explore the second direction in this fork.");

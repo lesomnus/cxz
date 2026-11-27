@@ -4,7 +4,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import { AccountsView } from "#src/features/accounts/accounts-view.tsx";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import { useNavigate } from "@tanstack/react-router";
-import { accountLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 export function AccountsPage({
   c,
   sessions,
@@ -16,6 +16,7 @@ export function AccountsPage({
   projects?: Project[];
   sessionsLoading?: boolean;
 }) {
+  const { accountLocation } = useResourceRoutes();
   const navigate = useNavigate();
   const { account } = useWorkspaceRoute();
   return (

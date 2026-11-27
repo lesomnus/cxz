@@ -196,7 +196,9 @@ function Preview({
     const projects = empty ? [] : fixture.projects;
     const sessions = empty ? [] : fixture.sessions;
     const history = createMemoryHistory({
-      initialEntries: [list || empty ? "/c/_/project" : "/c/_/project/web"],
+      initialEntries: [
+        list || empty ? "/c/@local/project" : "/c/@local/project/web",
+      ],
     });
     return createWorkspaceRouter(
       {

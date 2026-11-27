@@ -346,8 +346,7 @@ export const messages = {
   "Action failed. Check session status before retrying.":
     "Action failed. Check session status before retrying.",
   "(path not reported)": "(path not reported)",
-  "This connection is unavailable. Use _ to address the server that served this page.":
-    "This connection is unavailable. Use _ to address the server that served this page.",
+  "This connection is unavailable.": "This connection is unavailable.",
   "Page not found": "Page not found",
   "{count} more files in Details": "{count} more files in Details",
 
@@ -965,6 +964,18 @@ export const messages = {
   "Last seen": "Last seen",
   "Error details": "Error details",
   Connection: "Connection",
+  "Add project": "Add project",
+  "Project details": "Project details",
+  "Unsupported project runtime": "Unsupported project runtime",
+  "Update the connected manager to report its project runtime.":
+    "Update the connected manager to report its project runtime.",
+  "Workspace path": "Workspace path",
+  "Project name": "Project name",
+  "Display name": "Display name",
+  "Devcontainer configuration": "Devcontainer configuration",
+  "Image or Kubernetes settings (JSON)": "Image or Kubernetes settings (JSON)",
+  "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.":
+    "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.",
   "Request ID": "Request ID",
   Code: "Code",
   Method: "Method",

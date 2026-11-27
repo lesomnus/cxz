@@ -1,6 +1,6 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import { projectId } from "#src/shared/api/project-id.ts";
 import { DateTime } from "#src/shared/components/date-time.tsx";
 import { useEffect, useRef, useState } from "react";
@@ -51,6 +51,7 @@ export function ConversationSearch({
   c: Connection;
   projects: Project[];
 }) {
+  const { sessionLocation } = useResourceRoutes();
   const [query, setQuery] = useState("");
   const [match, setMatch] = useState<SearchMatch>("substring");
   const [project, setProject] = useState("");

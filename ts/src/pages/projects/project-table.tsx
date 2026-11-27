@@ -18,8 +18,8 @@ import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { RelativeTime } from "#src/shared/components/date-time.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import {
-  projectLocation,
   resourceHandle,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import { containerState } from "./project-state";
 import { ProjectStateIcon } from "./project-state-icon";
@@ -45,6 +45,7 @@ export function ProjectTable({
   sessionsLoading?: boolean;
   updated: (project: Project) => void;
 }) {
+  const { projectLocation } = useResourceRoutes();
   const [selected, select] = useState<Set<string>>(() => new Set());
   const chosen = projects.filter((project) => selected.has(key(project.id)));
   const selection = useRangeSelection({

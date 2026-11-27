@@ -29,9 +29,9 @@ import { useResourceSelection } from "#src/shared/api/resource-selection.ts";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
 import {
   matchesResource,
-  memoryLocation,
   resourceHandle,
   uuid,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 import styles from "./memory-page.module.css";
 import { ListDetailPages } from "@lesomnus/nox";
@@ -51,6 +51,7 @@ export function MemoryPage({
   sessionsLoading?: boolean;
   error?: string;
 }) {
+  const { memoryLocation } = useResourceRoutes();
   const navigate = useNavigate();
   const { memoryProject, memory } = useWorkspaceRoute();
   const selection = useResourceSelection(c);

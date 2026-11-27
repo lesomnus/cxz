@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -40,6 +41,7 @@ func Default(root string) Config {
 // browser keeps working, and a configuration someone wrote by hand is theirs.
 func Generate(root string) (Config, []string, error) {
 	cfg := Default(root)
+	cfg.ConnectionID = uuid.NewString()
 	var created []string
 	if _, err := os.Stat(cfg.TokenFile); errors.Is(err, fs.ErrNotExist) {
 		secret := make([]byte, 32)

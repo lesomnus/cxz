@@ -1,5 +1,5 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import { projectId, projectRef } from "#src/shared/api/project-id.ts";
 import { useEffect, useId, useRef, useState } from "react";
 import {
@@ -39,6 +39,7 @@ export function SessionCreate({
   centered?: boolean;
   close: () => void;
 }) {
+  const { sessionLocation } = useResourceRoutes();
   const dialogClose = useDialogClose(close);
   const navigate = useNavigate();
   const formId = useId();

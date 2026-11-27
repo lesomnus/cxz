@@ -235,8 +235,8 @@ export class Connection {
 export const ref = (id: string) => ({
   key: { case: "runtimeId" as const, value: id },
 });
-export async function authenticate(token: string) {
-  const r = await fetch("/auth/login", {
+export async function authenticate(token: string, baseUrl = location.origin) {
+  const r = await fetch(`${baseUrl}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token }),

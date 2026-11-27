@@ -23,6 +23,7 @@ import { type ProjectIconName } from "#src/shared/icons/icon.tsx";
 import { projectIconName } from "#src/shared/components/project-icon.ts";
 import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
+import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
 import {
   ACCOUNT_INFO_TTL,
@@ -36,6 +37,7 @@ import {
   type ProjectField,
 } from "./project-edit";
 import { ProjectActions } from "./project-actions";
+import { ProjectAdd } from "./project-add";
 import { ProjectTable } from "./project-table";
 import { containerNamePrefixLength } from "./project-container-name";
 import { SessionTable } from "#src/features/session/table/session-table.tsx";
@@ -56,9 +58,9 @@ import {
 import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
 import pageStyles from "#src/shared/components/resource-page.module.css";
 import {
-  projectLocation,
   resourceHandle,
   uuid,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 
 export function ProjectsPage({
@@ -76,9 +78,11 @@ export function ProjectsPage({
   sessionsLoading?: boolean;
   error?: string;
 }) {
+  const { projectLocation } = useResourceRoutes();
   useLocale();
   const navigate = useNavigate();
   const [saved, setSaved] = useState<Project>();
+  const [adding, setAdding] = useState(false);
   const visibleProjects = projects.map((p) => {
     if (!saved || key(p.id) !== key(saved.id)) return p;
     const a = p.dateUpdated,
@@ -98,7 +102,16 @@ export function ProjectsPage({
   const project = selected ? resolved : undefined;
   return (
     <ResourcePage aria-label={t("Project workspace")}>
-      <ResourceToolbar aria-label={t("Project toolbar")}>
+      <ResourceToolbar
+        aria-label={t("Project toolbar")}
+        actions={
+          <ToolbarIconButton
+            icon="add"
+            label={t("Add project")}
+            onClick={() => setAdding(true)}
+          />
+        }
+      >
         <ProjectPicker
           projects={visibleProjects}
           value={projectId(project) ?? ""}
@@ -193,6 +206,16 @@ export function ProjectsPage({
           ) : null
         }
       />
+      {adding && (
+        <ProjectAdd
+          c={c}
+          close={() => setAdding(false)}
+          added={(project, target) => {
+            setAdding(false);
+            void navigate(projectLocation(resourceHandle(project), target));
+          }}
+        />
+      )}
     </ResourcePage>
   );
 }

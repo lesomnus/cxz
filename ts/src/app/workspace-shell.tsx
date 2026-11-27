@@ -36,11 +36,7 @@ import { resumableStates } from "#src/features/session/model/session-actions.ts"
 import { useSettings } from "#src/shared/settings/settings.ts";
 import {
   matchesResource,
-  memoryLocation,
-  projectLocation,
-  resourceLocation,
-  sessionLocation,
-  taskLocation,
+  useResourceRoutes,
 } from "#src/shared/navigation/resource-route.ts";
 type WorkspaceProps = {
   connection: Connection;
@@ -74,6 +70,13 @@ function WorkspaceContent({
   exitLabel = t("Sign out"),
   children,
 }: WorkspaceProps) {
+  const {
+    projectLocation,
+    resourceLocation,
+    sessionLocation,
+    taskLocation,
+    memoryLocation,
+  } = useResourceRoutes();
   useLocale();
   useScrollbars();
   useEffect(() => c.conversations.mount(), [c]);
@@ -194,21 +197,23 @@ function WorkspaceContent({
       projects: t("Projects"),
     }[view];
     const location =
-      view === "sessions" || view === "projects"
-        ? route.resource === view
-          ? resourceLocation(view)
-          : view === "projects"
-            ? projectLocation(currentProject)
+      view === "projects"
+        ? projectLocation(
+            route.resource === "projects" ? undefined : currentProject,
+          )
+        : view === "sessions"
+          ? route.resource === view
+            ? resourceLocation(view)
             : lastSession.current
               ? sessionLocation(lastSession.current)
               : resourceLocation("sessions")
-        : view === "tasks"
-          ? taskLocation({ project: currentProject })
-          : view === "memory"
-            ? memoryProject
-              ? memoryLocation(memoryProject)
-              : projectLocation()
-            : resourceLocation(view);
+          : view === "tasks"
+            ? taskLocation({ project: currentProject })
+            : view === "memory"
+              ? memoryProject
+                ? memoryLocation(memoryProject)
+                : projectLocation()
+              : resourceLocation(view);
     return (
       <SidebarHint key={view} label={label}>
         <RouteLink

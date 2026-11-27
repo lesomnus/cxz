@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import type { ButtonAnchorProps } from "@lesomnus/nox";
 import type { IconName } from "#src/shared/icons/icon.tsx";
 import type { Session } from "#gen/cxz/session_pb";
-import { sessionLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { AgentBrand } from "./agent-brand";
 import { ResourceNavigationButton } from "./resource-navigation-button";
@@ -22,6 +22,7 @@ export const SessionNavigationButton = forwardRef<
   { session, annotation, unread = false, className = "", ...props },
   ref,
 ) {
+  const { sessionLocation } = useResourceRoutes();
   const name = session.name || session.alias || session.runtimeId;
   const alias = session.alias || session.runtimeId;
   return (

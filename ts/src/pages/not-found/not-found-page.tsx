@@ -1,4 +1,3 @@
-import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
@@ -10,16 +9,8 @@ export function NotFoundPage() {
   return (
     <main className="empty route-not-found">
       <h1>{t("Page not found")}</h1>
-      {connection && connection !== "_" && (
-        <p>
-          {t(
-            "This connection is unavailable. Use _ to address the server that served this page.",
-          )}
-        </p>
-      )}
-      <RouteLink {...resourceLocation("sessions")}>
-        {t("Back to sessions")}
-      </RouteLink>
+      {connection && <p>{t("This connection is unavailable.")}</p>}
+      <RouteLink to="/">{t("Back to sessions")}</RouteLink>
     </main>
   );
 }

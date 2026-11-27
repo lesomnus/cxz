@@ -10,16 +10,19 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/lesomnus/cxz/internal/transport"
 	"github.com/lesomnus/cxz/internal/webui"
 )
 
 type Config struct {
-	Listen      string `json:"listen"`
-	Origin      string `json:"origin"`
-	Certificate string `json:"tls_cert,omitempty"`
-	Key         string `json:"tls_key,omitempty"`
-	TokenFile   string `json:"access_token_file,omitempty"`
+	Listen          string `json:"listen"`
+	Origin          string `json:"origin"`
+	Certificate     string `json:"tls_cert,omitempty"`
+	Key             string `json:"tls_key,omitempty"`
+	TokenFile       string `json:"access_token_file,omitempty"`
+	ConnectionAlias string `json:"connection_alias,omitempty"`
+	ConnectionID    string `json:"connection_id,omitempty"`
 	// TLSProxy serves an https origin whose TLS a proxy in front ends.
 	TLSProxy bool `json:"tls_proxy,omitempty"`
 }
@@ -60,7 +63,13 @@ func (c Config) Runtime() (webui.Config, error) {
 	if err != nil {
 		return webui.Config{}, err
 	}
-	v := webui.Config{Listen: c.Listen, Origin: c.Origin, Certificate: c.Certificate, Key: c.Key, Token: token, TLSProxy: c.TLSProxy}
+	v := webui.Config{Listen: c.Listen, Origin: c.Origin, Certificate: c.Certificate, Key: c.Key, Token: token, TLSProxy: c.TLSProxy, ConnectionAlias: c.ConnectionAlias}
+	if c.ConnectionID != "" {
+		v.ConnectionID, err = uuid.Parse(c.ConnectionID)
+		if err != nil || v.ConnectionID == uuid.Nil {
+			return v, fmt.Errorf("connection_id must be a UUID")
+		}
+	}
 	if err = v.Validate(); err != nil {
 		return v, err
 	}

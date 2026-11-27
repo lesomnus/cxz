@@ -23,7 +23,7 @@ test("task table edits work and canceled Working tasks become read-only", async 
   await expect(updated).toHaveAttribute("datetime", /T.*Z$/);
   await expect(page.getByRole("link", { name: /elm/ })).toHaveAttribute(
     "href",
-    "/c/_/session/elm",
+    "/c/@local/session/elm",
   );
   await page.getByRole("button", { name: "Add task", exact: true }).click();
   const add = page.getByRole("dialog", { name: "Add task", exact: true });

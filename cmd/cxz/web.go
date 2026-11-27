@@ -24,6 +24,8 @@ func webFlags() flg.Flags {
 		stringFlag("config", "Web JSON settings (default: STATE/web.json)", ""),
 		stringFlag("listen", "Listen address", ""),
 		stringFlag("origin", "Exact browser origin", ""),
+		stringFlag("connection-alias", "Browser connection alias (default: local)", ""),
+		stringFlag("connection-id", "Stable browser connection UUID", ""),
 		stringFlag("tls-cert", "TLS certificate PEM file", ""),
 		stringFlag("tls-key", "TLS private key PEM file", ""),
 		stringFlag("access-token-file", "Browser access token file", ""),
@@ -54,7 +56,7 @@ func loadWebConfig(ctx context.Context, c *xli.Command) (webconfig.Config, strin
 }
 
 func overrideWebFlags(c *xli.Command, cfg *webconfig.Config) error {
-	for name, target := range map[string]*string{"listen": &cfg.Listen, "origin": &cfg.Origin, "tls-cert": &cfg.Certificate, "tls-key": &cfg.Key, "access-token-file": &cfg.TokenFile} {
+	for name, target := range map[string]*string{"listen": &cfg.Listen, "origin": &cfg.Origin, "connection-alias": &cfg.ConnectionAlias, "connection-id": &cfg.ConnectionID, "tls-cert": &cfg.Certificate, "tls-key": &cfg.Key, "access-token-file": &cfg.TokenFile} {
 		if value := flg.MustGet[string](c, name); value != "" {
 			*target = value
 		}

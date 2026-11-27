@@ -8,7 +8,7 @@ test.use({
 test("session erasure requires confirmation and preserves the owning project and other sessions", async ({
   page,
 }) => {
-  await page.goto("/sandbox.html#/c/_/project/project-2");
+  await page.goto("/sandbox.html#/c/@local/project/project-2");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
   const rows = table.locator("tbody tr");
   await expect(rows).toHaveCount(1, { timeout: 45000 });

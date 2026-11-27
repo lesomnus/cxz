@@ -4,7 +4,7 @@ import { ErrorStatusTabs } from "./error-status-tabs";
 import type { ClientErrors } from "#src/shared/errors/client-errors.ts";
 import { ErrorTable } from "./error-table";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
-import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import { Icon } from "#src/shared/icons/icon.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -21,6 +21,7 @@ export function ErrorPanel({
   onTabChange: (tab: string) => void;
   close?: () => void;
 }) {
+  const { resourceLocation } = useResourceRoutes();
   useLocale();
   const entries = useSyncExternalStore(
     store.subscribe,

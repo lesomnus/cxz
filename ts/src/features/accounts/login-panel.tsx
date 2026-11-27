@@ -62,8 +62,7 @@ export function LoginPanel({
     setCode("");
     setReady(false);
     const url = new URL(
-      `/login/${target.project ? "session" : "auxiliary"}`,
-      c.baseUrl,
+      `${c.baseUrl}/login/${target.project ? "session" : "auxiliary"}`,
     );
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
     url.searchParams.set("account", target.account);

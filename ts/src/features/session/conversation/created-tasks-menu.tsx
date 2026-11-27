@@ -6,7 +6,7 @@ import type { Task } from "#gen/cxz/task_pb";
 import type { WorkTaskState } from "#src/features/session/model/work-tasks.ts";
 import { TaskPrioritySymbol } from "#src/features/tasks/task-indicators.tsx";
 import { MenuLink } from "#src/shared/navigation/route-link.tsx";
-import { taskLocation } from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import styles from "#src/shared/components/anchored-menu.module.css";
@@ -22,6 +22,7 @@ function TaskList({
   state: WorkTaskState;
   close: () => void;
 }) {
+  const { taskLocation } = useResourceRoutes();
   return (
     <MenuScrollArea
       viewportClassName="created-tasks-menu-viewport"

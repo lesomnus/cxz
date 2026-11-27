@@ -7318,14 +7318,15 @@ func (x *EngineInfo) GetUsageError() string {
 }
 
 type InstallationVersion struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Version       string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
-	Revision      string                 `protobuf:"bytes,2,opt,name=revision,proto3" json:"revision,omitempty"`
-	Channel       string                 `protobuf:"bytes,3,opt,name=channel,proto3" json:"channel,omitempty"`
-	Pin           string                 `protobuf:"bytes,4,opt,name=pin,proto3" json:"pin,omitempty"`
-	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Version        string                 `protobuf:"bytes,1,opt,name=version,proto3" json:"version,omitempty"`
+	Revision       string                 `protobuf:"bytes,2,opt,name=revision,proto3" json:"revision,omitempty"`
+	Channel        string                 `protobuf:"bytes,3,opt,name=channel,proto3" json:"channel,omitempty"`
+	Pin            string                 `protobuf:"bytes,4,opt,name=pin,proto3" json:"pin,omitempty"`
+	Error          string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	ProjectBackend string                 `protobuf:"bytes,6,opt,name=project_backend,json=projectBackend,proto3" json:"project_backend,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *InstallationVersion) Reset() {
@@ -7389,6 +7390,13 @@ func (x *InstallationVersion) GetPin() string {
 func (x *InstallationVersion) GetError() string {
 	if x != nil {
 		return x.Error
+	}
+	return ""
+}
+
+func (x *InstallationVersion) GetProjectBackend() string {
+	if x != nil {
+		return x.ProjectBackend
 	}
 	return ""
 }
@@ -8021,13 +8029,14 @@ const file_cxz_proto_rawDesc = "" +
 	"buildCache\x12 \n" +
 	"\vreclaimable\x18\b \x01(\tR\vreclaimable\x12\x1f\n" +
 	"\vusage_error\x18\t \x01(\tR\n" +
-	"usageError\"\x8d\x01\n" +
+	"usageError\"\xb6\x01\n" +
 	"\x13InstallationVersion\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1a\n" +
 	"\brevision\x18\x02 \x01(\tR\brevision\x12\x18\n" +
 	"\achannel\x18\x03 \x01(\tR\achannel\x12\x10\n" +
 	"\x03pin\x18\x04 \x01(\tR\x03pin\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error2\xb5'\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\x12'\n" +
+	"\x0fproject_backend\x18\x06 \x01(\tR\x0eprojectBackend2\xb5'\n" +
 	"\bSessions\x12D\n" +
 	"\fDevcontainer\x12\x1e.cxz.runtime.DevcontainerInput\x1a\x14.cxz.runtime.Receipt\x12D\n" +
 	"\n" +

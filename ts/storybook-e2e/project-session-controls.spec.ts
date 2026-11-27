@@ -326,8 +326,8 @@ test("unavailable runtime keeps cached session and account navigation available"
     name: "Work account work",
     exact: true,
   });
-  await expect(session).toHaveAttribute("href", "/c/_/session/oak");
-  await expect(account).toHaveAttribute("href", "/c/_/account/work");
+  await expect(session).toHaveAttribute("href", "/c/@local/session/oak");
+  await expect(account).toHaveAttribute("href", "/c/@local/account/work");
   await row.getByRole("checkbox").check();
   const before = await table(page).boundingBox();
   await session.focus();

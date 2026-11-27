@@ -1,50 +1,96 @@
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import React, { type PropsWithChildren, useEffect, useState } from "react";
+import {
+  type FormEvent,
+  type PropsWithChildren,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Provider } from "@lesomnus/payday/react";
 import { Connection, authenticate } from "#src/shared/api/connection.ts";
 import { Button } from "@lesomnus/nox";
 import { Workspace } from "./workspace-shell";
 import "#src/app/styles/style.css";
-import { useWorkspaceRoute } from "./router";
+import { useRouteConnections, useWorkspaceRoute } from "./router";
 import { LogsPage } from "#src/pages/logs/logs-page.tsx";
 import { RouteLink } from "#src/shared/navigation/route-link.tsx";
 import { recordClientError } from "#src/shared/logs/client-logs.ts";
-import { resourceLocation } from "#src/shared/navigation/resource-route.ts";
+import {
+  ConnectionScope,
+  resourceLocation,
+} from "#src/shared/navigation/resource-route.ts";
+import {
+  defaultConnection,
+  resolveConnection,
+  type RoutableConnection,
+} from "#src/shared/api/routable-connections.ts";
+import { NotFoundPage } from "#src/pages/not-found/not-found-page.tsx";
+
 export function App({ children }: PropsWithChildren) {
+  const route = useWorkspaceRoute();
+  const entries = useRouteConnections();
+  const last = useRef<string>(undefined);
+  const target = route.connection
+    ? resolveConnection(entries, route.connection)
+    : ((last.current ? resolveConnection(entries, last.current) : undefined) ??
+      defaultConnection(entries));
+  if (!target) return <NotFoundPage />;
+  if (route.connection) last.current = target.id ?? target.handle;
+  return (
+    <ConnectionScope value={target.handle}>
+      <Installation key={target.id ?? target.handle} target={target}>
+        {children}
+      </Installation>
+    </ConnectionScope>
+  );
+}
+
+function Installation({
+  target,
+  children,
+}: PropsWithChildren<{ target: RoutableConnection }>) {
   useLocale();
   const route = useWorkspaceRoute();
   const [connection, setConnection] = useState<Connection>();
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const { baseUrl } = target;
   useEffect(() => {
-    fetch("/auth/status")
+    const request = new AbortController();
+    fetch(`${baseUrl}/auth/status`, {
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(10000)]),
+    })
       .then((r) => {
-        if (r.ok)
-          setConnection(
-            new Connection(
-              location.origin,
-              undefined,
-              undefined,
-              r.headers.get("payday-identity") ?? undefined,
-            ),
-          );
+        if (request.signal.aborted || r.status === 401) return;
+        if (!r.ok || r.headers.get("content-type")?.includes("text/html"))
+          throw new Error(t("Cannot reach cxz"));
+        setConnection(
+          new Connection(
+            baseUrl,
+            undefined,
+            undefined,
+            r.headers.get("payday-identity") ?? undefined,
+          ),
+        );
       })
       .catch((error: unknown) => {
+        if (request.signal.aborted) return;
         recordClientError(error, "Cannot reach cxz");
         setError(t("Cannot reach cxz"));
       });
-  }, []);
-  async function login(e: React.FormEvent) {
+    return () => request.abort();
+  }, [baseUrl]);
+  useEffect(() => () => connection?.dispose(), [connection]);
+
+  async function login(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     try {
-      const identity = await authenticate(token);
+      const identity = await authenticate(token, baseUrl);
       setToken("");
-      setConnection(
-        new Connection(location.origin, undefined, undefined, identity),
-      );
+      setConnection(new Connection(baseUrl, undefined, undefined, identity));
       setError("");
     } catch (e) {
       setError(String(e));
@@ -53,13 +99,12 @@ export function App({ children }: PropsWithChildren) {
     }
   }
   async function logout() {
-    const r = await fetch("/auth/logout", { method: "POST" });
+    const r = await fetch(`${baseUrl}/auth/logout`, { method: "POST" });
     if (!r.ok) throw Error(t("Sign out failed"));
     connection?.drafts.clear();
     connection?.attention.clear();
     connection?.selection.clear();
     await connection?.forgetCachedTasks();
-    connection?.dispose();
     setConnection(undefined);
   }
   if (!connection && route.resource === "logs")
@@ -67,7 +112,7 @@ export function App({ children }: PropsWithChildren) {
       <div
         style={{ height: "100dvh", display: "flex", flexDirection: "column" }}
       >
-        <RouteLink {...resourceLocation("sessions")}>
+        <RouteLink {...resourceLocation("sessions", target.handle)}>
           {t("Back to sessions")}
         </RouteLink>
         <LogsPage />
@@ -92,7 +137,7 @@ export function App({ children }: PropsWithChildren) {
           <Button disabled={busy}>{t("Connect")}</Button>
         </form>
         <p role="alert">{error}</p>
-        <small>{location.origin}</small>
+        <small>{target.handle}</small>
         <RouteLink to="/log">{t("Logs")}</RouteLink>
       </main>
     );

@@ -1,10 +1,7 @@
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { isAPIError } from "#src/shared/errors/client-errors.ts";
 import { diagnosticText } from "#src/shared/logs/log-entry.ts";
-import {
-  sessionLocation,
-  resourceLocation,
-} from "#src/shared/navigation/resource-route.ts";
+import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
 import {
   projectId as projectUUID,
   projectRef,
@@ -155,6 +152,7 @@ export function Conversation(props: ConversationProps) {
   );
 }
 function ConversationContent({ c, id, projects }: ConversationProps) {
+  const { sessionLocation, resourceLocation } = useResourceRoutes();
   const conversationArea = useRef<HTMLElement>(null);
   useLocale();
   const navigate = useNavigate();

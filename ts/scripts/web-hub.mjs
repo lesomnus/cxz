@@ -1,5 +1,5 @@
 // The dev server as a hub: several cxz installations, each a connection, served
-// from one origin under /c/<name>/. It is the development stand-in for a
+// from one origin under /c/@alias/ or /c/UUID/. It is the development stand-in for a
 // gateway that holds connections (docs/plans/web-connections.md, "허브"):
 // the browser talks to this origin only, and each installation's session --
 // its gateway's HttpOnly cookie -- is kept here, server-side, never in the
@@ -10,11 +10,51 @@
 // in the browser as before, so a UI that knows nothing of connections keeps
 // working.
 
+import { createHash } from "node:crypto";
+
 export const connectionPrefix = "/c/";
 export const connectionName = /^[a-z0-9][a-z0-9-]{0,39}$/;
+export const connectionId =
+  /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export const listPath = "/cxz.ConnectionService/List";
 
-// connectionOf splits /c/<name>/rest into the connection and its gateway path.
+export function connectionIDs(entries) {
+  const ids = new Set();
+  const names = new Set();
+  return entries.map((entry) => {
+    if (
+      typeof entry.name !== "string" ||
+      !connectionName.test(entry.name) ||
+      names.has(entry.name)
+    ) {
+      throw new Error(`Invalid or duplicate connection alias: ${entry.name}`);
+    }
+    names.add(entry.name);
+    let id = entry.id;
+    if (id === undefined) {
+      const bytes = createHash("sha256")
+        .update("cxz.web.connection\0")
+        .update(entry.configFile ?? entry.origin)
+        .digest();
+      bytes[6] = (bytes[6] & 0x0f) | 0x80;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      id = bytes
+        .subarray(0, 16)
+        .toString("hex")
+        .replace(/^(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})$/, "$1-$2-$3-$4-$5");
+    }
+    if (typeof id !== "string" || !connectionId.test(id)) {
+      throw new Error(`Invalid connection UUID for ${entry.name}`);
+    }
+    id = id.toLowerCase();
+    if (ids.has(id))
+      throw new Error(`Duplicate connection UUID for ${entry.name}`);
+    ids.add(id);
+    return { ...entry, id };
+  });
+}
+
+// connectionOf splits a scoped URL into the connection and its gateway path.
 // A path outside /c/ is the default connection's, unchanged.
 export function connectionOf(url, connections) {
   if (!url.startsWith(connectionPrefix)) {
@@ -22,8 +62,14 @@ export function connectionOf(url, connections) {
   }
   const rest = url.slice(connectionPrefix.length);
   const slash = rest.indexOf("/");
-  const name = slash < 0 ? rest : rest.slice(0, slash);
-  const connection = connections.find((c) => c.name === name);
+  const handle = (slash < 0 ? rest : rest.slice(0, slash)).replace(
+    /^%40/i,
+    "@",
+  );
+  const connection = handle.startsWith("@")
+    ? connections.find((c) => c.name === handle.slice(1))
+    : connectionId.test(handle) &&
+      connections.find((c) => c.id === handle.toLowerCase());
   if (!connection) return undefined;
   return { connection, path: slash < 0 ? "/" : rest.slice(slash), hub: true };
 }
@@ -68,10 +114,11 @@ export class Sessions {
 // configured with. Every connection is read-only here -- the hub's
 // configuration says which there are, not the browser -- and the first is the
 // default, the one unprefixed paths reach. A connection's route is
-// /c/<name>; target is the installation it reaches, for showing.
+// /c/@alias or /c/UUID; target is the installation it reaches, for showing.
 export function listConnections(connections) {
   return {
     items: connections.map((c, i) => ({
+      id: Buffer.from(c.id.replaceAll("-", ""), "hex").toString("base64"),
       name: c.name,
       target: c.origin,
       transport: "gateway",

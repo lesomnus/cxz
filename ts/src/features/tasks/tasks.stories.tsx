@@ -11,17 +11,17 @@ import styles from "./tasks.module.css";
 function taskListPath(path: string) {
   const url = new URL(path, "https://storybook.invalid");
   const project =
-    url.pathname.match(/^\/c\/_\/project\/([^/]+)\/task/)?.[1] ??
+    url.pathname.match(/^\/c\/@local\/project\/([^/]+)\/task/)?.[1] ??
     url.searchParams.get("project") ??
     "workspace";
   url.searchParams.delete("project");
-  return `/c/_/project/${project}/task${url.search}`;
+  return `/c/@local/project/${project}/task${url.search}`;
 }
 
 function TaskPreview({
   count,
   unavailable = false,
-  initialPath = "/c/_/project/workspace/task",
+  initialPath = "/c/@local/project/workspace/task",
   pageSize = 500,
   pageDelay = 0,
   olderDone = 0,
@@ -172,12 +172,12 @@ export const ManyTasks: Story = { args: { count: 90 } };
 export const CompletedHistory: Story = { args: { olderDone: 125 } };
 export const EmptyProject: Story = { args: { count: 0 } };
 export const SessionFilter: Story = {
-  args: { initialPath: "/c/_/project/workspace/task?assignee=oak" },
+  args: { initialPath: "/c/@local/project/workspace/task?assignee=oak" },
 };
 export const OlderRuntime: Story = { args: { unavailable: true } };
 
 export const TaskDetails: Story = {
-  args: { initialPath: "/c/_/project/workspace/task/task-3" },
+  args: { initialPath: "/c/@local/project/workspace/task/task-3" },
   parameters: {
     docs: {
       description: {
@@ -189,7 +189,7 @@ export const TaskDetails: Story = {
 };
 export const CanceledTaskDetails: Story = {
   ...TaskDetails,
-  args: { initialPath: "/c/_/project/workspace/task/task-8" },
+  args: { initialPath: "/c/@local/project/workspace/task/task-8" },
   parameters: {
     docs: {
       description: {
@@ -203,14 +203,14 @@ export const CanceledTaskDetails: Story = {
 export const LongTaskDetails: Story = {
   ...TaskDetails,
   args: {
-    initialPath: "/c/_/project/workspace/task/task-3",
+    initialPath: "/c/@local/project/workspace/task/task-3",
     longDetails: true,
   },
 };
 export const ReadOnlyLongTitle: Story = {
   ...TaskDetails,
   args: {
-    initialPath: "/c/_/project/workspace/task/task-5",
+    initialPath: "/c/@local/project/workspace/task/task-5",
     longDoneTitle: true,
   },
 };
@@ -228,34 +228,35 @@ export const HistoryUnavailable: Story = {
 };
 export const SingleTaskDetails: Story = {
   ...TaskDetails,
-  args: { count: 1, initialPath: "/c/_/project/workspace/task/task-1" },
+  args: { count: 1, initialPath: "/c/@local/project/workspace/task/task-1" },
 };
 export const FirstTaskDetails: Story = {
   ...TaskDetails,
-  args: { initialPath: "/c/_/project/workspace/task/task-9" },
+  args: { initialPath: "/c/@local/project/workspace/task/task-9" },
 };
 export const LastTaskDetails: Story = {
   ...TaskDetails,
-  args: { initialPath: "/c/_/project/workspace/task/task-5" },
+  args: { initialPath: "/c/@local/project/workspace/task/task-5" },
 };
 export const AssignmentActions: Story = {
   ...TaskDetails,
-  args: { initialPath: "/c/_/project/workspace/task/task-7" },
+  args: { initialPath: "/c/@local/project/workspace/task/task-7" },
 };
 export const MissingTaskDetails: Story = {
   ...TaskDetails,
-  args: { initialPath: "/c/_/project/workspace/task/missing" },
+  args: { initialPath: "/c/@local/project/workspace/task/missing" },
 };
 export const TaskById: Story = {
   args: {
     initialPath:
-      "/c/_/project/00000000-0000-8000-8007-000000000001/task/00000000-0000-0000-0000-00000000000c",
+      "/c/@local/project/00000000-0000-8000-8007-000000000001/task/00000000-0000-0000-0000-00000000000c",
   },
 };
 
 export const ExistingBookmark: Story = {
   args: {
-    initialPath: "/c/_/task/task-3?project=workspace&assignee=elm&run=elm-run",
+    initialPath:
+      "/c/@local/task/task-3?project=workspace&assignee=elm&run=elm-run",
   },
 };
 

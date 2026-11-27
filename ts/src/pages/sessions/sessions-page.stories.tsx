@@ -327,7 +327,7 @@ function Preview({
       },
       createMemoryHistory({
         initialEntries: [
-          conversation ? "/c/_/session/web-oak" : "/c/_/session",
+          conversation ? "/c/@local/session/web-oak" : "/c/@local/session",
         ],
       }),
     ),
