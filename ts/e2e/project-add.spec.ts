@@ -11,6 +11,10 @@ const defaultKubeConfig = {
 test("project creation uses the chosen installation and a stable modal", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem("settings"))
+      localStorage.setItem("settings", JSON.stringify({ "ui.theme": "dark" }));
+  });
   await page.request.post("/auth/login", {
     headers: { Origin: "https://127.0.0.1:18081" },
     data: { token: "a".repeat(32) },
@@ -147,9 +151,9 @@ test("project creation uses the chosen installation and a stable modal", async (
 
   await connection.click();
   const cluster = page.getByRole("option", { name: "cluster", exact: true });
-  await expect(
-    cluster.locator('[data-icon="connection-kubernetes"]'),
-  ).toBeVisible();
+  const logo = cluster.locator('img[data-icon="connection-kubernetes"]');
+  await expect(logo).toHaveAttribute("src", /kubernetes-icon-white.*\.svg$/);
+  await expect(logo).not.toHaveJSProperty("naturalWidth", 0);
   await cluster.click();
   const projectName = dialog.getByLabel("Project name", { exact: true });
   await expect(projectName).toBeVisible();
@@ -191,14 +195,23 @@ test("project creation uses the chosen installation and a stable modal", async (
       .getByRole("rowheader", { name: /^local/ })
       .locator('[data-icon="connection-docker"]'),
   ).toBeVisible();
-  await expect(
-    connections
-      .getByRole("rowheader", { name: "cluster", exact: true })
-      .locator('[data-icon="connection-kubernetes"]'),
-  ).toBeVisible();
+  const settingsLogo = connections
+    .getByRole("rowheader", { name: "cluster", exact: true })
+    .locator('img[data-icon="connection-kubernetes"]');
+  await expect(settingsLogo).toBeVisible();
   await expect(
     connections
       .getByRole("rowheader", { name: "legacy", exact: true })
       .locator('[data-icon="connection-gateway"]'),
   ).toBeVisible();
+
+  await page.evaluate(() =>
+    localStorage.setItem("settings", JSON.stringify({ "ui.theme": "light" })),
+  );
+  await page.reload();
+  await expect(settingsLogo).toHaveAttribute(
+    "src",
+    /kubernetes-icon-black.*\.svg$/,
+  );
+  await expect(settingsLogo).not.toHaveJSProperty("naturalWidth", 0);
 });

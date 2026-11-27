@@ -188,13 +188,6 @@ export const iconDefinitions = {
     rect(3, 6, 18, 12, 1.5),
     path("M7 9v6m5-6v6m5-6v6"),
   ]),
-  "connection-kubernetes": line([
-    path("m12 2.5 8.3 4.8v9.4L12 21.5l-8.3-4.8V7.3Z"),
-    path("M12 8v4m0 0-3.5 2m3.5-2 3.5 2"),
-    circle(12, 7, 1, filled),
-    circle(7.5, 14.6, 1, filled),
-    circle(16.5, 14.6, 1, filled),
-  ]),
   "connection-gateway": line([
     rect(3, 4, 18, 7, 1.5),
     rect(3, 13, 18, 7, 1.5),

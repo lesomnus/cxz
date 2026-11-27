@@ -12,7 +12,7 @@
   gap: var(--ui-menu-item-gap);
 }
 
-.name > svg {
+.name > :is(svg, img) {
   flex: none;
 }
 

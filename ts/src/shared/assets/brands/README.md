@@ -1,4 +1,4 @@
-# 에이전트 로고
+# 브랜드 로고
 
 2026-10-05 확인. 공식 SVG 원본은 받은 바이트 그대로 보관하고,
 아래에 표시용 파생 파일을 구분한다.
@@ -59,3 +59,14 @@ SVG 안의 script, 이벤트 핸들러, 외부 참조 및 embedded image가 없�
 
 SVG 원본을 포맷하거나 최적화하지 않는다. 교체 시 공식 출처, 사용 조건과
 해시를 함께 갱신한다.
+
+## Kubernetes 로고
+
+연결 목록과 Add project에서 Kubernetes 런타임을 식별한다. 라이트 테마에는
+공식 검정 심볼을, 다크 테마에는 공식 흰색 심볼을 사용한다. 원본 SVG의
+색상과 비율을 유지한다. [Kubernetes 로고 사용 가이드](https://github.com/kubernetes/kubernetes/blob/master/logo/usage_guidelines.md)
+
+| 파일                        | CNCF 공식 원본                                                                                                                                      | SHA-256                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `kubernetes-icon-black.svg` | [검정 심볼](https://github.com/cncf/artwork/blob/921aef4681c989a5dc5a026ef3e5ab56169a0820/projects/kubernetes/icon/black/kubernetes-icon-black.svg) | `8093d087ca1f204e2cda36fcb566a8ca6243188a48b6e546dd0103a19af5cae4` |
+| `kubernetes-icon-white.svg` | [흰색 심볼](https://github.com/cncf/artwork/blob/921aef4681c989a5dc5a026ef3e5ab56169a0820/projects/kubernetes/icon/white/kubernetes-icon-white.svg) | `d569b160f7482362cb6369447d77ddf02909e4072b60509329992d0a86106157` |
