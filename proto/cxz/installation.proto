@@ -189,6 +189,8 @@ message EngineInfo {
 message InstallationVersion {
   string version = 1; string revision = 2; string channel = 3;
   string pin = 4; string error = 5;
+  // The backend that interprets Project.Add's workspace and config fields.
+  string project_backend = 6;
 }
 
 message DiagnosticsRequest {

@@ -51,7 +51,8 @@ func (c *Client) GetInstallationVersion(ctx context.Context, _ *api.Empty, opts 
 		return nil, err
 	}
 	return &api.InstallationVersion{
-		Version: v.GetVersion(), Revision: v.GetRevision(), Channel: v.GetChannel(),
+		ProjectBackend: v.GetProjectBackend(),
+		Version:        v.GetVersion(), Revision: v.GetRevision(), Channel: v.GetChannel(),
 		Pin: v.GetPin(), Error: v.GetError(),
 	}, nil
 }

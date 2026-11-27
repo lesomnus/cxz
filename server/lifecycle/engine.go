@@ -83,7 +83,7 @@ func (s InstallationServer) Version(ctx context.Context, _ *resource.EngineReque
 	}
 	return resource.InstallationVersion_builder{
 		Version: &out.Version, Revision: &out.Revision, Channel: &out.Channel,
-		Pin: &out.Pin, Error: &out.Error,
+		Pin: &out.Pin, Error: &out.Error, ProjectBackend: &out.ProjectBackend,
 	}.Build(), nil
 }
 

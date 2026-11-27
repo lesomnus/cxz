@@ -2755,16 +2755,17 @@ func (b0 EngineInfo_builder) Build() *EngineInfo {
 // error is set when the channel or the pin could not be read; the build itself
 // is compiled in and always known.
 type InstallationVersion struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Version     *string                `protobuf:"bytes,1,opt,name=version"`
-	xxx_hidden_Revision    *string                `protobuf:"bytes,2,opt,name=revision"`
-	xxx_hidden_Channel     *string                `protobuf:"bytes,3,opt,name=channel"`
-	xxx_hidden_Pin         *string                `protobuf:"bytes,4,opt,name=pin"`
-	xxx_hidden_Error       *string                `protobuf:"bytes,5,opt,name=error"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                     protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Version        *string                `protobuf:"bytes,1,opt,name=version"`
+	xxx_hidden_Revision       *string                `protobuf:"bytes,2,opt,name=revision"`
+	xxx_hidden_Channel        *string                `protobuf:"bytes,3,opt,name=channel"`
+	xxx_hidden_Pin            *string                `protobuf:"bytes,4,opt,name=pin"`
+	xxx_hidden_Error          *string                `protobuf:"bytes,5,opt,name=error"`
+	xxx_hidden_ProjectBackend *string                `protobuf:"bytes,6,opt,name=project_backend,json=projectBackend"`
+	XXX_raceDetectHookData    protoimpl.RaceDetectHookData
+	XXX_presence              [1]uint32
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *InstallationVersion) Reset() {
@@ -2842,29 +2843,44 @@ func (x *InstallationVersion) GetError() string {
 	return ""
 }
 
+func (x *InstallationVersion) GetProjectBackend() string {
+	if x != nil {
+		if x.xxx_hidden_ProjectBackend != nil {
+			return *x.xxx_hidden_ProjectBackend
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *InstallationVersion) SetVersion(v string) {
 	x.xxx_hidden_Version = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 6)
 }
 
 func (x *InstallationVersion) SetRevision(v string) {
 	x.xxx_hidden_Revision = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
 }
 
 func (x *InstallationVersion) SetChannel(v string) {
 	x.xxx_hidden_Channel = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
 }
 
 func (x *InstallationVersion) SetPin(v string) {
 	x.xxx_hidden_Pin = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
 }
 
 func (x *InstallationVersion) SetError(v string) {
 	x.xxx_hidden_Error = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 6)
+}
+
+func (x *InstallationVersion) SetProjectBackend(v string) {
+	x.xxx_hidden_ProjectBackend = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
 }
 
 func (x *InstallationVersion) HasVersion() bool {
@@ -2902,6 +2918,13 @@ func (x *InstallationVersion) HasError() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
+func (x *InstallationVersion) HasProjectBackend() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+}
+
 func (x *InstallationVersion) ClearVersion() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Version = nil
@@ -2927,6 +2950,11 @@ func (x *InstallationVersion) ClearError() {
 	x.xxx_hidden_Error = nil
 }
 
+func (x *InstallationVersion) ClearProjectBackend() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	x.xxx_hidden_ProjectBackend = nil
+}
+
 type InstallationVersion_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2935,6 +2963,8 @@ type InstallationVersion_builder struct {
 	Channel  *string
 	Pin      *string
 	Error    *string
+	// The backend that interprets Project.Add's workspace and config fields.
+	ProjectBackend *string
 }
 
 func (b0 InstallationVersion_builder) Build() *InstallationVersion {
@@ -2942,24 +2972,28 @@ func (b0 InstallationVersion_builder) Build() *InstallationVersion {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Version != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 6)
 		x.xxx_hidden_Version = b.Version
 	}
 	if b.Revision != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
 		x.xxx_hidden_Revision = b.Revision
 	}
 	if b.Channel != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
 		x.xxx_hidden_Channel = b.Channel
 	}
 	if b.Pin != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
 		x.xxx_hidden_Pin = b.Pin
 	}
 	if b.Error != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 6)
 		x.xxx_hidden_Error = b.Error
+	}
+	if b.ProjectBackend != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		x.xxx_hidden_ProjectBackend = b.ProjectBackend
 	}
 	return m0
 }
@@ -3948,13 +3982,14 @@ const file_cxz_installation_proto_rawDesc = "" +
 	"buildCache\x12 \n" +
 	"\vreclaimable\x18\b \x01(\tR\vreclaimable\x12\x1f\n" +
 	"\vusage_error\x18\t \x01(\tR\n" +
-	"usageError\"\x8d\x01\n" +
+	"usageError\"\xb6\x01\n" +
 	"\x13InstallationVersion\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x1a\n" +
 	"\brevision\x18\x02 \x01(\tR\brevision\x12\x18\n" +
 	"\achannel\x18\x03 \x01(\tR\achannel\x12\x10\n" +
 	"\x03pin\x18\x04 \x01(\tR\x03pin\x12\x14\n" +
-	"\x05error\x18\x05 \x01(\tR\x05error\"\x93\x01\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\x12'\n" +
+	"\x0fproject_backend\x18\x06 \x01(\tR\x0eprojectBackend\"\x93\x01\n" +
 	"\x12DiagnosticsRequest\x12\x16\n" +
 	"\x06method\x18\x01 \x01(\tR\x06method\x120\n" +
 	"\x05since\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x05since\x12\x14\n" +
