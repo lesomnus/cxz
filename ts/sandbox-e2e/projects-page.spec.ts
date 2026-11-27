@@ -15,8 +15,9 @@ test("projects use the full workspace with a persistent project picker and scope
     name: "Select project",
     exact: true,
   });
-  await expect(main.locator("header svg")).toBeVisible();
-  await expect(main.locator("header svg")).toHaveCSS("width", "14px");
+  const projectIcon = main.locator("header .prefix-value-menu svg");
+  await expect(projectIcon).toBeVisible();
+  await expect(projectIcon).toHaveCSS("width", "14px");
   await expect(
     page
       .getByRole("link", { name: "Projects view", exact: true })

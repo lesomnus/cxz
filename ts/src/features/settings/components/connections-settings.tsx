@@ -11,7 +11,10 @@ import {
   TableRow,
 } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
-import { client } from "#src/shared/api/connections.ts";
+import {
+  client,
+  list as savedConnections,
+} from "#src/shared/api/connections.ts";
 import { ConnectionScope } from "#src/shared/navigation/resource-route.ts";
 import { useRouteConnections } from "#src/app/router.tsx";
 import { InstallationFileMenu } from "./installation-files";
@@ -46,9 +49,10 @@ export function ConnectionsSettings({
     const entries = catalog.flatMap((entry) =>
       entry.entry ? [entry.entry] : [],
     );
-    return entries.length
-      ? { list: async () => ({ items: entries }) }
-      : client(origin);
+    if (!entries.length) return client(origin);
+    if (entries.length === 1 && entries[0].transport === "origin")
+      entries.push(...savedConnections(origin).slice(1));
+    return { list: async () => ({ items: entries }) };
   }, [connections, catalog, origin]);
   useEffect(() => {
     let live = true;
@@ -104,7 +108,10 @@ export function ConnectionsSettings({
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.name} data-read-only={item.readOnly}>
+              <TableRow
+                key={JSON.stringify([item.name, item.target])}
+                data-read-only={item.readOnly}
+              >
                 <TableHead scope="row">
                   <span
                     className={resourceTableStyles.identity}

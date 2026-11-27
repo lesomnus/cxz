@@ -482,7 +482,7 @@ export function accountWorkflowFixture(
   const connect: LoginSocketFactory = (url) => {
     calls.push(`login:${url.pathname}`);
     const attemptOutcome = ++loginAttempts === 1 ? outcome : "success";
-    const sessionLogin = url.pathname === "/login/session";
+    const sessionLogin = url.pathname.endsWith("/login/session");
     const socket = new PreviewLoginSocket(
       attemptOutcome,
       () => {
