@@ -745,7 +745,7 @@ test("session table fills the aligned dashboard column with a sticky header and 
     "/iframe.html?id=pages-projects--long-sessions&viewMode=story",
   );
   const list = page.getByRole("region", { name: "Session list", exact: true });
-  const viewport = list.locator(".panel-scroll-content");
+  const viewport = list.locator('[data-scroll-area="viewport"]');
   const cards = list.locator("tbody tr");
   await expect(cards).toHaveCount(16);
   const frame = (await viewport.boundingBox())!;
@@ -972,7 +972,7 @@ test("narrow screens scroll the table without overflowing the page or moving the
   const toolbar = main.locator(":scope > header");
   const before = await toolbar.boundingBox();
   const list = main.getByRole("region", { name: "Session list", exact: true });
-  const viewport = list.locator(".panel-scroll-content");
+  const viewport = list.locator('[data-scroll-area="viewport"]');
   await list.locator("tbody tr").first().getByRole("checkbox").check();
   await expect(
     list.getByRole("checkbox", {

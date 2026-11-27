@@ -8,7 +8,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useNavigate } from "@tanstack/react-router";
 import { key } from "@lesomnus/payday/store";
 import { Id } from "@lesomnus/payday/pdid";
-import { Button, Section } from "@lesomnus/nox";
+import { Button, Section, TableSection } from "@lesomnus/nox";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { useWorkspaceRoute } from "#src/app/router.tsx";
@@ -53,7 +53,6 @@ import {
   ResourceToolbar,
   ResourceDashboard,
   ResourceDashboardColumn,
-  ResourceTableSection,
 } from "#src/shared/components/resource-layout.tsx";
 import dashboardStyles from "#src/shared/components/resource-dashboard.module.css";
 import pageStyles from "#src/shared/components/resource-page.module.css";
@@ -374,7 +373,7 @@ function ProjectDashboard({
             <ErrorNotice api className={styles.errors} error={p.status.error} />
           )}
         </Section>
-        <ResourceTableSection aria-label={t("Project sessions")} fillHeight>
+        <TableSection aria-label={t("Project sessions")} fillHeight>
           <SessionTable
             c={c}
             sessions={sessions}
@@ -384,7 +383,6 @@ function ProjectDashboard({
             variant="overview"
             showToolbar={false}
             horizontalScrollbar
-            fillHeight
             addSession={() => setAddingSession(true)}
           />
           {addingSession && (
@@ -404,7 +402,7 @@ function ProjectDashboard({
               </Button>
             </div>
           )}
-        </ResourceTableSection>
+        </TableSection>
       </ResourceDashboardColumn>
       <ResourceDashboardColumn kind="activity">
         <section className={dashboardStyles.actions} aria-label={t("Actions")}>

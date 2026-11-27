@@ -9,6 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableSection,
 } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
 import {
@@ -19,7 +20,6 @@ import { ConnectionScope } from "#src/shared/navigation/resource-route.ts";
 import { useRouteConnections } from "#src/app/router.tsx";
 import { InstallationFileMenu } from "./installation-files";
 import { ConnectionIcon } from "#src/shared/components/connection-icon.tsx";
-import { ResourceTableSection } from "#src/shared/components/resource-layout.tsx";
 import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 import styles from "./connections-settings.module.css";
 
@@ -86,7 +86,7 @@ export function ConnectionsSettings({
           </small>
         </div>
       </header>
-      <ResourceTableSection>
+      <TableSection>
         {error && <ErrorNotice className={styles.error} error={error} />}
         <Table
           className={`connection-list ${resourceTableStyles.panelTable} ${resourceTableStyles.layout}`}
@@ -179,7 +179,7 @@ export function ConnectionsSettings({
             ))}
           </TableBody>
         </Table>
-      </ResourceTableSection>
+      </TableSection>
     </section>
   );
 }

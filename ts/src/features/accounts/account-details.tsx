@@ -3,7 +3,13 @@ import { DateTime, RelativeTime } from "#src/shared/components/date-time.tsx";
 import { useLocalError } from "#src/shared/errors/error-context.tsx";
 import { useRef, useState } from "react";
 import { ConnectError } from "@connectrpc/connect";
-import { Button, Popover, SectionGroup, Section } from "@lesomnus/nox";
+import {
+  Button,
+  Popover,
+  SectionGroup,
+  Section,
+  TableSection,
+} from "@lesomnus/nox";
 import { ConfirmationDialog } from "#src/shared/components/confirmation-dialog.tsx";
 import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
@@ -21,7 +27,6 @@ import { SessionTable } from "#src/features/session/table/session-table.tsx";
 import {
   ResourceDashboard,
   ResourceDashboardColumn,
-  ResourceTableSection,
 } from "#src/shared/components/resource-layout.tsx";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import { UsageReport } from "#src/features/activity/usage-report.tsx";
@@ -187,10 +192,7 @@ export function AccountDetails({
             />
           </ResourceFieldsGroup>
         </Section>
-        <ResourceTableSection
-          aria-label="Sessions using this account"
-          fillHeight
-        >
+        <TableSection aria-label="Sessions using this account" fillHeight>
           <SessionTable
             c={c}
             sessions={sessions}
@@ -202,9 +204,8 @@ export function AccountDetails({
             showProject
             showToolbar={false}
             horizontalScrollbar
-            fillHeight
           />
-        </ResourceTableSection>
+        </TableSection>
       </ResourceDashboardColumn>
       <ResourceDashboardColumn kind="activity">
         <SectionGroup
