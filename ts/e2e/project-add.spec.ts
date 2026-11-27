@@ -67,8 +67,11 @@ test("project creation uses the chosen installation and a stable modal", async (
     id: Buffer.alloc(16, 7).toString("base64"),
     alias: "cluster-app",
     name: "Cluster app",
-    workspace: "/workspaces/cluster-app",
-    status: { containerState: "CONTAINER_STATE_ABSENT" },
+    workspace: "07070707-0707-0707-0707-070707070707",
+    status: {
+      containerState: "CONTAINER_STATE_ABSENT",
+      remoteWorkspace: "/workspace",
+    },
   };
   await page.route(`**${clusterRPC}/cxz.ProjectService/List`, (route) =>
     route.fulfill({ json: { items: [project] } }),
@@ -84,8 +87,9 @@ test("project creation uses the chosen installation and a stable modal", async (
     addRequests.push(new URL(route.request().url()).pathname);
     const submitted = route.request().postDataJSON();
     expect(submitted).toMatchObject({
-      workspace: "cluster-app",
+      workspace: "/workspace",
       name: "Cluster app",
+      alias: "cluster-app",
     });
     expect(JSON.parse(submitted.config)).toEqual(
       addRequests.length === 1
@@ -164,8 +168,9 @@ test("project creation uses the chosen installation and a stable modal", async (
   await expect(logo).toHaveAttribute("src", /kubernetes-icon-white.*\.svg$/);
   await expect(logo).not.toHaveJSProperty("naturalWidth", 0);
   await cluster.click();
-  const projectName = dialog.getByLabel("Project name", { exact: true });
-  await expect(projectName).toBeVisible();
+  await expect(dialog.getByLabel("Project name", { exact: true })).toHaveCount(
+    0,
+  );
   await expect(dialog.getByLabel("Workspace path")).toHaveCount(0);
   const image = dialog.getByLabel("Container image", { exact: true });
   const user = dialog.getByLabel("Container user", { exact: true });
@@ -173,8 +178,8 @@ test("project creation uses the chosen installation and a stable modal", async (
   await expect(image).toHaveValue(defaultKubeConfig.image);
   await expect(user).toHaveValue(defaultKubeConfig.user);
   expect(await height()).toBe(initial);
-  await projectName.fill("cluster-app");
   await dialog.getByLabel("Display name").fill("Cluster app");
+  await dialog.getByLabel("Alias", { exact: true }).fill("cluster-app");
   await confirm.click();
   await expect(
     dialog.getByText("Test registration failure", { exact: false }),
@@ -233,6 +238,12 @@ test("project creation uses the chosen installation and a stable modal", async (
   await expect(
     page.getByRole("combobox", { name: "Select project", exact: true }),
   ).toHaveText("Cluster app");
+  const workspacePath = page.getByRole("button", {
+    name: "Copy: Workspace",
+    exact: true,
+  });
+  await expect(workspacePath).toBeVisible();
+  await expect(workspacePath).toContainText("/workspace");
   expect(addRequests).toEqual([
     `${clusterRPC}/cxz.ProjectService/Add`,
     `${clusterRPC}/cxz.ProjectService/Add`,

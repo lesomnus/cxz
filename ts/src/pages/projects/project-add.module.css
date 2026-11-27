@@ -29,6 +29,3 @@
   overflow: hidden;
   border-radius: var(--ui-form-control-radius);
 }
-.hint {
-  color: var(--ui-muted);
-}

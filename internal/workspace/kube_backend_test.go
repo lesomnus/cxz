@@ -14,6 +14,7 @@ import (
 
 	"github.com/lesomnus/cxz/api"
 	"github.com/lesomnus/cxz/internal/kube"
+	"github.com/lesomnus/cxz/internal/projectid"
 )
 
 func TestKubeExecArgs(t *testing.T) {
@@ -61,7 +62,7 @@ func TestKubeRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Workspace != "/workspaces/web" || p.RemoteWorkspace != "/workspaces/web" || p.Kube.Image != "node:24" || p.Kube.Storage != "5Gi" || p.Token == "" {
+	if p.Workspace != p.ID || p.RemoteWorkspace != KubernetesWorkspace || p.Kube.Image != "node:24" || p.Kube.Storage != "5Gi" || p.Token == "" {
 		t.Fatalf("%+v", p)
 	}
 	again, err := m.kubeRegister(ctx, "web", "")
@@ -108,9 +109,53 @@ pod_template:
 	}
 }
 
+func TestKubeRegisterSharedMountPath(t *testing.T) {
+	m := kubeManager(t, nil)
+	ctx := t.Context()
+	legacy := &Project{
+		ID: projectid.New(), Name: "legacy", Workspace: "/workspaces/legacy",
+		RemoteWorkspace: "/workspaces/legacy", Kube: &KubeProject{},
+	}
+	if err := m.save(ctx, legacy); err != nil {
+		t.Fatal(err)
+	}
+	first, err := m.Register(ctx, KubernetesWorkspace, "node:24")
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := m.Register(ctx, KubernetesWorkspace, "golang:1.27")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Id == second.Id || first.Workspace != first.Id || second.Workspace != second.Id ||
+		first.RemoteWorkspace != "/workspace" || second.RemoteWorkspace != "/workspace" {
+		t.Fatalf("expected two projects with one mount path: %+v, %+v", first, second)
+	}
+	for _, p := range []*api.Project{first, second} {
+		again, err := m.Register(ctx, p.Id, "")
+		if err != nil || again.Id != p.Id {
+			t.Fatalf("could not find %s again: %v", p.Id, err)
+		}
+		registered, err := m.resolve(ctx, p.Id)
+		if err != nil || registered.kubeImageRepository("registry/cxz") != "registry/cxz/"+p.Id {
+			t.Fatalf("image repository does not use %s: %+v (%v)", p.Id, registered, err)
+		}
+	}
+	old, err := m.Register(ctx, legacy.Name, "")
+	if err != nil || old.Id != legacy.ID || old.RemoteWorkspace != legacy.RemoteWorkspace {
+		t.Fatalf("legacy project changed: %+v (%v)", old, err)
+	}
+	if got := legacy.kubeImageRepository("registry/cxz"); got != "registry/cxz/legacy" {
+		t.Fatalf("legacy image repository changed: %s", got)
+	}
+}
+
 func TestKubePodObject(t *testing.T) {
 	m := kubeManager(t, nil)
-	p := &Project{ID: "id", StorageID: "sid", RemoteWorkspace: "/workspaces/web"}
+	p, err := m.kubeRegister(t.Context(), KubernetesWorkspace, "node:24")
+	if err != nil {
+		t.Fatal(err)
+	}
 	spec, err := m.kubeSpec(p)
 	if err != nil {
 		t.Fatal(err)
@@ -141,7 +186,7 @@ func TestKubePodObject(t *testing.T) {
 	if err = json.Unmarshal(b, &pod); err != nil {
 		t.Fatal(err)
 	}
-	if pod.Metadata.Name != "cxz-oooooooooooo-sid" || pod.Metadata.Labels["cxz.owner"] != m.Owner || pod.Metadata.Labels["cxz.project"] != "sid" || !pod.Spec.ShareProcessNamespace {
+	if pod.Metadata.Name != "cxz-oooooooooooo-"+p.ID || pod.Metadata.Labels["cxz.owner"] != m.Owner || pod.Metadata.Labels["cxz.project"] != p.ID || !pod.Spec.ShareProcessNamespace {
 		t.Fatalf("%+v", pod.Metadata)
 	}
 	tools, prepare := pod.Spec.InitContainers[0], pod.Spec.InitContainers[1]
@@ -152,7 +197,7 @@ func TestKubePodObject(t *testing.T) {
 		t.Fatal("prepare", prepare)
 	}
 	main := pod.Spec.Containers[0]
-	if main.Image != "node:24" || strings.Join(main.Command, " ") != "/cxz/tools/cxz _run-as --user vscode --workdir /workspaces/web -- /cxz/tools/cxz --state /cxz/state/data _project" || main.WorkingDir != "/workspaces/web" || main.Resources["requests"]["cpu"] != "1" {
+	if main.Image != "node:24" || strings.Join(main.Command, " ") != "/cxz/tools/cxz _run-as --user vscode --workdir /workspace -- /cxz/tools/cxz --state /cxz/state/data _project" || main.WorkingDir != "/workspace" || main.Resources["requests"]["cpu"] != "1" {
 		t.Fatal("runtime", main)
 	}
 	mounts := map[string]string{}
@@ -160,7 +205,7 @@ func TestKubePodObject(t *testing.T) {
 		sub, _ := v["subPath"].(string)
 		mounts[v["mountPath"].(string)] = v["name"].(string) + ":" + sub
 	}
-	want := map[string]string{"/cxz/state": "project:state", "/cxz/tools": "project:tools", "/workspaces/web": "project:workspace", "/cxz/secrets": "secrets:", "/cxz/assets": "assets:"}
+	want := map[string]string{"/cxz/state": "project:state", "/cxz/tools": "project:tools", "/workspace": "project:workspace", "/cxz/secrets": "secrets:", "/cxz/assets": "assets:"}
 	if !reflect.DeepEqual(mounts, want) {
 		t.Fatal(mounts)
 	}
@@ -168,7 +213,7 @@ func TestKubePodObject(t *testing.T) {
 	for _, e := range main.Env {
 		env[e["name"]] = e["value"]
 	}
-	if env["CXZ_STATE"] != "/cxz/state/data" || env["CXZ_PROJECT_ID"] != "id" {
+	if env["CXZ_STATE"] != "/cxz/state/data" || env["CXZ_PROJECT_ID"] != p.ID {
 		t.Fatal(env)
 	}
 	// Without a user the image's own runs it, and nothing is handed over.

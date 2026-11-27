@@ -5,6 +5,15 @@ import { resourceRef, uuid } from "#src/shared/navigation/resource-route.ts";
 export const projectId = (project?: Pick<Project, "id">) =>
   project ? new Id(project.id).toString() : "";
 
+export const kubernetesWorkspace = "/workspace";
+
+export function projectWorkspace(project?: Project) {
+  if (!project) return undefined;
+  return project.id.length === 16 && project.workspace === projectId(project)
+    ? project.status?.remoteWorkspace || kubernetesWorkspace
+    : project.workspace;
+}
+
 export function projectRef(value: string) {
   const id = uuid(value);
   if (id) return { key: { case: "id" as const, value: id } };

@@ -166,6 +166,9 @@ func (m *Manager) Kubernetes() bool { return m.kube != nil }
 
 var kubeName = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?$`)
 
+// KubernetesWorkspace is the mount point and working directory of new projects.
+const KubernetesWorkspace = "/workspace"
+
 // kubeResource is the one name a project's pod, volume and secret share.
 func (m *Manager) kubeResource(p *Project) string {
 	return "cxz-" + m.Owner[:12] + "-" + p.storageID()
@@ -197,12 +200,21 @@ func (m *Manager) kubeProject(p *Project) (image, user, storage string, requests
 	return
 }
 
-// kubeRegister records a project by name: there is no host folder to point
-// at, and the workspace is the project's own volume. config, when given, is
-// the project's KubeProject as YAML, JSON or an image reference.
-func (m *Manager) kubeRegister(ctx context.Context, name, config string) (*Project, error) {
-	if !kubeName.MatchString(name) {
-		return nil, fmt.Errorf("a Kubernetes project name is 1-40 lowercase letters, digits or hyphens")
+// The fixed mount path is a creation request. Older clients may still
+// supply a project name or an existing project reference.
+func (m *Manager) kubeRegister(ctx context.Context, handle, config string) (*Project, error) {
+	name := "Workspace"
+	if handle != KubernetesWorkspace {
+		lock := m.projectLock(handle)
+		lock.Lock()
+		defer lock.Unlock()
+		if p, err := m.resolve(ctx, handle); err == nil {
+			return p, nil
+		}
+		if !kubeName.MatchString(handle) {
+			return nil, fmt.Errorf("expected /workspace, an existing project reference, or a Kubernetes project name")
+		}
+		name = handle
 	}
 	k, err := parseKubeProject(config)
 	if err != nil {
@@ -214,13 +226,10 @@ func (m *Manager) kubeRegister(ctx context.Context, name, config string) (*Proje
 	if len(m.Owner) < 12 {
 		return nil, fmt.Errorf("invalid manager owner")
 	}
-	lock := m.projectLock(name)
-	lock.Lock()
-	defer lock.Unlock()
-	if p, err := m.resolve(ctx, name); err == nil {
-		return p, nil
-	}
-	p := &Project{ID: projectid.New(), Workspace: "/workspaces/" + name, Name: name, RemoteWorkspace: "/workspaces/" + name, Token: core.ID() + core.ID(), Kube: k}
+	id := projectid.New()
+	// Each pod has its own volume. Use the project ID as the registration
+	// key so the public resource's unique workspace index can distinguish them.
+	p := &Project{ID: id, Workspace: id, Name: name, RemoteWorkspace: KubernetesWorkspace, Token: core.ID() + core.ID(), Kube: k}
 	return p, m.save(ctx, p)
 }
 
@@ -785,8 +794,8 @@ func (m *Manager) kubeProjects(ctx context.Context, all []*Project) (*api.Projec
 // not: what a person asked for is that the project runs.
 func (m *Manager) kubeStart(ctx context.Context, r *api.ProjectRequest) (result *api.Receipt, retErr error) {
 	name := r.Workspace
-	if name == "" {
-		return nil, fmt.Errorf("project name required")
+	if name == "" || name == KubernetesWorkspace {
+		return nil, fmt.Errorf("project reference required")
 	}
 	p, err := m.resolve(ctx, name)
 	if err != nil {

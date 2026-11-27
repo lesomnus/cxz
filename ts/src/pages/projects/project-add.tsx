@@ -22,6 +22,7 @@ import { parseAlias } from "@lesomnus/payday/slug";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useProjectConnection } from "#src/shared/api/project-connection.ts";
+import { kubernetesWorkspace } from "#src/shared/api/project-id.ts";
 import { ConnectionIcon } from "#src/shared/components/connection-icon.tsx";
 import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
@@ -44,7 +45,6 @@ type ProjectDraft = {
 };
 
 const emptyDraft: ProjectDraft = { workspace: "", name: "", alias: "" };
-const kubeName = /^[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?$/;
 
 export function ProjectAdd({
   c,
@@ -84,8 +84,8 @@ export function ProjectAdd({
     () => (kubernetes ? readKubernetesProjectSettings(config) : undefined),
     [config, kubernetes],
   );
-  const workspace = draft.workspace.trim();
-  const valid = !!active && !!workspace && (docker || !!kubeSettings?.value);
+  const workspace = kubernetes ? kubernetesWorkspace : draft.workspace.trim();
+  const valid = !!active && (docker ? !!workspace : !!kubeSettings?.value);
   const set = (field: keyof ProjectDraft, value: string) =>
     setDraft((old) => ({ ...old, [field]: value }));
 
@@ -93,14 +93,6 @@ export function ProjectAdd({
     event.preventDefault();
     if (!valid || !active || !target || request.current || !dialog.open) return;
     setError("");
-    if (kubernetes && !kubeName.test(workspace)) {
-      setError(
-        t(
-          "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.",
-        ),
-      );
-      return;
-    }
     const name = draft.name.trim();
     const alias = draft.alias.trim();
     const invalid =
@@ -215,26 +207,23 @@ export function ProjectAdd({
               )}
               {(docker || kubernetes) && active && (
                 <>
-                  <FormField
-                    label={t(docker ? "Workspace path" : "Project name")}
-                    htmlFor={`${id}-workspace`}
-                  >
-                    <input
-                      id={`${id}-workspace`}
-                      required
-                      autoComplete="off"
-                      value={draft.workspace}
-                      placeholder={
-                        docker ? "/workspace/my-project" : "my-project"
-                      }
-                      onChange={(event) => set("workspace", event.target.value)}
-                    />
-                    {kubernetes && (
-                      <small className={styles.hint}>
-                        {t("Used for the workspace path.")}
-                      </small>
-                    )}
-                  </FormField>
+                  {docker && (
+                    <FormField
+                      label={t("Workspace path")}
+                      htmlFor={`${id}-workspace`}
+                    >
+                      <input
+                        id={`${id}-workspace`}
+                        required
+                        autoComplete="off"
+                        value={draft.workspace}
+                        placeholder="/workspace/my-project"
+                        onChange={(event) =>
+                          set("workspace", event.target.value)
+                        }
+                      />
+                    </FormField>
+                  )}
                   <FormField label={t("Display name")} htmlFor={`${id}-name`}>
                     <input
                       id={`${id}-name`}

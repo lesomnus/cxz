@@ -970,10 +970,8 @@ export const messages = {
   "Update the connected manager to report its project runtime.":
     "Update the connected manager to report its project runtime.",
   "Workspace path": "Workspace path",
-  "Project name": "Project name",
   "Display name": "Display name",
   "Devcontainer configuration": "Devcontainer configuration",
-  "Used for the workspace path.": "Used for the workspace path.",
   "Kubernetes settings": "Kubernetes settings",
   "Kubernetes project YAML": "Kubernetes project YAML",
   Form: "Form",
@@ -988,8 +986,6 @@ export const messages = {
   "Build context": "Build context",
   "Invalid Kubernetes settings. Edit the YAML to continue.":
     "Invalid Kubernetes settings. Edit the YAML to continue.",
-  "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.":
-    "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.",
   "Request ID": "Request ID",
   Code: "Code",
   Method: "Method",

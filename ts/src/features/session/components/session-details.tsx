@@ -1,5 +1,6 @@
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { DateTime } from "#src/shared/components/date-time.tsx";
+import { projectWorkspace } from "#src/shared/api/project-id.ts";
 import { useState, type ReactNode } from "react";
 import type { Session } from "#gen/cxz/session_pb";
 import {
@@ -51,7 +52,7 @@ export function SessionDetails({
       />,
     ],
     [t("Project"), value.project?.name || value.project?.alias],
-    [t("Workspace"), value.project?.workspace],
+    [t("Workspace"), projectWorkspace(value.project)],
     [t("Agent"), value.agent],
     [t("Model"), info.model],
     [t("Effort"), info.effort],

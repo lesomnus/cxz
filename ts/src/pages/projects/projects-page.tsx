@@ -1,7 +1,7 @@
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { useProject } from "#src/shared/api/use-project.ts";
-import { projectId } from "#src/shared/api/project-id.ts";
+import { projectId, projectWorkspace } from "#src/shared/api/project-id.ts";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
@@ -341,7 +341,7 @@ function ProjectDashboard({
                 },
                 {
                   label: t("Workspace"),
-                  value: p.workspace,
+                  value: projectWorkspace(p),
                   path: true,
                 },
                 {
