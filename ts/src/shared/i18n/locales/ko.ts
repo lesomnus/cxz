@@ -966,9 +966,9 @@ export const messages = {
   Connection: "연결",
   "Add project": "프로젝트 추가",
   "Project details": "프로젝트 상세 정보",
-  "Runtime type": "런타임 유형",
-  "Select a runtime": "런타임 선택",
   "Unsupported project runtime": "지원하지 않는 프로젝트 런타임입니다.",
+  "Update the connected manager to report its project runtime.":
+    "프로젝트 런타임 정보를 확인하려면 연결된 매니저를 업데이트하세요.",
   "Workspace path": "워크스페이스 경로",
   "Project name": "프로젝트 이름",
   "Display name": "표시 이름",

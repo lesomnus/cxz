@@ -967,9 +967,9 @@ export const messages = {
   Connection: "Connection",
   "Add project": "Add project",
   "Project details": "Project details",
-  "Runtime type": "Runtime type",
-  "Select a runtime": "Select a runtime",
   "Unsupported project runtime": "Unsupported project runtime",
+  "Update the connected manager to report its project runtime.":
+    "Update the connected manager to report its project runtime.",
   "Workspace path": "Workspace path",
   "Project name": "Project name",
   "Display name": "Display name",

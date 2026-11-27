@@ -25,22 +25,27 @@ test("project creation uses the chosen installation and a stable modal", async (
             target: "https://cluster.example",
             transport: "gateway",
           },
+          {
+            name: "legacy",
+            target: "https://legacy.example",
+            transport: "gateway",
+          },
         ],
       },
     }),
   );
-  await page.route("**/cxz.InstallationService/Version", (route) =>
-    route.fulfill({
+  await page.route("**/cxz.InstallationService/Version", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.startsWith("/c/legacy/")) return route.fulfill({ json: {} });
+    return route.fulfill({
       json: {
-        projectBackend: new URL(route.request().url()).pathname.startsWith(
-          "/c/cluster/",
-        )
+        projectBackend: path.startsWith("/c/cluster/")
           ? "kubernetes"
           : "docker",
       },
-    }),
-  );
-  await page.route("**/c/cluster/auth/status", (route) =>
+    });
+  });
+  await page.route("**/c/{cluster,legacy}/auth/status", (route) =>
     route.fulfill({ status: 204 }),
   );
   const project = {
@@ -89,9 +94,21 @@ test("project creation uses the chosen installation and a stable modal", async (
     dialog.evaluate((node) => node.getBoundingClientRect().height);
   const initial = await height();
 
-  await dialog
-    .getByRole("combobox", { name: "Connection", exact: true })
-    .click();
+  const connection = dialog.getByRole("combobox", {
+    name: "Connection",
+    exact: true,
+  });
+  const confirm = dialog.getByRole("button", { name: "Confirm", exact: true });
+  await connection.click();
+  await page.getByRole("option", { name: "legacy", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "Update the connected manager to report its project runtime.",
+  );
+  await expect(dialog.getByRole("combobox")).toHaveCount(1);
+  await expect(confirm).toBeDisabled();
+  expect(await height()).toBe(initial);
+
+  await connection.click();
   await page.getByRole("option", { name: "cluster", exact: true }).click();
   const projectName = dialog.getByLabel("Project name", { exact: true });
   await expect(projectName).toBeVisible();
@@ -102,7 +119,6 @@ test("project creation uses the chosen installation and a stable modal", async (
   await dialog
     .getByLabel("Image or Kubernetes settings (JSON)")
     .fill("node:24");
-  const confirm = dialog.getByRole("button", { name: "Confirm", exact: true });
   await confirm.click();
   await expect(
     dialog.getByText("Test registration failure", { exact: false }),

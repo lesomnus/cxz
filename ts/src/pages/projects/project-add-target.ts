@@ -15,8 +15,6 @@ export type ProjectAddTarget = {
   connection: string;
   baseUrl: string;
 };
-export type ProjectBackend = "docker" | "kubernetes";
-
 function unavailable(error: unknown) {
   const code = ConnectError.from(error).code;
   return code === Code.Unimplemented || code === Code.NotFound;

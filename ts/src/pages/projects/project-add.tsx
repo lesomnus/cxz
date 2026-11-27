@@ -19,11 +19,7 @@ import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import {
-  projectAddClient,
-  projectAddTargets,
-  type ProjectBackend,
-} from "./project-add-target";
+import { projectAddClient, projectAddTargets } from "./project-add-target";
 import { validateProjectField } from "./project-edit";
 import styles from "./project-add.module.css";
 
@@ -45,7 +41,6 @@ export function ProjectAdd({
   const request = useRef<AbortController | undefined>(undefined);
   useEffect(() => () => request.current?.abort(), []);
   const [selected, setSelected] = useState<string>();
-  const [fallbackBackend, setFallbackBackend] = useState<ProjectBackend>();
   const [draft, setDraft] = useState(emptyDraft);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -63,7 +58,7 @@ export function ProjectAdd({
     target && runtime.data?.baseUrl === target.baseUrl
       ? runtime.data
       : undefined;
-  const backend = active?.backend || fallbackBackend;
+  const backend = active?.backend;
   const docker = backend === "docker";
   const kubernetes = backend === "kubernetes";
   const workspace = draft.workspace.trim();
@@ -155,7 +150,6 @@ export function ProjectAdd({
                     if (target?.connection === value) return;
                     setSelected(value);
                     setDraft(emptyDraft);
-                    setFallbackBackend(undefined);
                     setError("");
                   }}
                 />
@@ -175,30 +169,14 @@ export function ProjectAdd({
                   </Button>
                 </div>
               )}
-              {active && !active.backend && (
-                <FormField label={t("Runtime type")}>
-                  <ValueMenu
-                    label={t("Runtime type")}
-                    value={fallbackBackend ?? ""}
-                    options={[
-                      { value: "", label: t("Select a runtime") },
-                      { value: "docker", label: "Docker" },
-                      { value: "kubernetes", label: "Kubernetes" },
-                    ]}
-                    choose={(value) => {
-                      setFallbackBackend(
-                        value === "docker" || value === "kubernetes"
-                          ? value
-                          : undefined,
-                      );
-                      setDraft(emptyDraft);
-                      setError("");
-                    }}
-                  />
-                </FormField>
-              )}
-              {active?.backend && !docker && !kubernetes && (
-                <ErrorNotice error={t("Unsupported project runtime")} />
+              {active && !docker && !kubernetes && (
+                <ErrorNotice
+                  error={t(
+                    backend
+                      ? "Unsupported project runtime"
+                      : "Update the connected manager to report its project runtime.",
+                  )}
+                />
               )}
               {(docker || kubernetes) && active && (
                 <>
