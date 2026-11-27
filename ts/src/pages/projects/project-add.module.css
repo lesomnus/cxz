@@ -4,21 +4,8 @@
     calc(100dvh - 4 * var(--ui-space) - 2 * var(--card-border-width))
   );
 }
-.form .body.body {
-  --card-body-padding: calc(2 * var(--ui-dialog-padding)) 0px;
-  display: flex;
+.body {
   flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-.scroll {
-  --ui-scroll-area-background: transparent;
-}
-.viewport {
-  padding-inline: max(
-    0px,
-    calc(var(--ui-dialog-padding) - var(--ui-control-inset))
-  );
 }
 .error {
   overflow-wrap: anywhere;

@@ -192,6 +192,24 @@ test("project creation uses the chosen installation and a stable modal", async (
   const modeBox = (await mode.boundingBox())!;
   expect(modeBox.x).toBeCloseTo(connectionBox.x, 1);
   expect(modeBox.width).toBeCloseTo(connectionBox.width, 1);
+
+  const desktop = page.viewportSize()!;
+  await page.setViewportSize({ width: desktop.width, height: 320 });
+  const scrollbar = dialog.getByRole("scrollbar", { name: "Project details" });
+  await scrollbar.hover();
+  const cardBox = (await dialog.locator(".floating-card").boundingBox())!;
+  const handleBox = (await scrollbar
+    .locator('[data-scroll-area="handle"]')
+    .boundingBox())!;
+  expect(handleBox.x).toBeGreaterThan(cardBox.x + cardBox.width);
+  await scrollbar.press("End");
+  await expect(scrollbar).toHaveAttribute(
+    "aria-valuenow",
+    (await scrollbar.getAttribute("aria-valuemax"))!,
+  );
+  await expect(confirm).toBeVisible();
+  await page.setViewportSize(desktop);
+
   await displayName.fill("Cluster app");
   await alias.fill("cluster-app");
   await confirm.click();

@@ -132,6 +132,7 @@ export function ProjectAdd({
 
   return (
     <Dialog
+      className="dialog-outside-scrollbar"
       open={dialog.open}
       onClose={dialog.dismiss}
       onClosed={dialog.onClosed}
@@ -144,8 +145,7 @@ export function ProjectAdd({
         </DialogHeader>
         <DialogBody className={styles.body}>
           <ScrollArea
-            className={styles.scroll}
-            viewportClassName={styles.viewport}
+            scrollbarOffset={-8}
             scrollbarLabel={t("Project details")}
           >
             <Form
