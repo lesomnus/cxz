@@ -318,6 +318,45 @@ func (s *Store) Through(ctx context.Context) (uint64, error) {
 // Fill records the part of a journal the store does not have yet, in batches so
 // that it never holds the write lock for the whole of a long conversation. It
 // answers how many records it wrote.
+// BulkFill fills a store that is not a record yet, which is what a fork's child
+// is until its session.json names it: nothing reads this file, and a failure
+// deletes it rather than recovering it.
+//
+// So the per-commit sync that a live recording needs buys nothing here, and it
+// is most of the cost. Measured on a 60,051 event conversation (cxz#396):
+// 13.41s at the recording durability, 4.35s without it -- and the difference is
+// not the commits themselves but WAL checkpoints fsyncing a growing file, which
+// happen regardless of how the events are batched. Chunking them differently
+// changes nothing (4.66s at 5k).
+//
+// The relaxed setting lasts exactly as long as the load. What was written is
+// made durable before this returns, so a caller that goes on to record into
+// this store is writing to a file that is already on disk, and one that
+// crashes mid-load leaves a file its caller was going to delete anyway.
+func (s *Store) BulkFill(ctx context.Context, events []core.Event, through uint64) (int, error) {
+	if _, err := s.db.ExecContext(ctx, "PRAGMA synchronous(OFF)"); err != nil {
+		return 0, err
+	}
+	n, err := s.Fill(ctx, events, through)
+	// Restored whatever happened above: the next writer of this file must not
+	// inherit a relaxed sync, and a failed load must not leave one behind.
+	if _, restore := s.db.ExecContext(ctx, "PRAGMA synchronous("+Durability+")"); err == nil {
+		err = restore
+	}
+	if err != nil {
+		return n, err
+	}
+	return n, s.Sync(ctx)
+}
+
+// Sync puts what is written where a crash cannot take it. The relaxed load
+// above leaves pages in the write-ahead log and in the page cache; a checkpoint
+// at the recording durability is what carries them into the file and fsyncs it.
+func (s *Store) Sync(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, "PRAGMA wal_checkpoint(FULL)")
+	return err
+}
+
 func (s *Store) Fill(ctx context.Context, events []core.Event, through uint64) (int, error) {
 	pending := make([]core.Event, 0, len(events))
 	for _, e := range events {
