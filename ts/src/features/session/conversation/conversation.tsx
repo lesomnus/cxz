@@ -38,6 +38,7 @@ import {
   isSessionRunning,
   manageSession,
   prepareSessionLogin,
+  resumableStates,
   sessionLoginSnapshot,
   type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
@@ -825,6 +826,9 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const needsLogin =
     s?.agent === "claude" &&
     authenticationRequired(metadata, s.status?.runId ?? "");
+  const resumeRun = resumableStates.has(s?.status?.state ?? "")
+    ? s?.status?.runId
+    : undefined;
   const forkRequest = useRef<ForkRequest | undefined>(undefined);
   async function forkConversation() {
     return action(async (session) => {
@@ -1279,6 +1283,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         lookupPaths={projectId ? lookupPaths : undefined}
         workspace={sessionProject?.status?.remoteWorkspace}
         canSend={!busy && !!s?.status?.runId && !!draft.trim()}
+        onResume={resumeRun ? () => manage("resume", resumeRun) : undefined}
         queued={
           <QueuedMessage
             text={queued}

@@ -298,15 +298,30 @@ test("expired Claude OAuth offers session login and resumes without replaying th
   expect(f.requests.some((r) => r.path.endsWith("/Send"))).toBe(false);
 });
 
-test("Resume's structured credential failure opens Claude login automatically", async ({
+test("the composer Resume matches the toolbar width and opens Claude login when needed", async ({
   page,
 }) => {
   const f = await fixture(page, { state: "stopped", authFailure: false });
   await expect(
     page.getByRole("button", { name: "Log in again", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Session menu" }).click();
-  await page.getByRole("menuitem", { name: "Resume", exact: true }).click();
+  const composer = page.locator("form.composer");
+  const resume = composer.getByRole("button", { name: "Resume", exact: true });
+  await expect(resume).toBeEnabled();
+  const { button, toolbar } = await composer.evaluate((form) => ({
+    button: form
+      .querySelector(".composer-resume")
+      .getBoundingClientRect()
+      .toJSON(),
+    toolbar: form
+      .querySelector(".composer-wrapper")
+      .getBoundingClientRect()
+      .toJSON(),
+  }));
+  expect(button.left).toBe(toolbar.left);
+  expect(button.width).toBe(toolbar.width);
+  expect(button.bottom).toBeLessThan(toolbar.top);
+  await resume.click();
   const panel = page.getByRole("region", { name: "Provider login" });
   await expect(panel).toBeVisible();
   expect(f.requests.filter((r) => r.path.endsWith("/Stop"))).toHaveLength(0);
@@ -315,6 +330,7 @@ test("Resume's structured credential failure opens Claude login automatically", 
     .poll(() => f.requests.filter((r) => r.path.endsWith("/Resume")).length)
     .toBe(2);
   await expect(panel).toBeHidden();
+  await expect(resume).toHaveCount(0);
 });
 
 async function changeAccount(page, confirmLabel) {
