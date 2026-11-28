@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
+import { AccountSchema } from "#gen/cxz/account_pb";
 import type { SessionEvent } from "#gen/cxz/session_pb";
 import type { AuxState } from "#gen/cxz/session_svc_pb";
 import {
@@ -86,6 +87,11 @@ export function PreviewMetadata({
   };
   const session = storySession();
   session.agent = agent;
+  session.account = create(AccountSchema, {
+    name: "Work",
+    alias: "work",
+    agent,
+  });
   session.status!.state = busy ? "working" : "idle";
   return (
     <>

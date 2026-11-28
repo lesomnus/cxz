@@ -391,7 +391,15 @@ test("changing a stopped session's account leaves it stopped", async ({
   page,
 }) => {
   const f = await fixture(page, { state: "stopped", authFailure: false });
+  const account = page
+    .locator(".composer-meta")
+    .getByRole("group", { name: "Account", exact: true });
+  await expect(account).toHaveText("Claude account");
+  await expect(account.getByRole("img", { name: "Claude" })).toBeVisible();
+  const width = await account.evaluate((el) => el.offsetWidth);
   await changeAccount(page, "Change");
+  await expect(account).toHaveText("Second Claude account");
+  expect(await account.evaluate((el) => el.offsetWidth)).toBe(width);
   expect(accountSwitchRequests(f.requests)).toMatchObject([
     { operation: "SwitchAccount", account: { alias: "work2" } },
   ]);

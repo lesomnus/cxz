@@ -1,8 +1,10 @@
 import { Icon } from "#src/shared/icons/icon.tsx";
+import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import styles from "./model-settings.module.css";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { IconValueMenu } from "@lesomnus/nox";
+import type { Account } from "#gen/cxz/account_pb";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { payload } from "#src/features/session/model/journal.ts";
 import type { SessionInfo } from "#src/features/session/model/session-info.ts";
@@ -55,18 +57,22 @@ export function selectedModel(c: ModelCatalog) {
 }
 export function ModelSettings({
   session,
+  account = session?.account,
   info,
   catalog,
   busy,
   change,
 }: {
   session?: Session;
+  account?: Account;
   info: SessionInfo;
   catalog?: ModelCatalog;
   busy: boolean;
   change: (kind: "model" | "effort", value: string) => void;
 }) {
   useLocale();
+  const accountName = account?.name || account?.alias;
+  const agent = account?.agent || session?.agent;
   const selected = catalog && selectedModel(catalog);
   const models = catalog?.models.map((m) => m.id) ?? [];
   if (catalog?.models.some((m) => m.default) && !models.includes("default"))
@@ -81,6 +87,14 @@ export function ModelSettings({
     efforts.push("default");
   return (
     <div className="model-info">
+      <div className={styles.account} role="group" aria-label={t("Account")}>
+        <span className={styles.accountLogo}>
+          {agent && <AgentBrand agent={agent} />}
+        </span>
+        <span className="meta-value" title={accountName}>
+          {accountName || "—"}
+        </span>
+      </div>
       {(["model", "effort"] as const).map((kind) => {
         const label = kind === "model" ? t("Model") : t("Effort");
         const values = [...new Set(kind === "model" ? models : efforts)];

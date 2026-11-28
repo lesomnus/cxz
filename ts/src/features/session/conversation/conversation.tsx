@@ -59,6 +59,7 @@ import React, {
 } from "react";
 import { useQuery } from "@lesomnus/payday/react";
 import { SessionService, SessionRefSchema } from "#gen/cxz/session_svc_pb";
+import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
@@ -521,6 +522,22 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const transcript = useMemo(() => transcriptRows(events), [events]);
   const aux = useSessionAux(c, id);
   const s = current.data;
+  const accountId = key(s?.account?.id);
+  const subscribeAccount = useCallback(
+    (changed: () => void) =>
+      c.store.subscribe(
+        accountId ? [c.store.rowKey("cxz.Account", accountId)] : [],
+        changed,
+      ),
+    [c, accountId],
+  );
+  const accountRow = useSyncExternalStore(subscribeAccount, () =>
+    c.store.row("cxz.Account", accountId),
+  );
+  const account = useMemo(
+    () => accountRow && c.store.message<Account>("cxz.Account", accountRow),
+    [c, accountRow],
+  );
   const sessionProject =
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
@@ -1415,6 +1432,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       >
         <ModelSettings
           session={s}
+          account={account}
           info={info}
           catalog={catalog}
           busy={busy}

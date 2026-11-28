@@ -1,3 +1,21 @@
+.account {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--ui-control-inline-inset);
+  inline-size: calc(
+    12ch + var(--agent-logo-size) + var(--ui-control-inline-inset)
+  );
+  white-space: nowrap;
+}
+.accountLogo {
+  display: inline-flex;
+  flex: 0 0 var(--agent-logo-size);
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .icon > svg {
   /* Optical alignment with the x-height of lowercase model/effort names. */
   transform: translateY(1px);
