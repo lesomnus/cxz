@@ -258,8 +258,30 @@ func remove(path string) error {
 	return os.RemoveAll(path)
 }
 
+// Only the conversation being forked is carried over. A session profile
+// accumulates every thread it has ever held, and copying the folder whole meant
+// each fork handed its ancestors' unrelated transcripts to the next generation,
+// so the pile only ever grew. Measured on the installation: one forked codex
+// profile held ten threads' rollouts, 122.9MB, and the child needed one of them.
+//
+// Kept is the transcript named after the vendor id, the directory the provider
+// keeps beside it for that conversation's subagents and tool results, and the
+// agent's memory. A file the provider turns out to need and we did not bring is
+// not silently wrong: it is missing, and the provider says so.
+func wantedHistory(relative, vendor string) bool {
+	parts := strings.Split(relative, string(os.PathSeparator))
+	for _, part := range parts[:len(parts)-1] {
+		if part == vendor || part == "memory" {
+			return true
+		}
+	}
+	name := parts[len(parts)-1]
+	return name == vendor+".jsonl" || strings.HasSuffix(name, "-"+vendor+".jsonl")
+}
+
 func copyHistory(ctx context.Context, source, target, vendor string) (string, error) {
 	var native string
+	var written []string
 	err := filepath.WalkDir(source, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -267,16 +289,15 @@ func copyHistory(ctx context.Context, source, target, vendor string) (string, er
 		if err = ctx.Err(); err != nil {
 			return err
 		}
-		if entry.Type()&os.ModeSymlink != 0 {
-			return fmt.Errorf("provider history contains a symbolic link")
-		}
 		relative, err := filepath.Rel(source, path)
 		if err != nil {
 			return err
 		}
-		destination := filepath.Join(target, relative)
-		if entry.IsDir() {
-			return os.MkdirAll(destination, 0700)
+		if entry.IsDir() || relative == "." || !wantedHistory(relative, vendor) {
+			return nil
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("provider history contains a symbolic link")
 		}
 		info, err := entry.Info()
 		if err != nil {
@@ -284,6 +305,10 @@ func copyHistory(ctx context.Context, source, target, vendor string) (string, er
 		}
 		if !info.Mode().IsRegular() {
 			return fmt.Errorf("provider history contains a special file")
+		}
+		destination := filepath.Join(target, relative)
+		if err = os.MkdirAll(filepath.Dir(destination), 0700); err != nil {
+			return err
 		}
 		in, err := os.Open(path)
 		if err != nil {
@@ -295,9 +320,6 @@ func copyHistory(ctx context.Context, source, target, vendor string) (string, er
 			return err
 		}
 		_, err = io.Copy(out, contextReader{ctx, in})
-		if err == nil {
-			err = out.Sync()
-		}
 		closeErr := out.Close()
 		if err != nil {
 			return err
@@ -305,6 +327,7 @@ func copyHistory(ctx context.Context, source, target, vendor string) (string, er
 		if closeErr != nil {
 			return closeErr
 		}
+		written = append(written, destination)
 		if entry.Name() == vendor+".jsonl" || strings.HasSuffix(entry.Name(), "-"+vendor+".jsonl") {
 			native = destination
 		}
@@ -313,10 +336,66 @@ func copyHistory(ctx context.Context, source, target, vendor string) (string, er
 	if err != nil {
 		return "", fmt.Errorf("copy provider history: %w", err)
 	}
+	if err = syncAll(ctx, written); err != nil {
+		return "", fmt.Errorf("copy provider history: %w", err)
+	}
 	if native == "" {
 		return "", fmt.Errorf("provider transcript for this conversation is unavailable")
 	}
 	return native, nil
+}
+
+// The child's history has to be on disk before the session.json that says the
+// fork finished: a crash between the two would otherwise leave a child that
+// claims to be complete and a transcript the provider refuses, which
+// clearAbandoned will not clear because that file is there.
+//
+// Paying for it one file at a time is what made this slow. Measured on a
+// profile from the installation -- 323 files, 238MB -- writing the bytes takes
+// 0.19s and fsyncing each file as it is written takes 15.71s; the same flushes
+// issued together take 6.03s, which is this disk writing 238MB and is the floor
+// for having them durable at all.
+const historySyncWorkers = 128
+
+func syncAll(ctx context.Context, paths []string) error {
+	queue := make(chan string, len(paths))
+	for _, path := range paths {
+		queue <- path
+	}
+	close(queue)
+	workers := min(historySyncWorkers, len(paths))
+	results := make(chan error, workers)
+	for range workers {
+		go func() {
+			var first error
+			for path := range queue {
+				if err := ctx.Err(); err != nil {
+					if first == nil {
+						first = err
+					}
+					continue
+				}
+				f, err := os.Open(path)
+				if err == nil {
+					err = f.Sync()
+					if closeErr := f.Close(); err == nil {
+						err = closeErr
+					}
+				}
+				if err != nil && first == nil {
+					first = err
+				}
+			}
+			results <- first
+		}()
+	}
+	var failure error
+	for range workers {
+		if err := <-results; err != nil && failure == nil {
+			failure = err
+		}
+	}
+	return failure
 }
 
 type contextReader struct {
