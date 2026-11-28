@@ -1026,8 +1026,10 @@ export const messages = {
     "Could not change the account. Check session status before retrying.",
   "The conversation, its history and its settings stay with this session. The new account may ask you to log in before the session runs again.":
     "The conversation, its history and its settings stay with this session. The new account may ask you to log in before the session runs again.",
-  "The session is stopped first. Active work stops.":
-    "The session is stopped first. Active work stops.",
+  "Any work in progress stops. The session starts again after the account changes.":
+    "Any work in progress stops. The session starts again after the account changes.",
+  "Account changed. Could not start the session. {error}":
+    "Account changed. Could not start the session. {error}",
   "No other account is registered for this agent.":
     "No other account is registered for this agent.",
   "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.":

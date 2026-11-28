@@ -21,14 +21,14 @@ function stream(rows) {
     Buffer.from([2, 0, 0, 0, 2, 123, 125]),
   ]);
 }
-function loginDetail(sessionKey = "original-creation") {
+function loginDetail(sessionKey = "original-creation", account = "work1") {
   const w = new BinaryWriter()
     .tag(1, WireType.LengthDelimited)
     .string("PROJECT_LOGIN_REQUIRED")
     .tag(2, WireType.LengthDelimited)
     .string("cxz.auth");
   for (const [key, value] of [
-    ["account", "work1"],
+    ["account", account],
     ["session_key", sessionKey],
   ])
     w.tag(3, WireType.LengthDelimited).bytes(
@@ -46,7 +46,7 @@ function loginDetail(sessionKey = "original-creation") {
 }
 async function fixture(
   page,
-  { state = "idle", authFailure = true, forkError } = {},
+  { state = "idle", authFailure = true, forkError, resumeError } = {},
 ) {
   const id = (v) => Buffer.from(v.padEnd(16, "0")).toString("base64");
   const project = {
@@ -56,13 +56,20 @@ async function fixture(
     workspace: "/workspace",
     status: { containerState: "CONTAINER_STATE_RUNNING" },
   };
-  const account = {
+  const initialAccount = {
     id: id("account"),
     alias: "work1",
     name: "Claude account",
     agent: "claude",
     authBackend: "project-local-oauth",
   };
+  const nextAccount = {
+    ...initialAccount,
+    id: id("account2"),
+    alias: "work2",
+    name: "Second Claude account",
+  };
+  let account = initialAccount;
   let run = "original-run";
   let authenticated = false;
   let child;
@@ -147,8 +154,8 @@ async function fixture(
         status: 400,
         json: {
           code: "failed_precondition",
-          message: "account work1 needs Claude subscription login",
-          details: [loginDetail(key)],
+          message: `account ${account.alias} needs Claude subscription login`,
+          details: [loginDetail(key, account.alias)],
         },
       });
     for (const [service, value] of [
@@ -157,7 +164,12 @@ async function fixture(
       ["Session", session()],
     ]) {
       const isSession = service === "Session";
-      const items = isSession && child ? [value, child] : [value];
+      const items =
+        service === "Account"
+          ? [initialAccount, nextAccount]
+          : isSession && child
+            ? [value, child]
+            : [value];
       if (path === `/cxz.${service}Service/Get`)
         return send(
           (isSession &&
@@ -190,7 +202,17 @@ async function fixture(
       state = "stopped";
       return send(session());
     }
+    if (path === "/cxz.SessionService/SwitchAccount") {
+      if (state !== "stopped" || q.account?.alias !== nextAccount.alias)
+        return route.fulfill({
+          status: 400,
+          json: { code: "failed_precondition" },
+        });
+      account = nextAccount;
+      return send(session());
+    }
     if (path === "/cxz.SessionService/Resume") {
+      if (resumeError) return route.fulfill({ status: 400, json: resumeError });
       if (!authenticated) return needsLogin();
       run = "resumed-run";
       state = "idle";
@@ -293,6 +315,81 @@ test("Resume's structured credential failure opens Claude login automatically", 
     .poll(() => f.requests.filter((r) => r.path.endsWith("/Resume")).length)
     .toBe(2);
   await expect(panel).toBeHidden();
+});
+
+async function changeAccount(page, confirmLabel) {
+  await page.getByRole("button", { name: "Session menu" }).click();
+  const change = page.getByRole("menuitem", { name: "Change account" });
+  await expect(change.locator('[data-icon="switch-account"]')).toBeVisible();
+  await change.click();
+  const dialog = page.getByRole("dialog", { name: "Change account" });
+  await dialog.getByRole("combobox", { name: "Account" }).click();
+  await page.getByRole("option", { name: /Second Claude account/ }).click();
+  await dialog.getByRole("button", { name: confirmLabel, exact: true }).click();
+  await expect(dialog).toBeHidden();
+}
+
+function accountSwitchRequests(requests) {
+  return requests
+    .filter(({ path }) =>
+      /^\/cxz\.SessionService\/(Stop|SwitchAccount|Start|Resume|Send)$/.test(
+        path,
+      ),
+    )
+    .map(({ path, q }) => ({ operation: path.split("/").at(-1), ...q }));
+}
+
+test("changing a running session's account resumes with the new account", async ({
+  page,
+}) => {
+  const f = await fixture(page, { state: "working", authFailure: false });
+  await changeAccount(page, "Stop and change");
+  const panel = page.getByRole("region", { name: "Provider login" });
+  await expect(panel).toBeVisible();
+  expect(accountSwitchRequests(f.requests)).toMatchObject([
+    { operation: "Stop", runId: "original-run" },
+    { operation: "SwitchAccount", account: { alias: "work2" } },
+    { operation: "Resume", runId: "original-run" },
+  ]);
+  expect(f.sockets[0].url.searchParams.get("account")).toBe("work2");
+  f.complete();
+  await expect(panel).toBeHidden();
+  await expect
+    .poll(() =>
+      accountSwitchRequests(f.requests).map(({ operation }) => operation),
+    )
+    .toEqual(["Stop", "SwitchAccount", "Resume", "Resume"]);
+});
+
+test("changing a stopped session's account leaves it stopped", async ({
+  page,
+}) => {
+  const f = await fixture(page, { state: "stopped", authFailure: false });
+  await changeAccount(page, "Change");
+  expect(accountSwitchRequests(f.requests)).toMatchObject([
+    { operation: "SwitchAccount", account: { alias: "work2" } },
+  ]);
+});
+
+test("a failed automatic start reports the account change separately", async ({
+  page,
+}) => {
+  const f = await fixture(page, {
+    authFailure: false,
+    resumeError: { code: "unavailable", message: "runtime unreachable" },
+  });
+  await changeAccount(page, "Stop and change");
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({
+        hasText:
+          "Account changed. Could not start the session. runtime unreachable",
+      }),
+  ).toBeVisible();
+  expect(
+    accountSwitchRequests(f.requests).map(({ operation }) => operation),
+  ).toEqual(["Stop", "SwitchAccount", "Resume"]);
 });
 
 test("Fork saves the conversation before OAuth and only starts the child after login", async ({

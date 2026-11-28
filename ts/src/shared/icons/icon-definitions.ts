@@ -320,6 +320,7 @@ export const iconDefinitions = {
     }),
   ]),
   accounts: line([circle(12, 8, 4), path("M4 21v-3a8 8 0 0 1 16 0v3")]),
+  "switch-account": line([path("M4 14 14 4M8 4h6v6M20 10 10 20m0-6v6h6")]),
   memory: solid(
     [
       rect(3, 3, 4, 18, 0.75),

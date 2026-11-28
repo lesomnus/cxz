@@ -9,7 +9,7 @@ import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
-import { resumableStates } from "#src/features/session/model/session-actions.ts";
+import { isSessionRunning } from "#src/features/session/model/session-actions.ts";
 
 /** Choose another account of the session's agent and rebind the session to it. */
 export function SessionAccountDialog({
@@ -30,7 +30,7 @@ export function SessionAccountDialog({
     (a) => a.agent === session.agent && a.alias !== current,
   );
   const [alias, setAlias] = useState("");
-  const running = !resumableStates.has(session.status?.state ?? "");
+  const running = isSessionRunning(session);
   return (
     <ConfirmationDialog
       title={t("Change account")}
@@ -49,7 +49,9 @@ export function SessionAccountDialog({
       </p>
       {running && (
         <p className="muted">
-          {t("The session is stopped first. Active work stops.")}
+          {t(
+            "Any work in progress stops. The session starts again after the account changes.",
+          )}
         </p>
       )}
       <FormField label={t("Account")}>

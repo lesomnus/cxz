@@ -1,4 +1,5 @@
 import type { Client } from "@connectrpc/connect";
+import type { Session } from "#gen/cxz/session_pb";
 import type { SessionService, SessionRef } from "#gen/cxz/session_svc_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 
@@ -13,6 +14,12 @@ export const resumableStates = new Set([
   "failed",
   "interrupted",
 ]);
+
+const runningStates = new Set(["starting", "idle", "working", "waiting_input"]);
+
+export function isSessionRunning(session: Session) {
+  return runningStates.has(session.status?.state ?? "");
+}
 
 // Restart follows the TUI lifecycle and never adopts a run started by another
 // client between Stop and Resume. A failed Stop must not trigger Resume.
