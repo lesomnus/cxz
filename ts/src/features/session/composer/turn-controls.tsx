@@ -5,6 +5,8 @@ import { ElapsedTime } from "@lesomnus/nox";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
+import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
+import actionStyles from "#src/shared/components/resource-action.module.css";
 import styles from "./turn-controls.module.css";
 
 export function TurnControls({
@@ -12,18 +14,22 @@ export function TurnControls({
   busy,
   working,
   interrupt,
+  onResume,
   children,
 }: {
   turn: TurnProgress;
   busy: boolean;
   working?: boolean;
   interrupt: () => void;
+  onResume?: () => Promise<boolean>;
   children?: ReactNode;
 }) {
   useLocale();
   const root = useRef<HTMLDivElement>(null);
-  const latest = useRef({ turn, busy, interrupt });
-  latest.current = { turn, busy, interrupt };
+  const resumable = !!onResume;
+  const blocked = busy || resumable;
+  const latest = useRef({ turn, blocked, interrupt });
+  latest.current = { turn, blocked, interrupt };
   const confirmation = useRef<{ key?: string; source?: string; until: number }>(
     { until: 0 },
   );
@@ -37,7 +43,7 @@ export function TurnControls({
   }
   function confirm(source: "click" | "escape") {
     const current = latest.current;
-    if (!current.turn.active || current.busy) return;
+    if (!current.turn.active || current.blocked) return;
     const now = performance.now();
     const previous = confirmation.current;
     if (
@@ -56,7 +62,7 @@ export function TurnControls({
   }
   useEffect(() => {
     reset();
-  }, [turn.key, turn.active, busy]);
+  }, [turn.key, turn.active, blocked]);
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
       if (
@@ -82,7 +88,7 @@ export function TurnControls({
       // before the card opened and attached its own Escape listener.
       if (conversation?.querySelector('.floating-card[data-active="true"]'))
         return;
-      if (!latest.current.turn.active || latest.current.busy) return;
+      if (!latest.current.turn.active || latest.current.blocked) return;
       event.preventDefault();
       confirm("escape");
     };
@@ -95,34 +101,46 @@ export function TurnControls({
     };
   }, []);
   return (
-    <div className="turn-controls" ref={root}>
-      <span className="stop-control">
-        <Button
-          type="button"
-          className={`toolbar-button stop ${styles.stop}`}
-          data-armed={armed}
-          data-working={working ?? turn.active}
-          aria-label={t("Stop response")}
-          aria-keyshortcuts="Escape"
-          aria-describedby={hint}
-          disabled={!turn.active || busy}
-          onClick={() => confirm("click")}
-        >
-          <Icon name="stop" width="18" height="18" aria-hidden="true" />
-        </Button>
-        <span id={hint} className="send-shortcut" role="tooltip">
-          {armed
-            ? t("Repeat within 3 seconds to stop")
-            : t("Click twice or press Esc twice within 3 seconds")}
+    <div className={styles.slot} data-resumable={resumable} ref={root}>
+      <div className={styles.controls} inert={resumable}>
+        <span className="stop-control">
+          <Button
+            type="button"
+            className={`toolbar-button stop ${styles.stop}`}
+            data-armed={armed}
+            data-working={working ?? turn.active}
+            aria-label={t("Stop response")}
+            aria-keyshortcuts="Escape"
+            aria-describedby={hint}
+            disabled={!turn.active || blocked}
+            onClick={() => confirm("click")}
+          >
+            <Icon name="stop" width="18" height="18" aria-hidden="true" />
+          </Button>
+          <span id={hint} className="send-shortcut" role="tooltip">
+            {armed
+              ? t("Repeat within 3 seconds to stop")
+              : t("Click twice or press Esc twice within 3 seconds")}
+          </span>
         </span>
-      </span>
-      <span className={styles.duration}>
-        <ElapsedTime
-          startedAt={turn.active ? turn.startedAt : undefined}
-          label={t("Response elapsed time")}
-        />
-      </span>
-      {children}
+        <span className={styles.duration}>
+          <ElapsedTime
+            startedAt={turn.active ? turn.startedAt : undefined}
+            label={t("Response elapsed time")}
+          />
+        </span>
+        {children}
+      </div>
+      <Button
+        type="button"
+        className={`${styles.resume} ${actionStyles.start}`}
+        inert={!resumable}
+        disabled={resumable && busy}
+        onClick={onResume}
+      >
+        <SessionActionIcon action="resume" />
+        {t("Resume")}
+      </Button>
     </div>
   );
 }

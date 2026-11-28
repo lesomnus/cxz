@@ -1,3 +1,54 @@
+.slot {
+  --turn-controls-slide: 220ms;
+  --turn-controls-easing: cubic-bezier(0.2, 0.7, 0.3, 1);
+  display: grid;
+  align-items: center;
+  margin-inline-end: auto;
+  /* Keep both faces inside the slot during the slide, then release tooltips. */
+  transition: overflow 0s var(--turn-controls-slide) allow-discrete;
+}
+.slot[data-resumable="true"] {
+  overflow: clip;
+  transition: none;
+}
+.controls,
+.resume {
+  grid-area: 1 / 1;
+  transition: translate var(--turn-controls-slide) var(--turn-controls-easing);
+}
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--control-inset);
+}
+.slot[data-resumable="true"] > .controls {
+  translate: 0 100%;
+}
+.slot > .resume {
+  width: 100%;
+  height: var(--toolbar-button-height);
+  min-height: var(--toolbar-button-height);
+  padding: 0 var(--control-inline-inset);
+  border-radius: var(--toolbar-button-radius);
+  translate: 0 -100%;
+  visibility: hidden;
+  transition:
+    translate var(--turn-controls-slide) var(--turn-controls-easing),
+    visibility 0s var(--turn-controls-slide);
+}
+.slot > .resume:focus-visible {
+  outline-offset: -2px;
+}
+.slot[data-resumable="true"] > .resume {
+  translate: 0 0;
+  visibility: visible;
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot {
+    --turn-controls-slide: 0s;
+  }
+}
 .stop:global(.toolbar-button.stop) {
   width: calc(var(--toolbar-button-height) + 4 * var(--control-inset));
   padding-inline: 3px;

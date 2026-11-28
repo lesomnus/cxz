@@ -12,8 +12,6 @@ import {
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { AudioWaveform, Button, InkSparkle } from "@lesomnus/nox";
-import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
-import actionStyles from "#src/shared/components/resource-action.module.css";
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { ComposerAurora } from "./composer-aurora";
 import { TurnControls } from "./turn-controls";
@@ -192,17 +190,6 @@ export function ConversationComposer({
         </>
       )}
       {queued}
-      {onResume && (
-        <Button
-          type="button"
-          className={`composer-resume ${actionStyles.start}`}
-          disabled={busy}
-          onClick={onResume}
-        >
-          <SessionActionIcon action="resume" />
-          {t("Resume")}
-        </Button>
-      )}
       <div className="composer-wrapper">
         <div className="composer-toolbar-surface">
           <ComposerAurora active={working} />
@@ -212,6 +199,7 @@ export function ConversationComposer({
               busy={busy}
               working={working}
               interrupt={interrupt}
+              onResume={onResume}
             >
               <BackgroundJobsIndicator
                 count={backgroundJobs}

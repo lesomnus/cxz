@@ -298,39 +298,50 @@ test("expired Claude OAuth offers session login and resumes without replaying th
   expect(f.requests.some((r) => r.path.endsWith("/Send"))).toBe(false);
 });
 
-test("the composer Resume matches the toolbar width and opens Claude login when needed", async ({
+test("the inline composer Resume slides out after Claude login", async ({
   page,
 }) => {
   const f = await fixture(page, { state: "stopped", authFailure: false });
   await expect(
     page.getByRole("button", { name: "Log in again", exact: true }),
   ).toHaveCount(0);
-  const composer = page.locator("form.composer");
-  const resume = composer.getByRole("button", { name: "Resume", exact: true });
+  const toolbar = page.locator(".composer-toolbar");
+  const slot = toolbar.locator("[data-resumable]");
+  const resume = toolbar.getByRole("button", { name: "Resume", exact: true });
+  const stop = toolbar.getByRole("button", {
+    name: "Stop response",
+    exact: true,
+  });
   await expect(resume).toBeEnabled();
-  const { button, toolbar } = await composer.evaluate((form) => ({
-    button: form
-      .querySelector(".composer-resume")
-      .getBoundingClientRect()
-      .toJSON(),
-    toolbar: form
-      .querySelector(".composer-wrapper")
-      .getBoundingClientRect()
-      .toJSON(),
-  }));
-  expect(button.left).toBe(toolbar.left);
-  expect(button.width).toBe(toolbar.width);
-  expect(button.bottom).toBeLessThan(toolbar.top);
+  await expect(slot.locator(":scope > div")).toHaveAttribute("inert", "");
+  const width = await slot.evaluate((el) => el.getBoundingClientRect().width);
+  expect((await resume.boundingBox()).width).toBe(width);
   await resume.click();
   const panel = page.getByRole("region", { name: "Provider login" });
   await expect(panel).toBeVisible();
   expect(f.requests.filter((r) => r.path.endsWith("/Stop"))).toHaveLength(0);
+  await slot.evaluate((el) => {
+    el.addEventListener("transitionrun", (event) => {
+      if (
+        event.propertyName === "translate" &&
+        event.target === el.lastElementChild &&
+        el.dataset.resumable === "false"
+      )
+        el.dataset.slideOverflow = getComputedStyle(el).overflow;
+    });
+  });
   f.complete();
   await expect
     .poll(() => f.requests.filter((r) => r.path.endsWith("/Resume")).length)
     .toBe(2);
   await expect(panel).toBeHidden();
+  await expect(slot).toHaveAttribute("data-slide-overflow", "clip");
   await expect(resume).toHaveCount(0);
+  await expect(stop).toBeVisible();
+  await expect(slot).toHaveCSS("overflow", "visible");
+  expect(await slot.evaluate((el) => el.getBoundingClientRect().width)).toBe(
+    width,
+  );
 });
 
 async function changeAccount(page, confirmLabel) {

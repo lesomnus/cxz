@@ -1185,23 +1185,14 @@ pre {
   margin: 0 auto;
   padding: 0 0 max(12px, env(safe-area-inset-bottom));
 }
-.composer-wrapper,
-.composer-resume {
-  width: calc(
-    100% + 2 * (var(--composer-extension) - var(--composer-overhang))
-  );
-  margin-inline: calc(var(--composer-overhang) - var(--composer-extension));
-}
-.composer > .composer-resume {
-  display: block;
-  min-height: var(--composer-toolbar-height);
-  margin-block-end: var(--ui-space);
-  border-radius: var(--wrapper-radius);
-}
 .composer-wrapper {
   --composer-border-width: var(--toolbar-surface-border-width);
   --composer-toolbar-overlap: var(--composer-radius);
   position: relative;
+  width: calc(
+    100% + 2 * (var(--composer-extension) - var(--composer-overhang))
+  );
+  margin-inline: calc(var(--composer-overhang) - var(--composer-extension));
   padding: 0;
   border: var(--composer-border-width) solid var(--toolbar-surface-border-color);
   background: transparent;
@@ -2056,12 +2047,6 @@ pre {
 .send-control {
   position: relative;
   display: inline-flex;
-}
-.turn-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--control-inset);
-  margin-right: auto;
 }
 .stop-control {
   position: relative;
