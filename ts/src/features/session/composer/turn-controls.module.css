@@ -12,7 +12,7 @@
   transition: none;
 }
 .controls,
-.resume {
+.start {
   grid-area: 1 / 1;
   transition: translate var(--turn-controls-slide) var(--turn-controls-easing);
 }
@@ -24,7 +24,7 @@
 .slot[data-resumable="true"] > .controls {
   translate: 0 100%;
 }
-.slot > .resume {
+.slot > .start {
   width: 100%;
   height: var(--toolbar-button-height);
   min-height: var(--toolbar-button-height);
@@ -36,10 +36,10 @@
     translate var(--turn-controls-slide) var(--turn-controls-easing),
     visibility 0s var(--turn-controls-slide);
 }
-.slot > .resume:focus-visible {
+.slot > .start:focus-visible {
   outline-offset: -2px;
 }
-.slot[data-resumable="true"] > .resume {
+.slot[data-resumable="true"] > .start {
   translate: 0 0;
   visibility: visible;
   transition-delay: 0s;

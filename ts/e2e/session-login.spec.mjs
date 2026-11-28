@@ -453,8 +453,12 @@ test("Fork waits for the new session, opens it, and only starts it after login",
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("Continue in the fork");
   const send = page.getByRole("button", { name: "Send", exact: true });
+  const start = page
+    .locator(".composer-toolbar")
+    .getByRole("button", { name: "Start", exact: true });
   await expect(send).toBeDisabled();
-  await choose("Start");
+  await expect(start).toBeEnabled();
+  await start.click();
   await expect(panel).toBeVisible();
   await expect.poll(() => f.sockets.length).toBe(1);
   expect(f.sockets[0].url.searchParams.get("account")).toBe("work1");
@@ -473,6 +477,7 @@ test("Fork waits for the new session, opens it, and only starts it after login",
   f.complete();
   await expect(panel).toBeHidden();
   await expect(send).toBeEnabled();
+  await expect(start).toHaveCount(0);
   expect(forks()).toHaveLength(1);
   expect(starts()).toHaveLength(3);
   for (const { q } of starts()) expect(q.ref).toEqual({ runtimeId: "child" });

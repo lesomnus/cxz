@@ -5,28 +5,37 @@ import { ElapsedTime } from "@lesomnus/nox";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
+import type { SessionStartLabel } from "#src/features/session/model/session-actions.ts";
 import { SessionActionIcon } from "#src/features/session/components/session-action-icon.tsx";
 import actionStyles from "#src/shared/components/resource-action.module.css";
 import styles from "./turn-controls.module.css";
+
+export type TurnStartAction = {
+  label: SessionStartLabel;
+  run: () => Promise<boolean>;
+};
 
 export function TurnControls({
   turn,
   busy,
   working,
   interrupt,
-  onResume,
+  start,
   children,
 }: {
   turn: TurnProgress;
   busy: boolean;
   working?: boolean;
   interrupt: () => void;
-  onResume?: () => Promise<boolean>;
+  start?: TurnStartAction;
   children?: ReactNode;
 }) {
   useLocale();
   const root = useRef<HTMLDivElement>(null);
-  const resumable = !!onResume;
+  const resumable = !!start;
+  // Preserve the departing label until the slide is out of view.
+  const [startLabel, setStartLabel] = useState(start?.label ?? "Resume");
+  if (start && start.label !== startLabel) setStartLabel(start.label);
   const blocked = busy || resumable;
   const latest = useRef({ turn, blocked, interrupt });
   latest.current = { turn, blocked, interrupt };
@@ -133,13 +142,13 @@ export function TurnControls({
       </div>
       <Button
         type="button"
-        className={`${styles.resume} ${actionStyles.start}`}
+        className={`${styles.start} ${actionStyles.start}`}
         inert={!resumable}
         disabled={resumable && busy}
-        onClick={onResume}
+        onClick={start?.run}
       >
         <SessionActionIcon action="resume" />
-        {t("Resume")}
+        {t(startLabel)}
       </Button>
     </div>
   );

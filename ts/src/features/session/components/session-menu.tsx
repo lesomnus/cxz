@@ -8,7 +8,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import actionStyles from "#src/shared/components/resource-action.module.css";
 import { SessionActionIcon } from "./session-action-icon";
 import {
-  resumableStates,
+  sessionStartLabel,
   type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
 import {
@@ -60,7 +60,7 @@ export function SessionMenu({
   tools = [],
 }: SessionMenuProps) {
   useLocale();
-  const resume = resumableStates.has(session?.status?.state ?? "");
+  const start = sessionStartLabel(session);
   const unavailable = busy || !session?.status?.runId;
   const run = session?.status?.runId ?? "";
   const [confirmation, setConfirmation] = useState<{
@@ -93,12 +93,12 @@ export function SessionMenu({
             layout: "row",
             items: [
               {
-                label: resume ? (run ? t("Resume") : t("Start")) : t("Stop"),
-                className: resume ? actionStyles.start : undefined,
-                icon: <SessionActionIcon action={resume ? "resume" : "stop"} />,
-                disabled: resume ? busy : unavailable,
+                label: t(start ?? "Stop"),
+                className: start ? actionStyles.start : undefined,
+                icon: <SessionActionIcon action={start ? "resume" : "stop"} />,
+                disabled: start ? busy : unavailable,
                 run: () =>
-                  resume ? void manage("resume", run) : confirm("stop"),
+                  start ? void manage("resume", run) : confirm("stop"),
               },
               {
                 label: t("Restart"),

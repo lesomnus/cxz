@@ -38,8 +38,8 @@ import {
   isSessionRunning,
   manageSession,
   prepareSessionLogin,
-  resumableStates,
   sessionLoginSnapshot,
+  sessionStartLabel,
   type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
 import { performSessionControl } from "#src/features/session/model/session-control-batch.ts";
@@ -826,9 +826,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const needsLogin =
     s?.agent === "claude" &&
     authenticationRequired(metadata, s.status?.runId ?? "");
-  const resumeRun = resumableStates.has(s?.status?.state ?? "")
-    ? s?.status?.runId
-    : undefined;
+  const startLabel = sessionStartLabel(s);
   const forkRequest = useRef<ForkRequest | undefined>(undefined);
   async function forkConversation() {
     const sourcePath = router.state.location.pathname;
@@ -1285,7 +1283,12 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         lookupPaths={projectId ? lookupPaths : undefined}
         workspace={sessionProject?.status?.remoteWorkspace}
         canSend={!busy && !!s?.status?.runId && !!draft.trim()}
-        onResume={resumeRun ? () => manage("resume", resumeRun) : undefined}
+        start={
+          startLabel && {
+            label: startLabel,
+            run: () => manage("resume", s?.status?.runId ?? ""),
+          }
+        }
         queued={
           <QueuedMessage
             text={queued}

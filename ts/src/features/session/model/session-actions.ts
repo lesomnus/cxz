@@ -4,6 +4,7 @@ import type { SessionService, SessionRef } from "#gen/cxz/session_svc_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 
 export type SessionOperation = "stop" | "resume" | "restart";
+export type SessionStartLabel = "Start" | "Resume";
 type LifecycleClient = Pick<
   Client<typeof SessionService>,
   "get" | "stop" | "start" | "resume"
@@ -14,6 +15,13 @@ export const resumableStates = new Set([
   "failed",
   "interrupted",
 ]);
+
+export function sessionStartLabel(
+  session?: Session,
+): SessionStartLabel | undefined {
+  if (!resumableStates.has(session?.status?.state ?? "")) return;
+  return session?.status?.runId ? "Resume" : "Start";
+}
 
 const runningStates = new Set(["starting", "idle", "working", "waiting_input"]);
 
