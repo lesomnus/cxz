@@ -80,7 +80,7 @@ type AccountAddRequest struct {
 	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Agent         string                 `protobuf:"bytes,8,opt,name=agent"`
 	xxx_hidden_AuthBackend   string                 `protobuf:"bytes,9,opt,name=auth_backend,json=authBackend"`
-	xxx_hidden_LoginIdentity string                 `protobuf:"bytes,10,opt,name=login_identity,json=loginIdentity"`
+	xxx_hidden_LoginIdentity *string                `protobuf:"bytes,10,opt,name=login_identity,json=loginIdentity"`
 	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
 	XXX_presence             [1]uint32
@@ -157,7 +157,10 @@ func (x *AccountAddRequest) GetAuthBackend() string {
 
 func (x *AccountAddRequest) GetLoginIdentity() string {
 	if x != nil {
-		return x.xxx_hidden_LoginIdentity
+		if x.xxx_hidden_LoginIdentity != nil {
+			return *x.xxx_hidden_LoginIdentity
+		}
+		return ""
 	}
 	return ""
 }
@@ -198,7 +201,8 @@ func (x *AccountAddRequest) SetAuthBackend(v string) {
 }
 
 func (x *AccountAddRequest) SetLoginIdentity(v string) {
-	x.xxx_hidden_LoginIdentity = v
+	x.xxx_hidden_LoginIdentity = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 8)
 }
 
 func (x *AccountAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -212,6 +216,13 @@ func (x *AccountAddRequest) HasId() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
+func (x *AccountAddRequest) HasLoginIdentity() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
+}
+
 func (x *AccountAddRequest) HasDateCreated() bool {
 	if x == nil {
 		return false
@@ -222,6 +233,11 @@ func (x *AccountAddRequest) HasDateCreated() bool {
 func (x *AccountAddRequest) ClearId() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Id = nil
+}
+
+func (x *AccountAddRequest) ClearLoginIdentity() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_LoginIdentity = nil
 }
 
 func (x *AccountAddRequest) ClearDateCreated() {
@@ -237,7 +253,7 @@ type AccountAddRequest_builder struct {
 	Desc          string
 	Agent         string
 	AuthBackend   string
-	LoginIdentity string
+	LoginIdentity *string
 	DateCreated   *timestamppb.Timestamp
 }
 
@@ -254,7 +270,10 @@ func (b0 AccountAddRequest_builder) Build() *AccountAddRequest {
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Agent = b.Agent
 	x.xxx_hidden_AuthBackend = b.AuthBackend
-	x.xxx_hidden_LoginIdentity = b.LoginIdentity
+	if b.LoginIdentity != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 8)
+		x.xxx_hidden_LoginIdentity = b.LoginIdentity
+	}
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -2602,16 +2621,16 @@ var File_cxz_account_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_account_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17cxz/account_svc.g.proto\x12\x03cxz\x1a\x11cxz/account.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xaa\x02\n" +
+	"\x17cxz/account_svc.g.proto\x12\x03cxz\x1a\x11cxz/account.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xa3\x02\n" +
 	"\x11AccountAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12\x1b\n" +
 	"\x05agent\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x05agent\x12(\n" +
-	"\fauth_backend\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\vauthBackend\x12,\n" +
+	"\fauth_backend\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\vauthBackend\x12%\n" +
 	"\x0elogin_identity\x18\n" +
-	" \x01(\tB\x05\xaa\x01\x02\b\x02R\rloginIdentity\x12=\n" +
+	" \x01(\tR\rloginIdentity\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
 	"\x11AccountGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.AccountRefR\x03ref\x12*\n" +

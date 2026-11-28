@@ -124,7 +124,11 @@ func (st AccountServiceServer) create(ctx context.Context, req *resource.Account
 	q.SetDesc(req.GetDesc())
 	q.SetAgent(req.GetAgent())
 	q.SetAuthBackend(req.GetAuthBackend())
-	q.SetLoginIdentity(req.GetLoginIdentity())
+	if req.HasLoginIdentity() {
+		q.SetLoginIdentity(req.GetLoginIdentity())
+	} else {
+		q.SetLoginIdentity("")
+	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())

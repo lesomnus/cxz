@@ -148,6 +148,7 @@ func (m *Mutation) ResetAuthBackend() {
 // SetLoginIdentity sets the "login_identity" field.
 func (m *Mutation) SetLoginIdentity(s string) {
 	m.login_identity = &s
+	delete(m.clearedFields, FieldLoginIdentity)
 	delete(m.exprs, FieldLoginIdentity)
 }
 
@@ -160,9 +161,23 @@ func (m *Mutation) LoginIdentity() (r string, exists bool) {
 	return *v, true
 }
 
+// ClearLoginIdentity clears the value of the "login_identity" field.
+func (m *Mutation) ClearLoginIdentity() {
+	m.login_identity = nil
+	delete(m.exprs, FieldLoginIdentity)
+	m.clearedFields[FieldLoginIdentity] = struct{}{}
+}
+
+// LoginIdentityCleared returns if the "login_identity" field was cleared in this mutation.
+func (m *Mutation) LoginIdentityCleared() bool {
+	_, ok := m.clearedFields[FieldLoginIdentity]
+	return ok
+}
+
 // ResetLoginIdentity resets all changes to the "login_identity" field.
 func (m *Mutation) ResetLoginIdentity() {
 	m.login_identity = nil
+	delete(m.clearedFields, FieldLoginIdentity)
 	delete(m.exprs, FieldLoginIdentity)
 }
 
@@ -567,6 +582,9 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *Mutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(FieldLoginIdentity) {
+		fields = append(fields, FieldLoginIdentity)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -587,6 +605,9 @@ func (m *Mutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *Mutation) ClearField(name string) error {
 	switch name {
+	case FieldLoginIdentity:
+		m.ClearLoginIdentity()
+		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
 		return nil

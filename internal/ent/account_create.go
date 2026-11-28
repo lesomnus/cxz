@@ -59,6 +59,14 @@ func (_c *AccountCreate) SetLoginIdentity(v string) *AccountCreate {
 	return _c
 }
 
+// SetNillableLoginIdentity sets the "login_identity" field if the given value is not nil.
+func (_c *AccountCreate) SetNillableLoginIdentity(v *string) *AccountCreate {
+	if v != nil {
+		_c.SetLoginIdentity(*v)
+	}
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *AccountCreate) SetDateUpdated(v time.Time) *AccountCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -106,6 +114,7 @@ func (_c *AccountCreate) Mutation() *AccountMutation {
 
 // Save creates the Account in the database.
 func (_c *AccountCreate) Save(ctx context.Context) (*Account, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -131,6 +140,16 @@ func (_c *AccountCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *AccountCreate) defaults() {
+	if _, ok := _c.mutation.LoginIdentity(); !ok {
+		if _, ok := _c.mutation.FieldExpr(account.FieldLoginIdentity); !ok {
+			v := account.DefaultLoginIdentity
+			_c.mutation.SetLoginIdentity(v)
+		}
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *AccountCreate) check() error {
 	if fs := _c.mutation.ExprFields(); len(fs) > 0 {
@@ -150,9 +169,6 @@ func (_c *AccountCreate) check() error {
 	}
 	if _, ok := _c.mutation.AuthBackend(); !ok {
 		return &ValidationError{Name: "auth_backend", err: errors.New(`ent: missing required field "Account.auth_backend"`)}
-	}
-	if _, ok := _c.mutation.LoginIdentity(); !ok {
-		return &ValidationError{Name: "login_identity", err: errors.New(`ent: missing required field "Account.login_identity"`)}
 	}
 	if _, ok := _c.mutation.DateUpdated(); !ok {
 		return &ValidationError{Name: "date_updated", err: errors.New(`ent: missing required field "Account.date_updated"`)}
@@ -291,6 +307,7 @@ func (_c *AccountCreateBulk) Save(ctx context.Context) ([]*Account, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*AccountMutation)
 				if !ok {
