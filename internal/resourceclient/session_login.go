@@ -4,19 +4,23 @@ import (
 	"context"
 	"io"
 
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/resource"
 )
 
-func (c *Client) LoginSession(ctx context.Context, project, account, key string, input io.ReadCloser, output io.Writer) error {
+func (c *Client) LoginSession(ctx context.Context, r accounts.SessionLogin) (accounts.SessionLoginResult, error) {
+	var out accounts.SessionLoginResult
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	defer input.Close()
+	input := r.Input
 	stream, err := c.projects.SessionLogin(ctx)
 	if err != nil {
-		return err
+		input.Close()
+		return out, err
 	}
-	if err := stream.Send(resource.ProjectLoginRequest_builder{Ref: pr(project), Account: ar(account), SessionKey: &key}.Build()); err != nil {
-		return err
+	if err := stream.Send(resource.ProjectLoginRequest_builder{Ref: pr(r.Project), Account: ar(r.Account), SessionKey: &r.Key, LoginIdentity: &r.Identity}.Build()); err != nil {
+		input.Close()
+		return out, err
 	}
 	sent := make(chan error, 1)
 	go func() {
@@ -49,13 +53,18 @@ func (c *Client) LoginSession(ctx context.Context, project, account, key string,
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
-			return nil
+			return out, nil
 		}
 		if err != nil {
-			return err
+			return accounts.SessionLoginResult{}, err
 		}
-		if _, err := output.Write(msg.GetOutput()); err != nil {
-			return err
+		// The identity the runtime reached is for the Manager to record, and is
+		// not part of what the person logging in is shown.
+		if v := msg.GetLoginIdentity(); v != "" {
+			out.Identity = v
+		}
+		if _, err := r.Output.Write(msg.GetOutput()); err != nil {
+			return accounts.SessionLoginResult{}, err
 		}
 	}
 }

@@ -29,7 +29,6 @@ import (
 	"github.com/lesomnus/cxz/internal/core"
 	"github.com/lesomnus/cxz/internal/cxzupdate"
 	"github.com/lesomnus/cxz/internal/observe"
-	"github.com/lesomnus/cxz/internal/quotashare"
 	"github.com/lesomnus/cxz/internal/sessionstore"
 	"github.com/lesomnus/cxz/internal/settings"
 	"github.com/lesomnus/cxz/internal/sqlitetime"
@@ -205,11 +204,6 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 			}
 			defer tcp.Close()
 		}
-		quota, err := quotashare.Start(root, quotashare.Socket, s.manager.AuthorizeQuota)
-		if err != nil {
-			return err
-		}
-		defer quota.Close()
 		s.manager.StartAuxiliary(ctx)
 	}
 	if s.manager == nil {
@@ -283,7 +277,7 @@ func Run(ctx context.Context, root, agent, configDir string) error {
 	// Every RPC this manager serves, kept where a client can read it back.
 	watching := observe.New(root)
 	defer watching.Close()
-	resources, e := lifecycle.Build(ctx, resourceDB, s, watching, lifecycle.Options{Notifications: os.Getenv("CXZ_PROJECT_ID") == ""})
+	resources, e := lifecycle.Build(ctx, resourceDB, s, watching, lifecycle.Options{Notifications: os.Getenv("CXZ_PROJECT_ID") == "", Manager: s.manager != nil})
 	if e != nil {
 		return fmt.Errorf("build payday resource server: %w", e)
 	}

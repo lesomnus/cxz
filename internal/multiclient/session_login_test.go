@@ -6,17 +6,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/cxz/internal/accounts"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type loginDaemon struct{ daemon }
 
-func (d *loginDaemon) LoginSession(_ context.Context, project, account, key string, input io.ReadCloser, output io.Writer) error {
-	d.record("login:" + project + ":" + account + ":" + key)
-	defer input.Close()
-	_, err := io.Copy(output, input)
-	return err
+func (d *loginDaemon) LoginSession(_ context.Context, r accounts.SessionLogin) (accounts.SessionLoginResult, error) {
+	d.record("login:" + r.Project + ":" + r.Account + ":" + r.Key)
+	defer r.Input.Close()
+	_, err := io.Copy(r.Output, r.Input)
+	return accounts.SessionLoginResult{}, err
 }
 
 func TestSessionLoginRoutesToCapturedConnection(t *testing.T) {
@@ -25,7 +26,7 @@ func TestSessionLoginRoutesToCapturedConnection(t *testing.T) {
 	defer c.Close()
 	ctx := c.ContextFor(context.Background(), "home::project")
 	var output strings.Builder
-	if err := c.LoginSession(ctx, "work::project", "work1", "creation", io.NopCloser(strings.NewReader("fixture")), &output); err != nil {
+	if _, err := c.LoginSession(ctx, accounts.SessionLogin{Project: "work::project", Account: "work1", Key: "creation", Input: io.NopCloser(strings.NewReader("fixture")), Output: &output}); err != nil {
 		t.Fatal(err)
 	}
 	if output.String() != "fixture" {
@@ -36,7 +37,7 @@ func TestSessionLoginRoutesToCapturedConnection(t *testing.T) {
 		t.Fatal("scoped project was not resolved", work.calls)
 	}
 	work.mu.Unlock()
-	if err := c.LoginSession(ctx, "old::project", "work1", "creation", io.NopCloser(strings.NewReader("")), io.Discard); status.Code(err) != codes.Unimplemented {
+	if _, err := c.LoginSession(ctx, accounts.SessionLogin{Project: "old::project", Account: "work1", Key: "creation", Input: io.NopCloser(strings.NewReader("")), Output: io.Discard}); status.Code(err) != codes.Unimplemented {
 		t.Fatal("missing login transport should request upgrade", err)
 	}
 	home.mu.Lock()

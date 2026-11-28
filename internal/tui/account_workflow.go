@@ -141,7 +141,7 @@ func (m *model) startAccountWorkflow(alias, provider, sessionID string, create b
 			if !ok {
 				return nil, fmt.Errorf("session login input unavailable")
 			}
-			if err := login.LoginSession(ctx, projectID, alias, loginKey, reader, output); err != nil {
+			if _, err := login.LoginSession(ctx, accounts.SessionLogin{Project: projectID, Account: alias, Key: loginKey, Input: reader, Output: output}); err != nil {
 				if status.Code(err) == codes.Unimplemented {
 					return nil, fmt.Errorf("session login RPC unavailable: update cxz on the daemon host, run cxz install --recreate, then cxz project recreate WORKSPACE")
 				}

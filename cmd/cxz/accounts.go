@@ -27,8 +27,11 @@ import (
 
 func accountCommands() *xli.Command {
 	parent := &xli.Command{Name: "account", Brief: "Register isolated agent authentication profiles", Handler: onRun(func(_ context.Context, c *xli.Command) error { return c.PrintHelp(c.Writer) })}
-	for _, op := range []string{"add", "list", "get", "login", "status", "bindings"} {
+	for _, op := range []string{"add", "list", "get", "login", "status", "bindings", "unpin"} {
 		c := &xli.Command{Name: op, Handler: withClient(accountCommand)}
+		if op == "unpin" {
+			c.Brief = "Forget which provider account this one logged in to, so the next login may reach a different one"
+		}
 		if op != "list" {
 			c.Args = arg.Args{stringArg("ACCOUNT", false)}
 		}
@@ -77,6 +80,19 @@ func accountCommand(ctx context.Context, client api.SessionsClient, c *xli.Comma
 	}
 	if c.Name == "get" {
 		return writeResource(c, a)
+	}
+	if c.Name == "unpin" {
+		if a.GetLoginIdentity() == "" {
+			return fmt.Errorf("account %s is not pinned to a provider account yet", alias)
+		}
+		// Saying this out loud is the point of the command: the pin exists so
+		// that reaching a different provider account has to be asked for.
+		fmt.Fprintf(c.ErrWriter, "Account %s will no longer require the provider account it is logged in to; its next login pins whatever it reaches.\n", alias)
+		cleared, err := resources.Accounts.Patch(ctx, resource.AccountPatchRequest_builder{Ref: resource.AccountRef_builder{Id: a.GetId()}.Build(), LoginIdentity: ptr(""), DateUpdated: a.GetDateUpdated()}.Build())
+		if err != nil {
+			return err
+		}
+		return writeResource(c, cleared)
 	}
 	if c.Parent().Name == "binding" {
 		after := ""

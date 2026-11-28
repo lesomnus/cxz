@@ -3,7 +3,6 @@ package supervisor
 import (
 	"time"
 
-	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/core"
 )
 
@@ -36,24 +35,21 @@ func claudeRunArgs(model, effort, resume string) []string {
 	return args
 }
 
+// Ask the already authenticated process; never read or refresh OAuth tokens
+// here. Older CLIs can reject this experimental control without harming a turn.
+//
+// Every session polls for itself. Claude's only backend logs in per session
+// profile, so two sessions under one account alias can hold credentials for
+// different provider accounts -- and did: cxz#400 measured one session shown 2%
+// of a weekly limit while the account it actually spends was at 100%, because a
+// snapshot shared by alias had each publishing the other's numbers. Sharing a
+// poll between logins cannot be made safe by asking who they belong to; a
+// credential does not always say, and a usage figure that is confidently the
+// wrong account's is worse than one poll a minute per session.
 func (s *Supervisor) readClaudeQuota() {
-	// Ask the already authenticated process; never read/refresh OAuth tokens in
-	// the TUI. Older CLIs can reject this experimental control without harming a turn.
-	if s.session.AuthBackend == accounts.ProjectLocalOAuth {
-		// Sessions can log in independently under the same profile name.
-		if !s.quotaDisabled && time.Since(s.quotaPolledAt) >= time.Minute {
-			s.sendClaudeQuota()
-		}
-		return
+	if !s.quotaDisabled && time.Since(s.quotaPolledAt) >= time.Minute {
+		s.sendClaudeQuota()
 	}
-	if s.quotaToken != "" {
-		s.readRemoteClaudeQuota()
-		return
-	}
-	if !s.claimClaudeQuota() {
-		return
-	}
-	s.sendClaudeQuota()
 }
 
 func (s *Supervisor) sendClaudeQuota() {

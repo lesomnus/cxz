@@ -2,15 +2,16 @@ package workspace
 
 import (
 	"context"
-	"io"
 
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/resourceclient"
 )
 
-func (m *Manager) LoginSession(ctx context.Context, project, account, key string, input io.ReadCloser, output io.Writer) error {
-	p, err := m.resolve(ctx, project)
+func (m *Manager) LoginSession(ctx context.Context, r accounts.SessionLogin) (accounts.SessionLoginResult, error) {
+	var out accounts.SessionLoginResult
+	p, err := m.resolve(ctx, r.Project)
 	if err != nil {
-		return err
+		return out, err
 	}
 	lock := m.projectLock(p.ID)
 	lock.Lock()
@@ -22,20 +23,21 @@ func (m *Manager) LoginSession(ctx context.Context, project, account, key string
 	}()
 	p, err = m.resolve(ctx, p.ID)
 	if err != nil {
-		return err
+		return out, err
 	}
 	// client checks live container ownership and carries the project's token.
 	conn, _, err := m.client(ctx, p)
 	if err != nil {
-		return err
+		return out, err
 	}
 	defer conn.Close()
 	if err = m.prepareAgent(ctx, p, "claude"); err != nil {
-		return err
+		return out, err
 	}
 	// Interactive login may wait for a person; preparation is serialized, the
 	// conversation with that person must not lock every other project action.
 	lock.Unlock()
 	locked = false
-	return resourceclient.New(conn).LoginSession(ctx, p.ID, account, key, input, output)
+	r.Project = p.ID
+	return resourceclient.New(conn).LoginSession(ctx, r)
 }

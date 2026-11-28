@@ -57,14 +57,8 @@ type Supervisor struct {
 	batch            []core.Event
 	buffering        bool
 	codex            *codexProtocol
-	quotaSocket      string
-	quotaChecking    bool
-	quotaWorkers     sync.WaitGroup
 	quotaPolledAt    time.Time
 	quotaRoot        string
-	quotaToken       string
-	quotaLease       string
-	quotaObserved    int64
 	quotaDisabled    bool
 	quotaRequested   time.Time
 	modelOptions     []agentview.ModelOption
@@ -206,13 +200,7 @@ func Run(ctx context.Context, root, id string) error {
 	}
 	s.store = l.Store()
 	s.recordState(ctx)
-	defer s.quotaWorkers.Wait()
 	s.quotaRoot = root
-	var runtime struct{ Token string }
-	if raw, err := os.ReadFile(filepath.Join(filepath.Dir(root), "runtime.json")); err == nil {
-		_ = json.Unmarshal(raw, &runtime)
-		s.quotaToken = runtime.Token
-	}
 	s.event("state", "starting", "", nil, nil)
 	// A message was waiting for an agent that no longer exists. This run is not
 	// the one it was addressed to, so it is not delivered -- but it was the

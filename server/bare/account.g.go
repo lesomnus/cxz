@@ -124,6 +124,7 @@ func (st AccountServiceServer) create(ctx context.Context, req *resource.Account
 	q.SetDesc(req.GetDesc())
 	q.SetAgent(req.GetAgent())
 	q.SetAuthBackend(req.GetAuthBackend())
+	q.SetLoginIdentity(req.GetLoginIdentity())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
 		q.SetDateCreated(req.GetDateCreated().AsTime())
@@ -272,6 +273,9 @@ func AccountSelectedFields(m *resource.AccountSelect) []string {
 	if m.GetAuthBackend() {
 		vs = append(vs, account.FieldAuthBackend)
 	}
+	if m.GetLoginIdentity() {
+		vs = append(vs, account.FieldLoginIdentity)
+	}
 	if m.GetDateUpdated() {
 		vs = append(vs, account.FieldDateUpdated)
 	}
@@ -345,7 +349,7 @@ func AccountGetKey(ctx context.Context, db *ent.Client, ref *resource.AccountRef
 var accountOrmEntity = ormpatch.MustEntityOf(resource.File_cxz_account_proto, "Account")
 
 var accountPatchColumns = entpatch.Columns{
-	1: account.FieldId, 4: account.FieldAlias, 5: account.FieldName, 6: account.FieldDesc, 8: account.FieldAgent, 9: account.FieldAuthBackend, 13: account.FieldDateUpdated, 14: account.FieldDateErased, 15: account.FieldDateCreated}
+	1: account.FieldId, 4: account.FieldAlias, 5: account.FieldName, 6: account.FieldDesc, 8: account.FieldAgent, 9: account.FieldAuthBackend, 10: account.FieldLoginIdentity, 13: account.FieldDateUpdated, 14: account.FieldDateErased, 15: account.FieldDateCreated}
 
 func (s AccountServiceServer) Apply(ctx context.Context, req *resource.AccountApplyRequest) (*resource.Account, error) {
 	if !req.HasPatch() {

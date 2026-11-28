@@ -1,13 +1,8 @@
 package supervisor
 
 import (
-	"context"
-	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/lesomnus/cxz/internal/accounts"
-	"github.com/lesomnus/cxz/internal/quotashare"
 )
 
 func TestQuotaPollingTimeoutAndRecovery(t *testing.T) {
@@ -26,7 +21,11 @@ func TestQuotaPollingTimeoutAndRecovery(t *testing.T) {
 			if first == 0 || input.Len() != first || s.quotaRequested.IsZero() {
 				t.Fatal("missing query or duplicate in-flight query")
 			}
+			// An unanswered request is noticed at the next scheduled poll, not
+			// in between: how often to ask is quotaPolledAt's to say and how
+			// long to wait for an answer is quotaRequested's.
 			s.quotaRequested = time.Now().Add(-time.Minute)
+			s.quotaPolledAt = time.Now().Add(-time.Minute)
 			poll()
 			found := false
 			for _, e := range s.log.All() {
@@ -40,6 +39,7 @@ func TestQuotaPollingTimeoutAndRecovery(t *testing.T) {
 				t.Fatal("response did not complete request")
 			}
 			before := input.Len()
+			s.quotaPolledAt = time.Now().Add(-time.Minute)
 			poll()
 			if input.Len() <= before {
 				t.Fatal("polling failed to recover")
@@ -48,32 +48,12 @@ func TestQuotaPollingTimeoutAndRecovery(t *testing.T) {
 	}
 }
 
-func TestClaudeSharedQuotaAcrossSupervisors(t *testing.T) {
-	root := t.TempDir()
-	a, first := displaySupervisor(t, "claude")
-	b, second := displaySupervisor(t, "claude")
-	a.quotaRoot = root
-	b.quotaRoot = root
-	a.session.Account = "same"
-	b.session.Account = "same"
-	a.readClaudeQuota()
-	b.readClaudeQuota()
-	if first.Len() == 0 || second.Len() != 0 {
-		t.Fatal("duplicate quota requests")
-	}
-	a.consume([]byte(`{"type":"control_response","response":{"request_id":"cxz-quota","subtype":"success","response":{"rate_limits":{"five_hour":{"utilization":20}}}}}`))
-	b.readClaudeQuota()
-	found := false
-	for _, e := range b.log.All() {
-		if e.Kind == "usage" && e.Text == "get_usage" {
-			found = true
-		}
-	}
-	if !found || second.Len() != 0 {
-		t.Fatal("peer did not reuse account snapshot")
-	}
-}
-
+// Two sessions under one account alias can hold credentials for different
+// provider accounts, because Claude's only backend logs in per session profile.
+// A shared poll therefore showed one session the other's limit; see cxz#400.
+// Nothing about the session says which case this is -- and the backend string
+// is not asked either, so a session whose manifest predates that field still
+// polls for itself rather than falling back to sharing.
 func TestClaudeQuotaUsesSessionOAuthLogin(t *testing.T) {
 	root := t.TempDir()
 	a, first := displaySupervisor(t, "claude")
@@ -81,7 +61,7 @@ func TestClaudeQuotaUsesSessionOAuthLogin(t *testing.T) {
 	for _, s := range []*Supervisor{a, b} {
 		s.quotaRoot = root
 		s.session.Account = "work"
-		s.session.AuthBackend = accounts.ProjectLocalOAuth
+		s.session.AuthBackend = ""
 	}
 	a.readClaudeQuota()
 	if first.Len() == 0 {
@@ -111,49 +91,5 @@ func TestCodexLiveCommandOutput(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("missing output event")
-	}
-}
-
-func TestRemoteQuotaDoesNotBlockAgentEvents(t *testing.T) {
-	root := t.TempDir()
-	socket := filepath.Join(root, "quota.sock")
-	gate := make(chan struct{})
-	entered := make(chan struct{})
-	srv, err := quotashare.Start(root, socket, func(_ context.Context, _ quotashare.Request, _ string) bool { close(entered); <-gate; return true })
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer srv.Close()
-	s, input := displaySupervisor(t, "claude")
-	s.quotaRoot = root
-	s.quotaSocket = socket
-	s.quotaToken = "token"
-	s.session.Account = "shared"
-	s.mu.Lock()
-	s.readClaudeQuota()
-	s.mu.Unlock()
-	select {
-	case <-entered:
-	case <-time.After(3 * time.Second):
-		close(gate)
-		s.quotaWorkers.Wait()
-		t.Fatal("quota coordinator was not reached")
-	}
-	processed := make(chan struct{})
-	go func() {
-		s.consume([]byte(`{"type":"assistant","message":{"content":[{"type":"text","text":"still responsive"}]}}`))
-		close(processed)
-	}()
-	select {
-	case <-processed:
-	case <-time.After(time.Second):
-		close(gate)
-		s.quotaWorkers.Wait()
-		t.Fatal("quota blocked provider output")
-	}
-	close(gate)
-	s.quotaWorkers.Wait()
-	if input.Len() == 0 {
-		t.Fatal("claimed quota was not requested")
 	}
 }

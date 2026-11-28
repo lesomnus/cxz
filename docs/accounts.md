@@ -55,6 +55,46 @@ cxz account login --session SESSION_ALIAS ACCOUNT
 
 API keys are not supported.
 
+## An alias is a label; the pin is what makes it mean an account
+
+cxz keeps no list of which provider account an alias stands for. A project-local
+OAuth login goes to the provider's own consent page, and when the browser is
+already signed in to an account that page approves it without offering a choice.
+So choosing a different alias does not choose a different account: the login can
+land on the same one, and the session then spends the very limit it was moved
+away from.
+
+`Account.login_identity` closes that. The first login writes down which provider
+account it reached, as an opaque token — no address, organization or subject, so
+it reveals nothing the rest of the resource does not. Every later login for that
+account has to reach the same one, or it is refused while its credential is still
+in staging, leaving the account exactly as it was.
+
+Changing accounts on purpose is therefore two steps, and the first one is saying
+so:
+
+```sh
+cxz account unpin ACCOUNT
+cxz account login --session SESSION_ALIAS ACCOUNT
+```
+
+The web says the same thing as a **Provider account** row on the account page,
+with an Unpin button beside it.
+
+Two cases are deliberately not refused. A brokered Codex account pins its subject
+centrally instead, under its own lock, so this field stays empty for it. And a
+Claude credential that carries no `accountUuid` — older releases wrote none, and
+a refresh has been seen to leave it out — means *cannot tell* rather than
+*mismatch*: the login is accepted and the pin is left alone, because the
+alternative is that a provider change stops logins from working.
+
+What the pin covers is the session login a person runs: the account it reaches
+and the account the resource says. The auxiliary helper profile and the internal
+`_account-login`/`_account-import` runtime commands write credentials without it,
+the same way editing a credential file by hand does. They need a shell inside the
+project container, so they are an escape hatch rather than a way to make this
+mistake by accident.
+
 ## Backends and bindings
 
 `Account.auth_backend` chooses the strategy — how login happens, what its scope is,

@@ -1020,4 +1020,14 @@ export const messages = {
     "이 에이전트에 등록된 다른 계정이 없습니다.",
   "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.":
     "공용 계정은 보존됩니다. 호스트의 워크스페이스 폴더는 남지만, Kubernetes 프로젝트의 워크스페이스는 자체 볼륨에 있어 함께 삭제됩니다.",
+  "Pinned by its first login": "첫 로그인으로 고정됨",
+  "Pinned by the next login": "다음 로그인으로 고정됨",
+  Unpin: "고정 해제",
+  "A login that reaches a different provider account is refused. Unpin first to change which account this one uses.":
+    "다른 공급자 계정으로 이어지는 로그인은 거절됩니다. 이 계정이 쓰는 공급자 계정을 바꾸려면 먼저 고정을 해제하세요.",
+  "Which provider account a login reaches is decided by the provider. The next one is remembered, and later logins have to match it.":
+    "로그인이 어느 공급자 계정으로 이어지는지는 공급자가 정합니다. 다음 로그인의 계정을 기억해 두고, 이후 로그인은 그 계정과 같아야 합니다.",
+  "Could not unpin this account.": "이 계정의 고정을 해제하지 못했습니다.",
+  "A provider account can only be unpinned, not chosen by hand.":
+    "공급자 계정은 손으로 지정할 수 없고 고정 해제만 할 수 있습니다.",
 } satisfies LanguagePack;

@@ -73,18 +73,19 @@ func (x AccountAuthStatus_State) Number() protoreflect.EnumNumber {
 }
 
 type AccountAddRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Agent       string                 `protobuf:"bytes,8,opt,name=agent"`
-	xxx_hidden_AuthBackend string                 `protobuf:"bytes,9,opt,name=auth_backend,json=authBackend"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id            []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Alias         string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name          string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc          string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Agent         string                 `protobuf:"bytes,8,opt,name=agent"`
+	xxx_hidden_AuthBackend   string                 `protobuf:"bytes,9,opt,name=auth_backend,json=authBackend"`
+	xxx_hidden_LoginIdentity string                 `protobuf:"bytes,10,opt,name=login_identity,json=loginIdentity"`
+	xxx_hidden_DateCreated   *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *AccountAddRequest) Reset() {
@@ -154,6 +155,13 @@ func (x *AccountAddRequest) GetAuthBackend() string {
 	return ""
 }
 
+func (x *AccountAddRequest) GetLoginIdentity() string {
+	if x != nil {
+		return x.xxx_hidden_LoginIdentity
+	}
+	return ""
+}
+
 func (x *AccountAddRequest) GetDateCreated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateCreated
@@ -166,7 +174,7 @@ func (x *AccountAddRequest) SetId(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Id = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 7)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 8)
 }
 
 func (x *AccountAddRequest) SetAlias(v string) {
@@ -187,6 +195,10 @@ func (x *AccountAddRequest) SetAgent(v string) {
 
 func (x *AccountAddRequest) SetAuthBackend(v string) {
 	x.xxx_hidden_AuthBackend = v
+}
+
+func (x *AccountAddRequest) SetLoginIdentity(v string) {
+	x.xxx_hidden_LoginIdentity = v
 }
 
 func (x *AccountAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -219,13 +231,14 @@ func (x *AccountAddRequest) ClearDateCreated() {
 type AccountAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id          []byte
-	Alias       string
-	Name        string
-	Desc        string
-	Agent       string
-	AuthBackend string
-	DateCreated *timestamppb.Timestamp
+	Id            []byte
+	Alias         string
+	Name          string
+	Desc          string
+	Agent         string
+	AuthBackend   string
+	LoginIdentity string
+	DateCreated   *timestamppb.Timestamp
 }
 
 func (b0 AccountAddRequest_builder) Build() *AccountAddRequest {
@@ -233,7 +246,7 @@ func (b0 AccountAddRequest_builder) Build() *AccountAddRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Id != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 7)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 8)
 		x.xxx_hidden_Id = b.Id
 	}
 	x.xxx_hidden_Alias = b.Alias
@@ -241,6 +254,7 @@ func (b0 AccountAddRequest_builder) Build() *AccountAddRequest {
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Agent = b.Agent
 	x.xxx_hidden_AuthBackend = b.AuthBackend
+	x.xxx_hidden_LoginIdentity = b.LoginIdentity
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -505,20 +519,21 @@ func (*accountRef_Id) isAccountRef_Key() {}
 func (*accountRef_Alias) isAccountRef_Key() {}
 
 type AccountSelect struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_Alias       bool                   `protobuf:"varint,4,opt,name=alias"`
-	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
-	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
-	xxx_hidden_Agent       bool                   `protobuf:"varint,8,opt,name=agent"`
-	xxx_hidden_AuthBackend bool                   `protobuf:"varint,9,opt,name=auth_backend,json=authBackend"`
-	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All           bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Alias         bool                   `protobuf:"varint,4,opt,name=alias"`
+	xxx_hidden_Name          bool                   `protobuf:"varint,5,opt,name=name"`
+	xxx_hidden_Desc          bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Agent         bool                   `protobuf:"varint,8,opt,name=agent"`
+	xxx_hidden_AuthBackend   bool                   `protobuf:"varint,9,opt,name=auth_backend,json=authBackend"`
+	xxx_hidden_LoginIdentity bool                   `protobuf:"varint,10,opt,name=login_identity,json=loginIdentity"`
+	xxx_hidden_DateUpdated   bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased    bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated   bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *AccountSelect) Reset() {
@@ -588,6 +603,13 @@ func (x *AccountSelect) GetAuthBackend() bool {
 	return false
 }
 
+func (x *AccountSelect) GetLoginIdentity() bool {
+	if x != nil {
+		return x.xxx_hidden_LoginIdentity
+	}
+	return false
+}
+
 func (x *AccountSelect) GetDateUpdated() bool {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -611,47 +633,52 @@ func (x *AccountSelect) GetDateCreated() bool {
 
 func (x *AccountSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
 }
 
 func (x *AccountSelect) SetAlias(v bool) {
 	x.xxx_hidden_Alias = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 10)
 }
 
 func (x *AccountSelect) SetName(v bool) {
 	x.xxx_hidden_Name = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
 }
 
 func (x *AccountSelect) SetDesc(v bool) {
 	x.xxx_hidden_Desc = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
 }
 
 func (x *AccountSelect) SetAgent(v bool) {
 	x.xxx_hidden_Agent = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
 }
 
 func (x *AccountSelect) SetAuthBackend(v bool) {
 	x.xxx_hidden_AuthBackend = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
+}
+
+func (x *AccountSelect) SetLoginIdentity(v bool) {
+	x.xxx_hidden_LoginIdentity = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
 }
 
 func (x *AccountSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
 }
 
 func (x *AccountSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
 }
 
 func (x *AccountSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *AccountSelect) HasAll() bool {
@@ -696,25 +723,32 @@ func (x *AccountSelect) HasAuthBackend() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *AccountSelect) HasDateUpdated() bool {
+func (x *AccountSelect) HasLoginIdentity() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *AccountSelect) HasDateErased() bool {
+func (x *AccountSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *AccountSelect) HasDateCreated() bool {
+func (x *AccountSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *AccountSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *AccountSelect) ClearAll() {
@@ -747,33 +781,39 @@ func (x *AccountSelect) ClearAuthBackend() {
 	x.xxx_hidden_AuthBackend = false
 }
 
-func (x *AccountSelect) ClearDateUpdated() {
+func (x *AccountSelect) ClearLoginIdentity() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	x.xxx_hidden_LoginIdentity = false
+}
+
+func (x *AccountSelect) ClearDateUpdated() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *AccountSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *AccountSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateCreated = false
 }
 
 type AccountSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	All         *bool
-	Alias       *bool
-	Name        *bool
-	Desc        *bool
-	Agent       *bool
-	AuthBackend *bool
-	DateUpdated *bool
-	DateErased  *bool
-	DateCreated *bool
+	All           *bool
+	Alias         *bool
+	Name          *bool
+	Desc          *bool
+	Agent         *bool
+	AuthBackend   *bool
+	LoginIdentity *bool
+	DateUpdated   *bool
+	DateErased    *bool
+	DateCreated   *bool
 }
 
 func (b0 AccountSelect_builder) Build() *AccountSelect {
@@ -781,39 +821,43 @@ func (b0 AccountSelect_builder) Build() *AccountSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
 		x.xxx_hidden_All = *b.All
 	}
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 10)
 		x.xxx_hidden_Alias = *b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
 		x.xxx_hidden_Name = *b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Desc = *b.Desc
 	}
 	if b.Agent != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
 		x.xxx_hidden_Agent = *b.Agent
 	}
 	if b.AuthBackend != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
 		x.xxx_hidden_AuthBackend = *b.AuthBackend
 	}
+	if b.LoginIdentity != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
+		x.xxx_hidden_LoginIdentity = *b.LoginIdentity
+	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -825,6 +869,7 @@ type AccountPatchRequest struct {
 	xxx_hidden_Alias            *string                `protobuf:"bytes,8,opt,name=alias"`
 	xxx_hidden_Name             *string                `protobuf:"bytes,10,opt,name=name"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
+	xxx_hidden_LoginIdentity    *string                `protobuf:"bytes,20,opt,name=login_identity,json=loginIdentity"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
 	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
@@ -895,6 +940,16 @@ func (x *AccountPatchRequest) GetDesc() string {
 	return ""
 }
 
+func (x *AccountPatchRequest) GetLoginIdentity() string {
+	if x != nil {
+		if x.xxx_hidden_LoginIdentity != nil {
+			return *x.xxx_hidden_LoginIdentity
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *AccountPatchRequest) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -915,17 +970,22 @@ func (x *AccountPatchRequest) SetRef(v *AccountRef) {
 
 func (x *AccountPatchRequest) SetAlias(v string) {
 	x.xxx_hidden_Alias = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 7)
 }
 
 func (x *AccountPatchRequest) SetName(v string) {
 	x.xxx_hidden_Name = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 7)
 }
 
 func (x *AccountPatchRequest) SetDesc(v string) {
 	x.xxx_hidden_Desc = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 7)
+}
+
+func (x *AccountPatchRequest) SetLoginIdentity(v string) {
+	x.xxx_hidden_LoginIdentity = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 7)
 }
 
 func (x *AccountPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -934,7 +994,7 @@ func (x *AccountPatchRequest) SetDateUpdated(v *timestamppb.Timestamp) {
 
 func (x *AccountPatchRequest) SetDateUpdatedForce(v bool) {
 	x.xxx_hidden_DateUpdatedForce = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 6)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 7)
 }
 
 func (x *AccountPatchRequest) HasRef() bool {
@@ -965,6 +1025,13 @@ func (x *AccountPatchRequest) HasDesc() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *AccountPatchRequest) HasLoginIdentity() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
 func (x *AccountPatchRequest) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -976,7 +1043,7 @@ func (x *AccountPatchRequest) HasDateUpdatedForce() bool {
 	if x == nil {
 		return false
 	}
-	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
 func (x *AccountPatchRequest) ClearRef() {
@@ -998,22 +1065,28 @@ func (x *AccountPatchRequest) ClearDesc() {
 	x.xxx_hidden_Desc = nil
 }
 
+func (x *AccountPatchRequest) ClearLoginIdentity() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_LoginIdentity = nil
+}
+
 func (x *AccountPatchRequest) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
 
 func (x *AccountPatchRequest) ClearDateUpdatedForce() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateUpdatedForce = false
 }
 
 type AccountPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref   *AccountRef
-	Alias *string
-	Name  *string
-	Desc  *string
+	Ref           *AccountRef
+	Alias         *string
+	Name          *string
+	Desc          *string
+	LoginIdentity *string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
 	// still holds this value, and the server stamps the new version itself.
@@ -1036,20 +1109,24 @@ func (b0 AccountPatchRequest_builder) Build() *AccountPatchRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	if b.Alias != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 7)
 		x.xxx_hidden_Alias = b.Alias
 	}
 	if b.Name != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 7)
 		x.xxx_hidden_Name = b.Name
 	}
 	if b.Desc != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 7)
 		x.xxx_hidden_Desc = b.Desc
+	}
+	if b.LoginIdentity != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 7)
+		x.xxx_hidden_LoginIdentity = b.LoginIdentity
 	}
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	if b.DateUpdatedForce != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 6)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 7)
 		x.xxx_hidden_DateUpdatedForce = *b.DateUpdatedForce
 	}
 	return m0
@@ -2525,14 +2602,16 @@ var File_cxz_account_svc_g_proto protoreflect.FileDescriptor
 
 const file_cxz_account_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17cxz/account_svc.g.proto\x12\x03cxz\x1a\x11cxz/account.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xfc\x01\n" +
+	"\x17cxz/account_svc.g.proto\x12\x03cxz\x1a\x11cxz/account.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\"\xaa\x02\n" +
 	"\x11AccountAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12\x1b\n" +
 	"\x05agent\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x05agent\x12(\n" +
-	"\fauth_backend\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\vauthBackend\x12=\n" +
+	"\fauth_backend\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\vauthBackend\x12,\n" +
+	"\x0elogin_identity\x18\n" +
+	" \x01(\tB\x05\xaa\x01\x02\b\x02R\rloginIdentity\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
 	"\x11AccountGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.AccountRefR\x03ref\x12*\n" +
@@ -2541,24 +2620,27 @@ const file_cxz_account_svc_g_proto_rawDesc = "" +
 	"AccountRef\x12\x10\n" +
 	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x16\n" +
 	"\x05alias\x18\x04 \x01(\tH\x00R\x05aliasB\x05\n" +
-	"\x03key\"\xff\x01\n" +
+	"\x03key\"\xa6\x02\n" +
 	"\rAccountSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\bR\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12\x14\n" +
 	"\x05agent\x18\b \x01(\bR\x05agent\x12!\n" +
-	"\fauth_backend\x18\t \x01(\bR\vauthBackend\x12!\n" +
+	"\fauth_backend\x18\t \x01(\bR\vauthBackend\x12%\n" +
+	"\x0elogin_identity\x18\n" +
+	" \x01(\bR\rloginIdentity\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xe3\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x8a\x02\n" +
 	"\x13AccountPatchRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.AccountRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
 	"\x04name\x18\n" +
 	" \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
+	"\x04desc\x18\f \x01(\tR\x04desc\x12%\n" +
+	"\x0elogin_identity\x18\x14 \x01(\tR\rloginIdentity\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"\\\n" +
 	"\x13AccountApplyRequest\x12!\n" +

@@ -71,6 +71,20 @@ func (_u *AccountUpdate) SetNillableDesc(v *string) *AccountUpdate {
 	return _u
 }
 
+// SetLoginIdentity sets the "login_identity" field.
+func (_u *AccountUpdate) SetLoginIdentity(v string) *AccountUpdate {
+	_u.mutation.SetLoginIdentity(v)
+	return _u
+}
+
+// SetNillableLoginIdentity sets the "login_identity" field if the given value is not nil.
+func (_u *AccountUpdate) SetNillableLoginIdentity(v *string) *AccountUpdate {
+	if v != nil {
+		_u.SetLoginIdentity(*v)
+	}
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *AccountUpdate) SetDateUpdated(v time.Time) *AccountUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -170,6 +184,12 @@ func (_u *AccountUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if e, ok := _u.mutation.FieldExpr(account.FieldDesc); ok {
 		_spec.SetField(account.FieldDesc, field.TypeString, e)
 	}
+	if value, ok := _u.mutation.LoginIdentity(); ok {
+		_spec.SetField(account.FieldLoginIdentity, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(account.FieldLoginIdentity); ok {
+		_spec.SetField(account.FieldLoginIdentity, field.TypeString, e)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(account.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -248,6 +268,20 @@ func (_u *AccountUpdateOne) SetDesc(v string) *AccountUpdateOne {
 func (_u *AccountUpdateOne) SetNillableDesc(v *string) *AccountUpdateOne {
 	if v != nil {
 		_u.SetDesc(*v)
+	}
+	return _u
+}
+
+// SetLoginIdentity sets the "login_identity" field.
+func (_u *AccountUpdateOne) SetLoginIdentity(v string) *AccountUpdateOne {
+	_u.mutation.SetLoginIdentity(v)
+	return _u
+}
+
+// SetNillableLoginIdentity sets the "login_identity" field if the given value is not nil.
+func (_u *AccountUpdateOne) SetNillableLoginIdentity(v *string) *AccountUpdateOne {
+	if v != nil {
+		_u.SetLoginIdentity(*v)
 	}
 	return _u
 }
@@ -380,6 +414,12 @@ func (_u *AccountUpdateOne) sqlSave(ctx context.Context) (_node *Account, err er
 	}
 	if e, ok := _u.mutation.FieldExpr(account.FieldDesc); ok {
 		_spec.SetField(account.FieldDesc, field.TypeString, e)
+	}
+	if value, ok := _u.mutation.LoginIdentity(); ok {
+		_spec.SetField(account.FieldLoginIdentity, field.TypeString, value)
+	}
+	if e, ok := _u.mutation.FieldExpr(account.FieldLoginIdentity); ok {
+		_spec.SetField(account.FieldLoginIdentity, field.TypeString, e)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(account.FieldDateUpdated, field.TypeTime, value)

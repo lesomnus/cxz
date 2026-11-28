@@ -80,6 +80,11 @@ func AuthBackend(v string) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldAuthBackend, v))
 }
 
+// LoginIdentity applies equality check predicate on the "login_identity" field. It's identical to LoginIdentityEQ.
+func LoginIdentity(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldLoginIdentity, v))
+}
+
 // DateUpdated applies equality check predicate on the "date_updated" field. It's identical to DateUpdatedEQ.
 func DateUpdated(v time.Time) predicate.Account {
 	return predicate.Account(sql.FieldEQ(FieldDateUpdated, v))
@@ -418,6 +423,71 @@ func AuthBackendEqualFold(v string) predicate.Account {
 // AuthBackendContainsFold applies the ContainsFold predicate on the "auth_backend" field.
 func AuthBackendContainsFold(v string) predicate.Account {
 	return predicate.Account(sql.FieldContainsFold(FieldAuthBackend, v))
+}
+
+// LoginIdentityEQ applies the EQ predicate on the "login_identity" field.
+func LoginIdentityEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldEQ(FieldLoginIdentity, v))
+}
+
+// LoginIdentityNEQ applies the NEQ predicate on the "login_identity" field.
+func LoginIdentityNEQ(v string) predicate.Account {
+	return predicate.Account(sql.FieldNEQ(FieldLoginIdentity, v))
+}
+
+// LoginIdentityIn applies the In predicate on the "login_identity" field.
+func LoginIdentityIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldIn(FieldLoginIdentity, vs...))
+}
+
+// LoginIdentityNotIn applies the NotIn predicate on the "login_identity" field.
+func LoginIdentityNotIn(vs ...string) predicate.Account {
+	return predicate.Account(sql.FieldNotIn(FieldLoginIdentity, vs...))
+}
+
+// LoginIdentityGT applies the GT predicate on the "login_identity" field.
+func LoginIdentityGT(v string) predicate.Account {
+	return predicate.Account(sql.FieldGT(FieldLoginIdentity, v))
+}
+
+// LoginIdentityGTE applies the GTE predicate on the "login_identity" field.
+func LoginIdentityGTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldGTE(FieldLoginIdentity, v))
+}
+
+// LoginIdentityLT applies the LT predicate on the "login_identity" field.
+func LoginIdentityLT(v string) predicate.Account {
+	return predicate.Account(sql.FieldLT(FieldLoginIdentity, v))
+}
+
+// LoginIdentityLTE applies the LTE predicate on the "login_identity" field.
+func LoginIdentityLTE(v string) predicate.Account {
+	return predicate.Account(sql.FieldLTE(FieldLoginIdentity, v))
+}
+
+// LoginIdentityContains applies the Contains predicate on the "login_identity" field.
+func LoginIdentityContains(v string) predicate.Account {
+	return predicate.Account(sql.FieldContains(FieldLoginIdentity, v))
+}
+
+// LoginIdentityHasPrefix applies the HasPrefix predicate on the "login_identity" field.
+func LoginIdentityHasPrefix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasPrefix(FieldLoginIdentity, v))
+}
+
+// LoginIdentityHasSuffix applies the HasSuffix predicate on the "login_identity" field.
+func LoginIdentityHasSuffix(v string) predicate.Account {
+	return predicate.Account(sql.FieldHasSuffix(FieldLoginIdentity, v))
+}
+
+// LoginIdentityEqualFold applies the EqualFold predicate on the "login_identity" field.
+func LoginIdentityEqualFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldEqualFold(FieldLoginIdentity, v))
+}
+
+// LoginIdentityContainsFold applies the ContainsFold predicate on the "login_identity" field.
+func LoginIdentityContainsFold(v string) predicate.Account {
+	return predicate.Account(sql.FieldContainsFold(FieldLoginIdentity, v))
 }
 
 // DateUpdatedEQ applies the EQ predicate on the "date_updated" field.
