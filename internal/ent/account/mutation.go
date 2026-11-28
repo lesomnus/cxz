@@ -14,19 +14,20 @@ import (
 
 // Mutation represents an operation that mutates the Account nodes in the graph.
 type Mutation struct {
-	op            ent.Op
-	typ           string
-	alias         *string
-	name          *string
-	desc          *string
-	agent         *string
-	auth_backend  *string
-	date_updated  *time.Time
-	date_erased   *time.Time
-	date_created  *time.Time
-	clearedFields map[string]struct{}
-	exprs         map[string]sql.Querier
-	predicates    []predicate.Account
+	op             ent.Op
+	typ            string
+	alias          *string
+	name           *string
+	desc           *string
+	agent          *string
+	auth_backend   *string
+	login_identity *string
+	date_updated   *time.Time
+	date_erased    *time.Time
+	date_created   *time.Time
+	clearedFields  map[string]struct{}
+	exprs          map[string]sql.Querier
+	predicates     []predicate.Account
 }
 
 // NewMutation creates a new Mutation for the Account entity.
@@ -142,6 +143,27 @@ func (m *Mutation) AuthBackend() (r string, exists bool) {
 // ResetAuthBackend resets all changes to the "auth_backend" field.
 func (m *Mutation) ResetAuthBackend() {
 	m.auth_backend = nil
+}
+
+// SetLoginIdentity sets the "login_identity" field.
+func (m *Mutation) SetLoginIdentity(s string) {
+	m.login_identity = &s
+	delete(m.exprs, FieldLoginIdentity)
+}
+
+// LoginIdentity returns the value of the "login_identity" field in the mutation.
+func (m *Mutation) LoginIdentity() (r string, exists bool) {
+	v := m.login_identity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLoginIdentity resets all changes to the "login_identity" field.
+func (m *Mutation) ResetLoginIdentity() {
+	m.login_identity = nil
+	delete(m.exprs, FieldLoginIdentity)
 }
 
 // SetDateUpdated sets the "date_updated" field.
@@ -268,7 +290,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -283,6 +305,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.auth_backend != nil {
 		fields = append(fields, FieldAuthBackend)
+	}
+	if m.login_identity != nil || m.exprs[FieldLoginIdentity] != nil {
+		fields = append(fields, FieldLoginIdentity)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -317,6 +342,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Agent()
 	case FieldAuthBackend:
 		return m.AuthBackend()
+	case FieldLoginIdentity:
+		return m.LoginIdentity()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -392,6 +419,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetAuthBackend(v)
 		return nil
+	case FieldLoginIdentity:
+		v, ok := value.(string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLoginIdentity(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -454,6 +491,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldAuthBackend:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
+	case FieldLoginIdentity:
+		m.ResetLoginIdentity()
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
 	case FieldDateErased:
@@ -489,6 +528,9 @@ func (m *Mutation) ExprFields() []string {
 	}
 	if _, ok := m.exprs[FieldDesc]; ok {
 		fields = append(fields, FieldDesc)
+	}
+	if _, ok := m.exprs[FieldLoginIdentity]; ok {
+		fields = append(fields, FieldLoginIdentity)
 	}
 	if _, ok := m.exprs[FieldDateUpdated]; ok {
 		fields = append(fields, FieldDateUpdated)
@@ -573,6 +615,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldAuthBackend:
 		m.ResetAuthBackend()
+		return nil
+	case FieldLoginIdentity:
+		m.ResetLoginIdentity()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

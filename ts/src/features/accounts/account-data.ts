@@ -4,9 +4,15 @@ import type { Account } from "#gen/cxz/account_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { t } from "#src/shared/i18n/i18n.ts";
 
-export type AccountField = "name" | "alias";
+export type AccountField = "name" | "alias" | "loginIdentity";
 export function validateAccountField(field: AccountField, value: string) {
-  if (field === "name") {
+  // Only clearing it is a person's to do: the pin is written by the login that
+  // reached a provider account, and setting it by hand would say an account was
+  // reached that was not.
+  if (field === "loginIdentity") {
+    if (value !== "")
+      return t("A provider account can only be unpinned, not chosen by hand.");
+  } else if (field === "name") {
     if (
       !value.trim() ||
       new TextEncoder().encode(value).length > 200 ||

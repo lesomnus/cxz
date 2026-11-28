@@ -276,10 +276,21 @@ message ProjectLoginRequest {
   AccountRef account = 2;
   string session_key = 3;
   bytes input = 4;
+  // The account's pinned login identity, as the Manager reads it from the
+  // Account resource when it opens this stream against a project runtime. The
+  // runtime keeps its own replica of that row, but a person who clears the pin
+  // expects the very next login to be accepted, so the authoritative value
+  // travels with the request instead of being looked up again. A Manager never
+  // forwards what a client put here: it builds this frame itself.
+  string login_identity = 5;
 }
 
 message ProjectLoginOutput {
   bytes output = 1;
+  // Reported once, by a project runtime, after a login it accepted. The Manager
+  // writes it to the Account resource when nothing was pinned yet, and does not
+  // pass it on to the client that asked for the login.
+  string login_identity = 2;
 }
 
 message ProjectPathsRequest {

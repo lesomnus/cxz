@@ -11,6 +11,7 @@ import type { Project } from "#gen/cxz/project_pb";
 import { AccountAuthStatus_State as AuthState } from "#gen/cxz/account_svc_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
 import { useRemote } from "#src/shared/api/use-remote.ts";
+import { t } from "#src/shared/i18n/i18n.ts";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import {
   ResourceFields,
@@ -104,6 +105,31 @@ export function AccountDetails({
     setRefreshVersion((version) => version + 1);
     return pending;
   }
+  const [unpinning, setUnpinning] = useState(false);
+  const [unpinError, setUnpinError] = useState("");
+  async function unpin() {
+    setUnpinning(true);
+    setUnpinError("");
+    try {
+      const updated = await editAccount(
+        c.accounts,
+        account,
+        "loginIdentity",
+        "",
+      );
+      c.reads.invalidatePrefix(cachePrefix);
+      c.store.apply("cxz.Account", [{ id: updated.id, value: updated }]);
+      saved(updated);
+    } catch (error) {
+      setUnpinError(
+        error instanceof ConnectError || error instanceof Error
+          ? error.message
+          : t("Could not unpin this account."),
+      );
+    } finally {
+      setUnpinning(false);
+    }
+  }
   const [login, setLogin] = useState(false),
     [logout, setLogout] = useState(false),
     [erase, setErase] = useState(false),
@@ -166,6 +192,35 @@ export function AccountDetails({
                   <span className={accountStyles.fieldValue}>
                     {account.authBackend || "—"}
                   </span>,
+                ],
+                [
+                  "Provider account",
+                  account.loginIdentity ? (
+                    <span className={accountStyles.fieldValue}>
+                      <span>{t("Pinned by its first login")}</span>
+                      <Button
+                        variant="outline"
+                        onClick={() => void unpin()}
+                        disabled={unpinning}
+                      >
+                        {t("Unpin")}
+                      </Button>
+                    </span>
+                  ) : (
+                    <span className={accountStyles.fieldValue}>
+                      {t("Pinned by the next login")}
+                    </span>
+                  ),
+                  undefined,
+                  unpinError
+                    ? unpinError
+                    : account.loginIdentity
+                      ? t(
+                          "A login that reaches a different provider account is refused. Unpin first to change which account this one uses.",
+                        )
+                      : t(
+                          "Which provider account a login reaches is decided by the provider. The next one is remembered, and later logins have to match it.",
+                        ),
                 ],
                 [
                   "Created",
