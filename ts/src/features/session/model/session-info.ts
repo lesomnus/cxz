@@ -107,6 +107,7 @@ export function sessionInfo(
       (e.text === "thread/tokenUsage/updated" || e.text === "context/message")
     )
       context = p;
+    if (s?.status && !currentRun) continue;
     if (s?.agent === "codex" && e.text === "account/rateLimits/updated") {
       const buckets = object(p.rateLimitsByLimitId);
       const single = object(p.rateLimits);

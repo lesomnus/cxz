@@ -1,8 +1,10 @@
 package supervisor
 
 import (
-	"github.com/lesomnus/cxz/internal/core"
 	"time"
+
+	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/core"
 )
 
 func claudeSessionArgs(session core.Session, effort, resume string) []string {
@@ -37,6 +39,13 @@ func claudeRunArgs(model, effort, resume string) []string {
 func (s *Supervisor) readClaudeQuota() {
 	// Ask the already authenticated process; never read/refresh OAuth tokens in
 	// the TUI. Older CLIs can reject this experimental control without harming a turn.
+	if s.session.AuthBackend == accounts.ProjectLocalOAuth {
+		// Sessions can log in independently under the same profile name.
+		if !s.quotaDisabled && time.Since(s.quotaPolledAt) >= time.Minute {
+			s.sendClaudeQuota()
+		}
+		return
+	}
 	if s.quotaToken != "" {
 		s.readRemoteClaudeQuota()
 		return
@@ -48,6 +57,6 @@ func (s *Supervisor) readClaudeQuota() {
 }
 
 func (s *Supervisor) sendClaudeQuota() {
-	s.quotaFallbackAt = time.Now()
+	s.quotaPolledAt = time.Now()
 	s.requestQuota(map[string]any{"type": "control_request", "request_id": "cxz-quota", "request": map[string]any{"subtype": "get_usage", "skip_behaviors": true}})
 }
