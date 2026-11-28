@@ -16,6 +16,19 @@
   overflow: hidden;
 }
 
+/* The model and effort overlays open aligned to their trigger's text, and can
+   only stay aligned while the trigger leaves room for the whole overlay before
+   the viewport edge; past that they stay on screen instead and the text jumps.
+   On a phone this account is wide enough to push both triggers past that point,
+   and how far depends on the account's name, so there it reads last and leaves
+   both triggers at the start of the row. A row of its own would do as well, but
+   the status bar is also what the composer's own height is measured from. */
+@media (max-width: 700px) {
+  .account {
+    order: 1;
+  }
+}
+
 .icon > svg {
   /* Optical alignment with the x-height of lowercase model/effort names. */
   transform: translateY(1px);
