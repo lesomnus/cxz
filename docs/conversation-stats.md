@@ -19,7 +19,8 @@ Response:
 - `conversation_bytes`: UTF-8 text bytes of input and assistant events.
 - `event_content_bytes`: text plus payload bytes of all journal events. Raw and
   derived events may contain duplicate information. This is not JSONL, SQLite,
-  WAL, index, attachment, memory, or provider transcript disk usage.
+  WAL, index, attachment, memory, or provider transcript disk usage; for that
+  see [what a session takes up](history.md#what-a-session-takes-up).
 - Input/output/cache-read/cache-write tokens. Input excludes cache tokens:
   Codex's inclusive input count is normalized by subtracting cached input.
   Cache counters are separate and should not be added to inclusive provider

@@ -4576,6 +4576,177 @@ func (b0 SessionLogsReply_builder) Build() *SessionLogsReply {
 	return m0
 }
 
+// Told apart by who decides that it grows. The journal is cxz's own, and a
+// retention policy can reach it. The provider's transcripts are the agent's,
+// grow with every turn, and nothing in cxz prunes them -- which is the number
+// to look at before deciding a session has to be started over. The rest of the
+// profile is the agent's home, caches and temporary files, worth seeing when it
+// is unexpectedly the large part.
+type SessionStorageReply struct {
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_JournalBytes  int64                  `protobuf:"varint,1,opt,name=journal_bytes,json=journalBytes"`
+	xxx_hidden_ProviderBytes int64                  `protobuf:"varint,2,opt,name=provider_bytes,json=providerBytes"`
+	xxx_hidden_ProfileBytes  int64                  `protobuf:"varint,3,opt,name=profile_bytes,json=profileBytes"`
+	xxx_hidden_TotalBytes    int64                  `protobuf:"varint,4,opt,name=total_bytes,json=totalBytes"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *SessionStorageReply) Reset() {
+	*x = SessionStorageReply{}
+	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SessionStorageReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SessionStorageReply) ProtoMessage() {}
+
+func (x *SessionStorageReply) ProtoReflect() protoreflect.Message {
+	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *SessionStorageReply) GetJournalBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_JournalBytes
+	}
+	return 0
+}
+
+func (x *SessionStorageReply) GetProviderBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_ProviderBytes
+	}
+	return 0
+}
+
+func (x *SessionStorageReply) GetProfileBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_ProfileBytes
+	}
+	return 0
+}
+
+func (x *SessionStorageReply) GetTotalBytes() int64 {
+	if x != nil {
+		return x.xxx_hidden_TotalBytes
+	}
+	return 0
+}
+
+func (x *SessionStorageReply) SetJournalBytes(v int64) {
+	x.xxx_hidden_JournalBytes = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 4)
+}
+
+func (x *SessionStorageReply) SetProviderBytes(v int64) {
+	x.xxx_hidden_ProviderBytes = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 4)
+}
+
+func (x *SessionStorageReply) SetProfileBytes(v int64) {
+	x.xxx_hidden_ProfileBytes = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+}
+
+func (x *SessionStorageReply) SetTotalBytes(v int64) {
+	x.xxx_hidden_TotalBytes = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+}
+
+func (x *SessionStorageReply) HasJournalBytes() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
+}
+
+func (x *SessionStorageReply) HasProviderBytes() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
+func (x *SessionStorageReply) HasProfileBytes() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 2)
+}
+
+func (x *SessionStorageReply) HasTotalBytes() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
+}
+
+func (x *SessionStorageReply) ClearJournalBytes() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
+	x.xxx_hidden_JournalBytes = 0
+}
+
+func (x *SessionStorageReply) ClearProviderBytes() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_ProviderBytes = 0
+}
+
+func (x *SessionStorageReply) ClearProfileBytes() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
+	x.xxx_hidden_ProfileBytes = 0
+}
+
+func (x *SessionStorageReply) ClearTotalBytes() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 3)
+	x.xxx_hidden_TotalBytes = 0
+}
+
+type SessionStorageReply_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	JournalBytes  *int64
+	ProviderBytes *int64
+	ProfileBytes  *int64
+	TotalBytes    *int64
+}
+
+func (b0 SessionStorageReply_builder) Build() *SessionStorageReply {
+	m0 := &SessionStorageReply{}
+	b, x := &b0, m0
+	_, _ = b, x
+	if b.JournalBytes != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 4)
+		x.xxx_hidden_JournalBytes = *b.JournalBytes
+	}
+	if b.ProviderBytes != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 4)
+		x.xxx_hidden_ProviderBytes = *b.ProviderBytes
+	}
+	if b.ProfileBytes != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		x.xxx_hidden_ProfileBytes = *b.ProfileBytes
+	}
+	if b.TotalBytes != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		x.xxx_hidden_TotalBytes = *b.TotalBytes
+	}
+	return m0
+}
+
 type SessionPermissionRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *SessionRef            `protobuf:"bytes,1,opt,name=ref"`
@@ -4590,7 +4761,7 @@ type SessionPermissionRequest struct {
 
 func (x *SessionPermissionRequest) Reset() {
 	*x = SessionPermissionRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4602,7 +4773,7 @@ func (x *SessionPermissionRequest) String() string {
 func (*SessionPermissionRequest) ProtoMessage() {}
 
 func (x *SessionPermissionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[29]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4761,7 +4932,7 @@ type SessionSendRequest struct {
 
 func (x *SessionSendRequest) Reset() {
 	*x = SessionSendRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4773,7 +4944,7 @@ func (x *SessionSendRequest) String() string {
 func (*SessionSendRequest) ProtoMessage() {}
 
 func (x *SessionSendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[30]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4958,7 +5129,7 @@ type SessionAttachRequest struct {
 
 func (x *SessionAttachRequest) Reset() {
 	*x = SessionAttachRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4970,7 +5141,7 @@ func (x *SessionAttachRequest) String() string {
 func (*SessionAttachRequest) ProtoMessage() {}
 
 func (x *SessionAttachRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[31]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5092,7 +5263,7 @@ type SessionAttachment struct {
 
 func (x *SessionAttachment) Reset() {
 	*x = SessionAttachment{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5104,7 +5275,7 @@ func (x *SessionAttachment) String() string {
 func (*SessionAttachment) ProtoMessage() {}
 
 func (x *SessionAttachment) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[32]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5178,7 +5349,7 @@ type SessionActivityRequest struct {
 
 func (x *SessionActivityRequest) Reset() {
 	*x = SessionActivityRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5190,7 +5361,7 @@ func (x *SessionActivityRequest) String() string {
 func (*SessionActivityRequest) ProtoMessage() {}
 
 func (x *SessionActivityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[33]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5345,7 +5516,7 @@ type SessionUpdateRequest struct {
 
 func (x *SessionUpdateRequest) Reset() {
 	*x = SessionUpdateRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5357,7 +5528,7 @@ func (x *SessionUpdateRequest) String() string {
 func (*SessionUpdateRequest) ProtoMessage() {}
 
 func (x *SessionUpdateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[34]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5546,7 +5717,7 @@ type SessionUpdateStatus struct {
 
 func (x *SessionUpdateStatus) Reset() {
 	*x = SessionUpdateStatus{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5558,7 +5729,7 @@ func (x *SessionUpdateStatus) String() string {
 func (*SessionUpdateStatus) ProtoMessage() {}
 
 func (x *SessionUpdateStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[35]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5815,7 +5986,7 @@ type SessionReplyRequest struct {
 
 func (x *SessionReplyRequest) Reset() {
 	*x = SessionReplyRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5827,7 +5998,7 @@ func (x *SessionReplyRequest) String() string {
 func (*SessionReplyRequest) ProtoMessage() {}
 
 func (x *SessionReplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[36]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6045,7 +6216,7 @@ type SessionEventsRequest struct {
 
 func (x *SessionEventsRequest) Reset() {
 	*x = SessionEventsRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6057,7 +6228,7 @@ func (x *SessionEventsRequest) String() string {
 func (*SessionEventsRequest) ProtoMessage() {}
 
 func (x *SessionEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[37]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6204,7 +6375,7 @@ type SessionEventBatch struct {
 
 func (x *SessionEventBatch) Reset() {
 	*x = SessionEventBatch{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6216,7 +6387,7 @@ func (x *SessionEventBatch) String() string {
 func (*SessionEventBatch) ProtoMessage() {}
 
 func (x *SessionEventBatch) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[38]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6271,7 +6442,7 @@ type SessionTranscriptRequest struct {
 
 func (x *SessionTranscriptRequest) Reset() {
 	*x = SessionTranscriptRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6283,7 +6454,7 @@ func (x *SessionTranscriptRequest) String() string {
 func (*SessionTranscriptRequest) ProtoMessage() {}
 
 func (x *SessionTranscriptRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[39]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6462,7 +6633,7 @@ type SessionTranscriptReply struct {
 
 func (x *SessionTranscriptReply) Reset() {
 	*x = SessionTranscriptReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6474,7 +6645,7 @@ func (x *SessionTranscriptReply) String() string {
 func (*SessionTranscriptReply) ProtoMessage() {}
 
 func (x *SessionTranscriptReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[40]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6655,7 +6826,7 @@ type SessionRowsRequest struct {
 
 func (x *SessionRowsRequest) Reset() {
 	*x = SessionRowsRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[41]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6667,7 +6838,7 @@ func (x *SessionRowsRequest) String() string {
 func (*SessionRowsRequest) ProtoMessage() {}
 
 func (x *SessionRowsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[41]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6788,7 +6959,7 @@ type SessionRow struct {
 
 func (x *SessionRow) Reset() {
 	*x = SessionRow{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[42]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6800,7 +6971,7 @@ func (x *SessionRow) String() string {
 func (*SessionRow) ProtoMessage() {}
 
 func (x *SessionRow) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[42]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6888,7 +7059,7 @@ type SessionEventDetailsRequest struct {
 
 func (x *SessionEventDetailsRequest) Reset() {
 	*x = SessionEventDetailsRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[43]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6900,7 +7071,7 @@ func (x *SessionEventDetailsRequest) String() string {
 func (*SessionEventDetailsRequest) ProtoMessage() {}
 
 func (x *SessionEventDetailsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[43]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6985,7 +7156,7 @@ type SessionBackgroundRequest struct {
 
 func (x *SessionBackgroundRequest) Reset() {
 	*x = SessionBackgroundRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[44]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6997,7 +7168,7 @@ func (x *SessionBackgroundRequest) String() string {
 func (*SessionBackgroundRequest) ProtoMessage() {}
 
 func (x *SessionBackgroundRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[44]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7056,7 +7227,7 @@ type SessionBackgroundReply struct {
 
 func (x *SessionBackgroundReply) Reset() {
 	*x = SessionBackgroundReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[45]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7068,7 +7239,7 @@ func (x *SessionBackgroundReply) String() string {
 func (*SessionBackgroundReply) ProtoMessage() {}
 
 func (x *SessionBackgroundReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[45]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7169,7 +7340,7 @@ type SessionModelsRequest struct {
 
 func (x *SessionModelsRequest) Reset() {
 	*x = SessionModelsRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[46]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7181,7 +7352,7 @@ func (x *SessionModelsRequest) String() string {
 func (*SessionModelsRequest) ProtoMessage() {}
 
 func (x *SessionModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[46]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7338,7 +7509,7 @@ type SessionModelsReply struct {
 
 func (x *SessionModelsReply) Reset() {
 	*x = SessionModelsReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[47]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7350,7 +7521,7 @@ func (x *SessionModelsReply) String() string {
 func (*SessionModelsReply) ProtoMessage() {}
 
 func (x *SessionModelsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[47]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7619,7 +7790,7 @@ type SessionSearchRequest struct {
 
 func (x *SessionSearchRequest) Reset() {
 	*x = SessionSearchRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[48]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7631,7 +7802,7 @@ func (x *SessionSearchRequest) String() string {
 func (*SessionSearchRequest) ProtoMessage() {}
 
 func (x *SessionSearchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[48]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7997,7 +8168,7 @@ type SessionSearchReply struct {
 
 func (x *SessionSearchReply) Reset() {
 	*x = SessionSearchReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[49]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8009,7 +8180,7 @@ func (x *SessionSearchReply) String() string {
 func (*SessionSearchReply) ProtoMessage() {}
 
 func (x *SessionSearchReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[49]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8127,7 +8298,7 @@ type SessionSearchVisit struct {
 
 func (x *SessionSearchVisit) Reset() {
 	*x = SessionSearchVisit{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[50]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8139,7 +8310,7 @@ func (x *SessionSearchVisit) String() string {
 func (*SessionSearchVisit) ProtoMessage() {}
 
 func (x *SessionSearchVisit) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[50]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8507,7 +8678,7 @@ type SessionSearchHit struct {
 
 func (x *SessionSearchHit) Reset() {
 	*x = SessionSearchHit{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[51]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8519,7 +8690,7 @@ func (x *SessionSearchHit) String() string {
 func (*SessionSearchHit) ProtoMessage() {}
 
 func (x *SessionSearchHit) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[51]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8741,7 +8912,7 @@ type SessionSearchProgress struct {
 
 func (x *SessionSearchProgress) Reset() {
 	*x = SessionSearchProgress{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[52]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8753,7 +8924,7 @@ func (x *SessionSearchProgress) String() string {
 func (*SessionSearchProgress) ProtoMessage() {}
 
 func (x *SessionSearchProgress) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[52]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8986,7 +9157,7 @@ type SessionSearchSummary struct {
 
 func (x *SessionSearchSummary) Reset() {
 	*x = SessionSearchSummary{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[53]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8998,7 +9169,7 @@ func (x *SessionSearchSummary) String() string {
 func (*SessionSearchSummary) ProtoMessage() {}
 
 func (x *SessionSearchSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[53]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9351,7 +9522,7 @@ type AuxRunRequest struct {
 
 func (x *AuxRunRequest) Reset() {
 	*x = AuxRunRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[54]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9363,7 +9534,7 @@ func (x *AuxRunRequest) String() string {
 func (*AuxRunRequest) ProtoMessage() {}
 
 func (x *AuxRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[54]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9472,7 +9643,7 @@ type AuxState struct {
 
 func (x *AuxState) Reset() {
 	*x = AuxState{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[55]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9484,7 +9655,7 @@ func (x *AuxState) String() string {
 func (*AuxState) ProtoMessage() {}
 
 func (x *AuxState) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[55]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9662,7 +9833,7 @@ type AuxSummary struct {
 
 func (x *AuxSummary) Reset() {
 	*x = AuxSummary{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[56]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9674,7 +9845,7 @@ func (x *AuxSummary) String() string {
 func (*AuxSummary) ProtoMessage() {}
 
 func (x *AuxSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[56]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9847,7 +10018,7 @@ type Aux struct {
 
 func (x *Aux) Reset() {
 	*x = Aux{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[57]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9859,7 +10030,7 @@ func (x *Aux) String() string {
 func (*Aux) ProtoMessage() {}
 
 func (x *Aux) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[57]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10193,7 +10364,7 @@ type AuxResult struct {
 
 func (x *AuxResult) Reset() {
 	*x = AuxResult{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[58]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10205,7 +10376,7 @@ func (x *AuxResult) String() string {
 func (*AuxResult) ProtoMessage() {}
 
 func (x *AuxResult) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[58]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10335,7 +10506,7 @@ type AuxUsage struct {
 
 func (x *AuxUsage) Reset() {
 	*x = AuxUsage{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[59]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10347,7 +10518,7 @@ func (x *AuxUsage) String() string {
 func (*AuxUsage) ProtoMessage() {}
 
 func (x *AuxUsage) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[59]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10513,7 +10684,7 @@ type AuxPreference struct {
 
 func (x *AuxPreference) Reset() {
 	*x = AuxPreference{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[60]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10525,7 +10696,7 @@ func (x *AuxPreference) String() string {
 func (*AuxPreference) ProtoMessage() {}
 
 func (x *AuxPreference) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[60]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10645,7 +10816,7 @@ type AuxStatusRequest struct {
 
 func (x *AuxStatusRequest) Reset() {
 	*x = AuxStatusRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[61]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10657,7 +10828,7 @@ func (x *AuxStatusRequest) String() string {
 func (*AuxStatusRequest) ProtoMessage() {}
 
 func (x *AuxStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[61]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10772,7 +10943,7 @@ type AuxPreferRequest struct {
 
 func (x *AuxPreferRequest) Reset() {
 	*x = AuxPreferRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[62]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10784,7 +10955,7 @@ func (x *AuxPreferRequest) String() string {
 func (*AuxPreferRequest) ProtoMessage() {}
 
 func (x *AuxPreferRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[62]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10858,7 +11029,7 @@ type AuxCancelRequest struct {
 
 func (x *AuxCancelRequest) Reset() {
 	*x = AuxCancelRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[63]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10870,7 +11041,7 @@ func (x *AuxCancelRequest) String() string {
 func (*AuxCancelRequest) ProtoMessage() {}
 
 func (x *AuxCancelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[63]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10958,7 +11129,7 @@ type SessionHistoryFloorRequest struct {
 
 func (x *SessionHistoryFloorRequest) Reset() {
 	*x = SessionHistoryFloorRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[64]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10970,7 +11141,7 @@ func (x *SessionHistoryFloorRequest) String() string {
 func (*SessionHistoryFloorRequest) ProtoMessage() {}
 
 func (x *SessionHistoryFloorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[64]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11030,7 +11201,7 @@ type SessionHistoryFloorReply struct {
 
 func (x *SessionHistoryFloorReply) Reset() {
 	*x = SessionHistoryFloorReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[65]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11042,7 +11213,7 @@ func (x *SessionHistoryFloorReply) String() string {
 func (*SessionHistoryFloorReply) ProtoMessage() {}
 
 func (x *SessionHistoryFloorReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[65]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11106,7 +11277,7 @@ type SessionMcpRequest struct {
 
 func (x *SessionMcpRequest) Reset() {
 	*x = SessionMcpRequest{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[66]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11118,7 +11289,7 @@ func (x *SessionMcpRequest) String() string {
 func (*SessionMcpRequest) ProtoMessage() {}
 
 func (x *SessionMcpRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[66]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11212,7 +11383,7 @@ type SessionMcpLogsReply struct {
 
 func (x *SessionMcpLogsReply) Reset() {
 	*x = SessionMcpLogsReply{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[67]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11224,7 +11395,7 @@ func (x *SessionMcpLogsReply) String() string {
 func (*SessionMcpLogsReply) ProtoMessage() {}
 
 func (x *SessionMcpLogsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[67]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11323,7 +11494,7 @@ type SessionNotification struct {
 
 func (x *SessionNotification) Reset() {
 	*x = SessionNotification{}
-	mi := &file_cxz_session_svc_g_proto_msgTypes[68]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -11335,7 +11506,7 @@ func (x *SessionNotification) String() string {
 func (*SessionNotification) ProtoMessage() {}
 
 func (x *SessionNotification) ProtoReflect() protoreflect.Message {
-	mi := &file_cxz_session_svc_g_proto_msgTypes[68]
+	mi := &file_cxz_session_svc_g_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -11582,7 +11753,13 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x18\n" +
 	"\aproject\x18\x02 \x01(\bR\aproject\"&\n" +
 	"\x10SessionLogsReply\x12\x12\n" +
-	"\x04text\x18\x01 \x01(\tR\x04text\"\x85\x01\n" +
+	"\x04text\x18\x01 \x01(\tR\x04text\"\xa7\x01\n" +
+	"\x13SessionStorageReply\x12#\n" +
+	"\rjournal_bytes\x18\x01 \x01(\x03R\fjournalBytes\x12%\n" +
+	"\x0eprovider_bytes\x18\x02 \x01(\x03R\rproviderBytes\x12#\n" +
+	"\rprofile_bytes\x18\x03 \x01(\x03R\fprofileBytes\x12\x1f\n" +
+	"\vtotal_bytes\x18\x04 \x01(\x03R\n" +
+	"totalBytes\"\x85\x01\n" +
 	"\x18SessionPermissionRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.SessionRefR\x03ref\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\x12\x1b\n" +
@@ -11820,7 +11997,7 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"generation\x12\x17\n" +
 	"\x03seq\x18\x03 \x01(\x04B\x05\xaa\x01\x02\b\x02R\x03seq\x12$\n" +
 	"\n" +
-	"request_id\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\trequestId2\x85\x13\n" +
+	"request_id\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\trequestId2\xbb\x13\n" +
 	"\x0eSessionService\x12+\n" +
 	"\x03Add\x12\x16.cxz.SessionAddRequest\x1a\f.cxz.Session\x12+\n" +
 	"\x03Get\x12\x16.cxz.SessionGetRequest\x1a\f.cxz.Session\x12/\n" +
@@ -11840,7 +12017,8 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\tInterrupt\x12\x13.cxz.SessionControl\x1a\x13.cxz.SessionReceipt\x12F\n" +
 	"\rCopyAgentData\x12 .cxz.SessionCopyAgentDataRequest\x1a\x13.cxz.SessionReceipt\x12Q\n" +
 	"\rReadAgentData\x12 .cxz.SessionReadAgentDataRequest\x1a\x1e.cxz.SessionReadAgentDataReply\x126\n" +
-	"\x04Logs\x12\x17.cxz.SessionLogsRequest\x1a\x15.cxz.SessionLogsReply\x12@\n" +
+	"\x04Logs\x12\x17.cxz.SessionLogsRequest\x1a\x15.cxz.SessionLogsReply\x124\n" +
+	"\aStorage\x12\x0f.cxz.SessionRef\x1a\x18.cxz.SessionStorageReply\x12@\n" +
 	"\n" +
 	"Permission\x12\x1d.cxz.SessionPermissionRequest\x1a\x13.cxz.SessionReceipt\x124\n" +
 	"\x04Send\x12\x17.cxz.SessionSendRequest\x1a\x13.cxz.SessionReceipt\x12;\n" +
@@ -11868,7 +12046,7 @@ const file_cxz_session_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"RestartMcp\x12\x16.cxz.SessionMcpRequest\x1a\x13.cxz.SessionReceiptB\"Z github.com/lesomnus/cxz/resourceb\beditionsp\xe8\a"
 
-var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 69)
+var file_cxz_session_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionAddRequest)(nil),           // 0: cxz.SessionAddRequest
 	(*SessionGetRequest)(nil),           // 1: cxz.SessionGetRequest
@@ -11899,95 +12077,96 @@ var file_cxz_session_svc_g_proto_goTypes = []any{
 	(*SessionReadAgentDataReply)(nil),   // 26: cxz.SessionReadAgentDataReply
 	(*SessionLogsRequest)(nil),          // 27: cxz.SessionLogsRequest
 	(*SessionLogsReply)(nil),            // 28: cxz.SessionLogsReply
-	(*SessionPermissionRequest)(nil),    // 29: cxz.SessionPermissionRequest
-	(*SessionSendRequest)(nil),          // 30: cxz.SessionSendRequest
-	(*SessionAttachRequest)(nil),        // 31: cxz.SessionAttachRequest
-	(*SessionAttachment)(nil),           // 32: cxz.SessionAttachment
-	(*SessionActivityRequest)(nil),      // 33: cxz.SessionActivityRequest
-	(*SessionUpdateRequest)(nil),        // 34: cxz.SessionUpdateRequest
-	(*SessionUpdateStatus)(nil),         // 35: cxz.SessionUpdateStatus
-	(*SessionReplyRequest)(nil),         // 36: cxz.SessionReplyRequest
-	(*SessionEventsRequest)(nil),        // 37: cxz.SessionEventsRequest
-	(*SessionEventBatch)(nil),           // 38: cxz.SessionEventBatch
-	(*SessionTranscriptRequest)(nil),    // 39: cxz.SessionTranscriptRequest
-	(*SessionTranscriptReply)(nil),      // 40: cxz.SessionTranscriptReply
-	(*SessionRowsRequest)(nil),          // 41: cxz.SessionRowsRequest
-	(*SessionRow)(nil),                  // 42: cxz.SessionRow
-	(*SessionEventDetailsRequest)(nil),  // 43: cxz.SessionEventDetailsRequest
-	(*SessionBackgroundRequest)(nil),    // 44: cxz.SessionBackgroundRequest
-	(*SessionBackgroundReply)(nil),      // 45: cxz.SessionBackgroundReply
-	(*SessionModelsRequest)(nil),        // 46: cxz.SessionModelsRequest
-	(*SessionModelsReply)(nil),          // 47: cxz.SessionModelsReply
-	(*SessionSearchRequest)(nil),        // 48: cxz.SessionSearchRequest
-	(*SessionSearchReply)(nil),          // 49: cxz.SessionSearchReply
-	(*SessionSearchVisit)(nil),          // 50: cxz.SessionSearchVisit
-	(*SessionSearchHit)(nil),            // 51: cxz.SessionSearchHit
-	(*SessionSearchProgress)(nil),       // 52: cxz.SessionSearchProgress
-	(*SessionSearchSummary)(nil),        // 53: cxz.SessionSearchSummary
-	(*AuxRunRequest)(nil),               // 54: cxz.AuxRunRequest
-	(*AuxState)(nil),                    // 55: cxz.AuxState
-	(*AuxSummary)(nil),                  // 56: cxz.AuxSummary
-	(*Aux)(nil),                         // 57: cxz.Aux
-	(*AuxResult)(nil),                   // 58: cxz.AuxResult
-	(*AuxUsage)(nil),                    // 59: cxz.AuxUsage
-	(*AuxPreference)(nil),               // 60: cxz.AuxPreference
-	(*AuxStatusRequest)(nil),            // 61: cxz.AuxStatusRequest
-	(*AuxPreferRequest)(nil),            // 62: cxz.AuxPreferRequest
-	(*AuxCancelRequest)(nil),            // 63: cxz.AuxCancelRequest
-	(*SessionHistoryFloorRequest)(nil),  // 64: cxz.SessionHistoryFloorRequest
-	(*SessionHistoryFloorReply)(nil),    // 65: cxz.SessionHistoryFloorReply
-	(*SessionMcpRequest)(nil),           // 66: cxz.SessionMcpRequest
-	(*SessionMcpLogsReply)(nil),         // 67: cxz.SessionMcpLogsReply
-	(*SessionNotification)(nil),         // 68: cxz.SessionNotification
-	(*ProjectRef)(nil),                  // 69: cxz.ProjectRef
-	(*timestamppb.Timestamp)(nil),       // 70: google.protobuf.Timestamp
-	(*SessionStatus)(nil),               // 71: cxz.SessionStatus
-	(*AccountRef)(nil),                  // 72: cxz.AccountRef
-	(*AuthBindingRef)(nil),              // 73: cxz.AuthBindingRef
-	(*ProjectSelect)(nil),               // 74: cxz.ProjectSelect
-	(*AccountSelect)(nil),               // 75: cxz.AccountSelect
-	(*AuthBindingSelect)(nil),           // 76: cxz.AuthBindingSelect
-	(*patchpb.Patch)(nil),               // 77: patch.Patch
-	(*Session)(nil),                     // 78: cxz.Session
-	(*SessionEvent)(nil),                // 79: cxz.SessionEvent
-	(AuxKind)(0),                        // 80: cxz.AuxKind
+	(*SessionStorageReply)(nil),         // 29: cxz.SessionStorageReply
+	(*SessionPermissionRequest)(nil),    // 30: cxz.SessionPermissionRequest
+	(*SessionSendRequest)(nil),          // 31: cxz.SessionSendRequest
+	(*SessionAttachRequest)(nil),        // 32: cxz.SessionAttachRequest
+	(*SessionAttachment)(nil),           // 33: cxz.SessionAttachment
+	(*SessionActivityRequest)(nil),      // 34: cxz.SessionActivityRequest
+	(*SessionUpdateRequest)(nil),        // 35: cxz.SessionUpdateRequest
+	(*SessionUpdateStatus)(nil),         // 36: cxz.SessionUpdateStatus
+	(*SessionReplyRequest)(nil),         // 37: cxz.SessionReplyRequest
+	(*SessionEventsRequest)(nil),        // 38: cxz.SessionEventsRequest
+	(*SessionEventBatch)(nil),           // 39: cxz.SessionEventBatch
+	(*SessionTranscriptRequest)(nil),    // 40: cxz.SessionTranscriptRequest
+	(*SessionTranscriptReply)(nil),      // 41: cxz.SessionTranscriptReply
+	(*SessionRowsRequest)(nil),          // 42: cxz.SessionRowsRequest
+	(*SessionRow)(nil),                  // 43: cxz.SessionRow
+	(*SessionEventDetailsRequest)(nil),  // 44: cxz.SessionEventDetailsRequest
+	(*SessionBackgroundRequest)(nil),    // 45: cxz.SessionBackgroundRequest
+	(*SessionBackgroundReply)(nil),      // 46: cxz.SessionBackgroundReply
+	(*SessionModelsRequest)(nil),        // 47: cxz.SessionModelsRequest
+	(*SessionModelsReply)(nil),          // 48: cxz.SessionModelsReply
+	(*SessionSearchRequest)(nil),        // 49: cxz.SessionSearchRequest
+	(*SessionSearchReply)(nil),          // 50: cxz.SessionSearchReply
+	(*SessionSearchVisit)(nil),          // 51: cxz.SessionSearchVisit
+	(*SessionSearchHit)(nil),            // 52: cxz.SessionSearchHit
+	(*SessionSearchProgress)(nil),       // 53: cxz.SessionSearchProgress
+	(*SessionSearchSummary)(nil),        // 54: cxz.SessionSearchSummary
+	(*AuxRunRequest)(nil),               // 55: cxz.AuxRunRequest
+	(*AuxState)(nil),                    // 56: cxz.AuxState
+	(*AuxSummary)(nil),                  // 57: cxz.AuxSummary
+	(*Aux)(nil),                         // 58: cxz.Aux
+	(*AuxResult)(nil),                   // 59: cxz.AuxResult
+	(*AuxUsage)(nil),                    // 60: cxz.AuxUsage
+	(*AuxPreference)(nil),               // 61: cxz.AuxPreference
+	(*AuxStatusRequest)(nil),            // 62: cxz.AuxStatusRequest
+	(*AuxPreferRequest)(nil),            // 63: cxz.AuxPreferRequest
+	(*AuxCancelRequest)(nil),            // 64: cxz.AuxCancelRequest
+	(*SessionHistoryFloorRequest)(nil),  // 65: cxz.SessionHistoryFloorRequest
+	(*SessionHistoryFloorReply)(nil),    // 66: cxz.SessionHistoryFloorReply
+	(*SessionMcpRequest)(nil),           // 67: cxz.SessionMcpRequest
+	(*SessionMcpLogsReply)(nil),         // 68: cxz.SessionMcpLogsReply
+	(*SessionNotification)(nil),         // 69: cxz.SessionNotification
+	(*ProjectRef)(nil),                  // 70: cxz.ProjectRef
+	(*timestamppb.Timestamp)(nil),       // 71: google.protobuf.Timestamp
+	(*SessionStatus)(nil),               // 72: cxz.SessionStatus
+	(*AccountRef)(nil),                  // 73: cxz.AccountRef
+	(*AuthBindingRef)(nil),              // 74: cxz.AuthBindingRef
+	(*ProjectSelect)(nil),               // 75: cxz.ProjectSelect
+	(*AccountSelect)(nil),               // 76: cxz.AccountSelect
+	(*AuthBindingSelect)(nil),           // 77: cxz.AuthBindingSelect
+	(*patchpb.Patch)(nil),               // 78: patch.Patch
+	(*Session)(nil),                     // 79: cxz.Session
+	(*SessionEvent)(nil),                // 80: cxz.SessionEvent
+	(AuxKind)(0),                        // 81: cxz.AuxKind
 }
 var file_cxz_session_svc_g_proto_depIdxs = []int32{
-	69,  // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
-	70,  // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	71,  // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
-	72,  // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
-	73,  // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
+	70,  // 0: cxz.SessionAddRequest.project:type_name -> cxz.ProjectRef
+	71,  // 1: cxz.SessionAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	72,  // 2: cxz.SessionAddRequest.status:type_name -> cxz.SessionStatus
+	73,  // 3: cxz.SessionAddRequest.account:type_name -> cxz.AccountRef
+	74,  // 4: cxz.SessionAddRequest.auth_binding:type_name -> cxz.AuthBindingRef
 	2,   // 5: cxz.SessionGetRequest.ref:type_name -> cxz.SessionRef
 	3,   // 6: cxz.SessionGetRequest.select:type_name -> cxz.SessionSelect
-	74,  // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
-	75,  // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
-	76,  // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
+	75,  // 7: cxz.SessionSelect.project:type_name -> cxz.ProjectSelect
+	76,  // 8: cxz.SessionSelect.account:type_name -> cxz.AccountSelect
+	77,  // 9: cxz.SessionSelect.auth_binding:type_name -> cxz.AuthBindingSelect
 	2,   // 10: cxz.SessionPatchRequest.ref:type_name -> cxz.SessionRef
-	70,  // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	71,  // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
+	71,  // 11: cxz.SessionPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	72,  // 12: cxz.SessionPatchRequest.status:type_name -> cxz.SessionStatus
 	2,   // 13: cxz.SessionApplyRequest.ref:type_name -> cxz.SessionRef
-	77,  // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
+	78,  // 14: cxz.SessionApplyRequest.patch:type_name -> patch.Patch
 	9,   // 15: cxz.SessionListRequest.filters:type_name -> cxz.SessionFilter
-	78,  // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
+	79,  // 16: cxz.SessionListResponse.items:type_name -> cxz.Session
 	2,   // 17: cxz.SessionFilter.ref:type_name -> cxz.SessionRef
-	69,  // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
-	72,  // 19: cxz.SessionFilter.account:type_name -> cxz.AccountRef
+	70,  // 18: cxz.SessionFilter.project:type_name -> cxz.ProjectRef
+	73,  // 19: cxz.SessionFilter.account:type_name -> cxz.AccountRef
 	9,   // 20: cxz.SessionWatchRequest.filters:type_name -> cxz.SessionFilter
 	12,  // 21: cxz.SessionWatchResponse.items:type_name -> cxz.SessionWatchItem
-	78,  // 22: cxz.SessionWatchItem.value:type_name -> cxz.Session
+	79,  // 22: cxz.SessionWatchItem.value:type_name -> cxz.Session
 	2,   // 23: cxz.SessionMarkReadRequest.ref:type_name -> cxz.SessionRef
 	2,   // 24: cxz.SessionReadStateRequest.ref:type_name -> cxz.SessionRef
-	69,  // 25: cxz.ConversationStatsRequest.project:type_name -> cxz.ProjectRef
+	70,  // 25: cxz.ConversationStatsRequest.project:type_name -> cxz.ProjectRef
 	2,   // 26: cxz.ConversationStatsRequest.session:type_name -> cxz.SessionRef
-	72,  // 27: cxz.ConversationStatsRequest.account:type_name -> cxz.AccountRef
+	73,  // 27: cxz.ConversationStatsRequest.account:type_name -> cxz.AccountRef
 	18,  // 28: cxz.ConversationStatsReply.total:type_name -> cxz.ConversationStatsValues
 	19,  // 29: cxz.ConversationStatsReply.days:type_name -> cxz.ConversationStatsDay
 	20,  // 30: cxz.ConversationStatsReply.sessions:type_name -> cxz.ConversationStatsCoverage
 	18,  // 31: cxz.ConversationStatsDay.values:type_name -> cxz.ConversationStatsValues
 	2,   // 32: cxz.SessionControl.ref:type_name -> cxz.SessionRef
 	2,   // 33: cxz.SessionSwitchAccountRequest.ref:type_name -> cxz.SessionRef
-	72,  // 34: cxz.SessionSwitchAccountRequest.account:type_name -> cxz.AccountRef
+	73,  // 34: cxz.SessionSwitchAccountRequest.account:type_name -> cxz.AccountRef
 	2,   // 35: cxz.SessionCopyAgentDataRequest.ref:type_name -> cxz.SessionRef
 	2,   // 36: cxz.SessionCopyAgentDataRequest.target:type_name -> cxz.SessionRef
 	2,   // 37: cxz.SessionReadAgentDataRequest.ref:type_name -> cxz.SessionRef
@@ -11999,40 +12178,40 @@ var file_cxz_session_svc_g_proto_depIdxs = []int32{
 	2,   // 43: cxz.SessionUpdateRequest.ref:type_name -> cxz.SessionRef
 	2,   // 44: cxz.SessionReplyRequest.ref:type_name -> cxz.SessionRef
 	2,   // 45: cxz.SessionEventsRequest.ref:type_name -> cxz.SessionRef
-	79,  // 46: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
+	80,  // 46: cxz.SessionEventBatch.events:type_name -> cxz.SessionEvent
 	2,   // 47: cxz.SessionTranscriptRequest.ref:type_name -> cxz.SessionRef
-	79,  // 48: cxz.SessionTranscriptReply.events:type_name -> cxz.SessionEvent
-	79,  // 49: cxz.SessionTranscriptReply.preceding_input:type_name -> cxz.SessionEvent
-	79,  // 50: cxz.SessionTranscriptReply.metadata:type_name -> cxz.SessionEvent
+	80,  // 48: cxz.SessionTranscriptReply.events:type_name -> cxz.SessionEvent
+	80,  // 49: cxz.SessionTranscriptReply.preceding_input:type_name -> cxz.SessionEvent
+	80,  // 50: cxz.SessionTranscriptReply.metadata:type_name -> cxz.SessionEvent
 	2,   // 51: cxz.SessionRowsRequest.ref:type_name -> cxz.SessionRef
-	79,  // 52: cxz.SessionRow.event:type_name -> cxz.SessionEvent
+	80,  // 52: cxz.SessionRow.event:type_name -> cxz.SessionEvent
 	2,   // 53: cxz.SessionEventDetailsRequest.ref:type_name -> cxz.SessionRef
 	2,   // 54: cxz.SessionBackgroundRequest.ref:type_name -> cxz.SessionRef
 	2,   // 55: cxz.SessionModelsRequest.ref:type_name -> cxz.SessionRef
-	70,  // 56: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
-	70,  // 57: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
-	50,  // 58: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
-	52,  // 59: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
-	53,  // 60: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
-	51,  // 61: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
-	70,  // 62: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
-	70,  // 63: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
+	71,  // 56: cxz.SessionSearchRequest.since:type_name -> google.protobuf.Timestamp
+	71,  // 57: cxz.SessionSearchRequest.until:type_name -> google.protobuf.Timestamp
+	51,  // 58: cxz.SessionSearchReply.visit:type_name -> cxz.SessionSearchVisit
+	53,  // 59: cxz.SessionSearchReply.progress:type_name -> cxz.SessionSearchProgress
+	54,  // 60: cxz.SessionSearchReply.summary:type_name -> cxz.SessionSearchSummary
+	52,  // 61: cxz.SessionSearchVisit.hits:type_name -> cxz.SessionSearchHit
+	71,  // 62: cxz.SessionSearchSummary.since:type_name -> google.protobuf.Timestamp
+	71,  // 63: cxz.SessionSearchSummary.until:type_name -> google.protobuf.Timestamp
 	2,   // 64: cxz.AuxRunRequest.ref:type_name -> cxz.SessionRef
-	80,  // 65: cxz.AuxRunRequest.kinds:type_name -> cxz.AuxKind
-	56,  // 66: cxz.AuxState.summaries:type_name -> cxz.AuxSummary
-	57,  // 67: cxz.AuxState.current:type_name -> cxz.Aux
-	57,  // 68: cxz.AuxState.recent:type_name -> cxz.Aux
-	60,  // 69: cxz.AuxState.preferences:type_name -> cxz.AuxPreference
-	80,  // 70: cxz.Aux.kinds:type_name -> cxz.AuxKind
-	58,  // 71: cxz.Aux.results:type_name -> cxz.AuxResult
-	59,  // 72: cxz.Aux.usage:type_name -> cxz.AuxUsage
-	80,  // 73: cxz.AuxResult.kind:type_name -> cxz.AuxKind
-	80,  // 74: cxz.AuxUsage.kind:type_name -> cxz.AuxKind
-	80,  // 75: cxz.AuxPreference.kind:type_name -> cxz.AuxKind
-	70,  // 76: cxz.AuxPreference.since:type_name -> google.protobuf.Timestamp
+	81,  // 65: cxz.AuxRunRequest.kinds:type_name -> cxz.AuxKind
+	57,  // 66: cxz.AuxState.summaries:type_name -> cxz.AuxSummary
+	58,  // 67: cxz.AuxState.current:type_name -> cxz.Aux
+	58,  // 68: cxz.AuxState.recent:type_name -> cxz.Aux
+	61,  // 69: cxz.AuxState.preferences:type_name -> cxz.AuxPreference
+	81,  // 70: cxz.Aux.kinds:type_name -> cxz.AuxKind
+	59,  // 71: cxz.Aux.results:type_name -> cxz.AuxResult
+	60,  // 72: cxz.Aux.usage:type_name -> cxz.AuxUsage
+	81,  // 73: cxz.AuxResult.kind:type_name -> cxz.AuxKind
+	81,  // 74: cxz.AuxUsage.kind:type_name -> cxz.AuxKind
+	81,  // 75: cxz.AuxPreference.kind:type_name -> cxz.AuxKind
+	71,  // 76: cxz.AuxPreference.since:type_name -> google.protobuf.Timestamp
 	2,   // 77: cxz.AuxStatusRequest.ref:type_name -> cxz.SessionRef
 	2,   // 78: cxz.AuxPreferRequest.ref:type_name -> cxz.SessionRef
-	60,  // 79: cxz.AuxPreferRequest.preferences:type_name -> cxz.AuxPreference
+	61,  // 79: cxz.AuxPreferRequest.preferences:type_name -> cxz.AuxPreference
 	2,   // 80: cxz.AuxCancelRequest.ref:type_name -> cxz.SessionRef
 	2,   // 81: cxz.SessionHistoryFloorRequest.ref:type_name -> cxz.SessionRef
 	2,   // 82: cxz.SessionMcpRequest.ref:type_name -> cxz.SessionRef
@@ -12055,71 +12234,73 @@ var file_cxz_session_svc_g_proto_depIdxs = []int32{
 	24,  // 99: cxz.SessionService.CopyAgentData:input_type -> cxz.SessionCopyAgentDataRequest
 	25,  // 100: cxz.SessionService.ReadAgentData:input_type -> cxz.SessionReadAgentDataRequest
 	27,  // 101: cxz.SessionService.Logs:input_type -> cxz.SessionLogsRequest
-	29,  // 102: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
-	30,  // 103: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
-	31,  // 104: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
-	33,  // 105: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
-	34,  // 106: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
-	36,  // 107: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
-	37,  // 108: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
-	39,  // 109: cxz.SessionService.Transcript:input_type -> cxz.SessionTranscriptRequest
-	41,  // 110: cxz.SessionService.Rows:input_type -> cxz.SessionRowsRequest
-	43,  // 111: cxz.SessionService.EventDetails:input_type -> cxz.SessionEventDetailsRequest
-	44,  // 112: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
-	46,  // 113: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
-	37,  // 114: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
-	48,  // 115: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
-	54,  // 116: cxz.SessionService.AuxRun:input_type -> cxz.AuxRunRequest
-	61,  // 117: cxz.SessionService.AuxStatus:input_type -> cxz.AuxStatusRequest
-	61,  // 118: cxz.SessionService.AuxEvents:input_type -> cxz.AuxStatusRequest
-	62,  // 119: cxz.SessionService.AuxPrefer:input_type -> cxz.AuxPreferRequest
-	63,  // 120: cxz.SessionService.AuxCancel:input_type -> cxz.AuxCancelRequest
-	64,  // 121: cxz.SessionService.GetHistoryFloor:input_type -> cxz.SessionHistoryFloorRequest
-	66,  // 122: cxz.SessionService.McpLogs:input_type -> cxz.SessionMcpRequest
-	66,  // 123: cxz.SessionService.RestartMcp:input_type -> cxz.SessionMcpRequest
-	78,  // 124: cxz.SessionService.Add:output_type -> cxz.Session
-	78,  // 125: cxz.SessionService.Get:output_type -> cxz.Session
-	78,  // 126: cxz.SessionService.Patch:output_type -> cxz.Session
-	78,  // 127: cxz.SessionService.Apply:output_type -> cxz.Session
-	6,   // 128: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
-	8,   // 129: cxz.SessionService.List:output_type -> cxz.SessionListResponse
-	11,  // 130: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
-	14,  // 131: cxz.SessionService.MarkRead:output_type -> cxz.SessionReadState
-	14,  // 132: cxz.SessionService.ReadState:output_type -> cxz.SessionReadState
-	17,  // 133: cxz.SessionService.ConversationStats:output_type -> cxz.ConversationStatsReply
-	78,  // 134: cxz.SessionService.Start:output_type -> cxz.Session
-	78,  // 135: cxz.SessionService.Resume:output_type -> cxz.Session
-	78,  // 136: cxz.SessionService.Fork:output_type -> cxz.Session
-	78,  // 137: cxz.SessionService.SwitchAccount:output_type -> cxz.Session
-	78,  // 138: cxz.SessionService.Stop:output_type -> cxz.Session
-	23,  // 139: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
-	23,  // 140: cxz.SessionService.CopyAgentData:output_type -> cxz.SessionReceipt
-	26,  // 141: cxz.SessionService.ReadAgentData:output_type -> cxz.SessionReadAgentDataReply
-	28,  // 142: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
-	23,  // 143: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
-	23,  // 144: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
-	32,  // 145: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
-	23,  // 146: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
-	35,  // 147: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
-	23,  // 148: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
-	38,  // 149: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
-	40,  // 150: cxz.SessionService.Transcript:output_type -> cxz.SessionTranscriptReply
-	42,  // 151: cxz.SessionService.Rows:output_type -> cxz.SessionRow
-	38,  // 152: cxz.SessionService.EventDetails:output_type -> cxz.SessionEventBatch
-	45,  // 153: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
-	47,  // 154: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
-	79,  // 155: cxz.SessionService.Events:output_type -> cxz.SessionEvent
-	49,  // 156: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
-	55,  // 157: cxz.SessionService.AuxRun:output_type -> cxz.AuxState
-	55,  // 158: cxz.SessionService.AuxStatus:output_type -> cxz.AuxState
-	55,  // 159: cxz.SessionService.AuxEvents:output_type -> cxz.AuxState
-	55,  // 160: cxz.SessionService.AuxPrefer:output_type -> cxz.AuxState
-	55,  // 161: cxz.SessionService.AuxCancel:output_type -> cxz.AuxState
-	65,  // 162: cxz.SessionService.GetHistoryFloor:output_type -> cxz.SessionHistoryFloorReply
-	67,  // 163: cxz.SessionService.McpLogs:output_type -> cxz.SessionMcpLogsReply
-	23,  // 164: cxz.SessionService.RestartMcp:output_type -> cxz.SessionReceipt
-	124, // [124:165] is the sub-list for method output_type
-	83,  // [83:124] is the sub-list for method input_type
+	2,   // 102: cxz.SessionService.Storage:input_type -> cxz.SessionRef
+	30,  // 103: cxz.SessionService.Permission:input_type -> cxz.SessionPermissionRequest
+	31,  // 104: cxz.SessionService.Send:input_type -> cxz.SessionSendRequest
+	32,  // 105: cxz.SessionService.Attach:input_type -> cxz.SessionAttachRequest
+	34,  // 106: cxz.SessionService.Activity:input_type -> cxz.SessionActivityRequest
+	35,  // 107: cxz.SessionService.UpdateAgent:input_type -> cxz.SessionUpdateRequest
+	37,  // 108: cxz.SessionService.Reply:input_type -> cxz.SessionReplyRequest
+	38,  // 109: cxz.SessionService.History:input_type -> cxz.SessionEventsRequest
+	40,  // 110: cxz.SessionService.Transcript:input_type -> cxz.SessionTranscriptRequest
+	42,  // 111: cxz.SessionService.Rows:input_type -> cxz.SessionRowsRequest
+	44,  // 112: cxz.SessionService.EventDetails:input_type -> cxz.SessionEventDetailsRequest
+	45,  // 113: cxz.SessionService.Background:input_type -> cxz.SessionBackgroundRequest
+	47,  // 114: cxz.SessionService.Models:input_type -> cxz.SessionModelsRequest
+	38,  // 115: cxz.SessionService.Events:input_type -> cxz.SessionEventsRequest
+	49,  // 116: cxz.SessionService.Search:input_type -> cxz.SessionSearchRequest
+	55,  // 117: cxz.SessionService.AuxRun:input_type -> cxz.AuxRunRequest
+	62,  // 118: cxz.SessionService.AuxStatus:input_type -> cxz.AuxStatusRequest
+	62,  // 119: cxz.SessionService.AuxEvents:input_type -> cxz.AuxStatusRequest
+	63,  // 120: cxz.SessionService.AuxPrefer:input_type -> cxz.AuxPreferRequest
+	64,  // 121: cxz.SessionService.AuxCancel:input_type -> cxz.AuxCancelRequest
+	65,  // 122: cxz.SessionService.GetHistoryFloor:input_type -> cxz.SessionHistoryFloorRequest
+	67,  // 123: cxz.SessionService.McpLogs:input_type -> cxz.SessionMcpRequest
+	67,  // 124: cxz.SessionService.RestartMcp:input_type -> cxz.SessionMcpRequest
+	79,  // 125: cxz.SessionService.Add:output_type -> cxz.Session
+	79,  // 126: cxz.SessionService.Get:output_type -> cxz.Session
+	79,  // 127: cxz.SessionService.Patch:output_type -> cxz.Session
+	79,  // 128: cxz.SessionService.Apply:output_type -> cxz.Session
+	6,   // 129: cxz.SessionService.Erase:output_type -> cxz.SessionEraseResponse
+	8,   // 130: cxz.SessionService.List:output_type -> cxz.SessionListResponse
+	11,  // 131: cxz.SessionService.Watch:output_type -> cxz.SessionWatchResponse
+	14,  // 132: cxz.SessionService.MarkRead:output_type -> cxz.SessionReadState
+	14,  // 133: cxz.SessionService.ReadState:output_type -> cxz.SessionReadState
+	17,  // 134: cxz.SessionService.ConversationStats:output_type -> cxz.ConversationStatsReply
+	79,  // 135: cxz.SessionService.Start:output_type -> cxz.Session
+	79,  // 136: cxz.SessionService.Resume:output_type -> cxz.Session
+	79,  // 137: cxz.SessionService.Fork:output_type -> cxz.Session
+	79,  // 138: cxz.SessionService.SwitchAccount:output_type -> cxz.Session
+	79,  // 139: cxz.SessionService.Stop:output_type -> cxz.Session
+	23,  // 140: cxz.SessionService.Interrupt:output_type -> cxz.SessionReceipt
+	23,  // 141: cxz.SessionService.CopyAgentData:output_type -> cxz.SessionReceipt
+	26,  // 142: cxz.SessionService.ReadAgentData:output_type -> cxz.SessionReadAgentDataReply
+	28,  // 143: cxz.SessionService.Logs:output_type -> cxz.SessionLogsReply
+	29,  // 144: cxz.SessionService.Storage:output_type -> cxz.SessionStorageReply
+	23,  // 145: cxz.SessionService.Permission:output_type -> cxz.SessionReceipt
+	23,  // 146: cxz.SessionService.Send:output_type -> cxz.SessionReceipt
+	33,  // 147: cxz.SessionService.Attach:output_type -> cxz.SessionAttachment
+	23,  // 148: cxz.SessionService.Activity:output_type -> cxz.SessionReceipt
+	36,  // 149: cxz.SessionService.UpdateAgent:output_type -> cxz.SessionUpdateStatus
+	23,  // 150: cxz.SessionService.Reply:output_type -> cxz.SessionReceipt
+	39,  // 151: cxz.SessionService.History:output_type -> cxz.SessionEventBatch
+	41,  // 152: cxz.SessionService.Transcript:output_type -> cxz.SessionTranscriptReply
+	43,  // 153: cxz.SessionService.Rows:output_type -> cxz.SessionRow
+	39,  // 154: cxz.SessionService.EventDetails:output_type -> cxz.SessionEventBatch
+	46,  // 155: cxz.SessionService.Background:output_type -> cxz.SessionBackgroundReply
+	48,  // 156: cxz.SessionService.Models:output_type -> cxz.SessionModelsReply
+	80,  // 157: cxz.SessionService.Events:output_type -> cxz.SessionEvent
+	50,  // 158: cxz.SessionService.Search:output_type -> cxz.SessionSearchReply
+	56,  // 159: cxz.SessionService.AuxRun:output_type -> cxz.AuxState
+	56,  // 160: cxz.SessionService.AuxStatus:output_type -> cxz.AuxState
+	56,  // 161: cxz.SessionService.AuxEvents:output_type -> cxz.AuxState
+	56,  // 162: cxz.SessionService.AuxPrefer:output_type -> cxz.AuxState
+	56,  // 163: cxz.SessionService.AuxCancel:output_type -> cxz.AuxState
+	66,  // 164: cxz.SessionService.GetHistoryFloor:output_type -> cxz.SessionHistoryFloorReply
+	68,  // 165: cxz.SessionService.McpLogs:output_type -> cxz.SessionMcpLogsReply
+	23,  // 166: cxz.SessionService.RestartMcp:output_type -> cxz.SessionReceipt
+	125, // [125:167] is the sub-list for method output_type
+	83,  // [83:125] is the sub-list for method input_type
 	83,  // [83:83] is the sub-list for extension type_name
 	83,  // [83:83] is the sub-list for extension extendee
 	0,   // [0:83] is the sub-list for field type_name
@@ -12147,7 +12328,7 @@ func file_cxz_session_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cxz_session_svc_g_proto_rawDesc), len(file_cxz_session_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   69,
+			NumMessages:   70,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

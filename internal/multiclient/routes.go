@@ -73,6 +73,16 @@ func (c *Client) Logs(ctx context.Context, in *api.LogsRequest, opts ...grpc.Cal
 	return reply, err
 }
 
+func (c *Client) SessionStorage(ctx context.Context, in *api.SessionRef, opts ...grpc.CallOption) (*api.StorageUsage, error) {
+	_, id, client, err := c.route(ctx, in.Id)
+	if err != nil {
+		return nil, err
+	}
+	request := proto.Clone(in).(*api.SessionRef)
+	request.Id = id
+	return client.SessionStorage(ctx, request, opts...)
+}
+
 func (c *Client) Permission(ctx context.Context, in *api.PermissionInput, opts ...grpc.CallOption) (*api.Receipt, error) {
 	_, id, client, err := c.route(ctx, in.SessionId)
 	if err != nil {
