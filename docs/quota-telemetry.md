@@ -133,9 +133,18 @@ notifications independently, so other windows survive hundreds of context
 updates and transcript window replacements. A later full unavailable snapshot
 still clears those older values.
 
+Claude usage is polled per session, at most once a minute, by asking that
+session's own already-authenticated process. It is not shared between sessions
+even when they name the same account: Claude's only backend logs in per session
+profile, so one alias can hold credentials for different provider accounts, and
+a snapshot shared by alias showed one session a limit it would not be refused by
+(cxz#400 measured 2% displayed against an account at 100%). Asking the
+credential which provider account it belongs to does not rescue sharing either,
+because a credential does not always say.
+
 - `internal/supervisor/codex.go`: account quota polling and notifications.
-- `internal/supervisor/claude_args.go`, `quota_shared.go`: Claude control query
-  and shared snapshot handling.
+- `internal/supervisor/claude_args.go`, `claude_quota.go`: Claude control query
+  and the recorded usage event.
 - `ts/src/features/session/model/session-info.ts`: preserve windows and select
   the compact-graph value.
 - `ts/src/features/session/composer/usage-info.tsx`: per-window hover rows.
