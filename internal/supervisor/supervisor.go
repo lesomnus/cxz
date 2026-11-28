@@ -60,7 +60,7 @@ type Supervisor struct {
 	quotaSocket      string
 	quotaChecking    bool
 	quotaWorkers     sync.WaitGroup
-	quotaFallbackAt  time.Time
+	quotaPolledAt    time.Time
 	quotaRoot        string
 	quotaToken       string
 	quotaLease       string

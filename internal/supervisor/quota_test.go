@@ -2,10 +2,12 @@ package supervisor
 
 import (
 	"context"
-	"github.com/lesomnus/cxz/internal/quotashare"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/lesomnus/cxz/internal/accounts"
+	"github.com/lesomnus/cxz/internal/quotashare"
 )
 
 func TestQuotaPollingTimeoutAndRecovery(t *testing.T) {
@@ -69,6 +71,32 @@ func TestClaudeSharedQuotaAcrossSupervisors(t *testing.T) {
 	}
 	if !found || second.Len() != 0 {
 		t.Fatal("peer did not reuse account snapshot")
+	}
+}
+
+func TestClaudeQuotaUsesSessionOAuthLogin(t *testing.T) {
+	root := t.TempDir()
+	a, first := displaySupervisor(t, "claude")
+	b, second := displaySupervisor(t, "claude")
+	for _, s := range []*Supervisor{a, b} {
+		s.quotaRoot = root
+		s.session.Account = "work"
+		s.session.AuthBackend = accounts.ProjectLocalOAuth
+	}
+	a.readClaudeQuota()
+	if first.Len() == 0 {
+		t.Fatal("first session did not poll its Claude process")
+	}
+	a.consume([]byte(`{"type":"control_response","response":{"request_id":"cxz-quota","subtype":"success","response":{"rate_limits":{"seven_day":{"utilization":1}}}}}`))
+	b.readClaudeQuota()
+	if second.Len() == 0 || recorded(b, "usage", "get_usage") != 0 {
+		t.Fatal("second session did not poll its own login independently")
+	}
+	b.consume([]byte(`{"type":"control_response","response":{"request_id":"cxz-quota","subtype":"success","response":{"rate_limits":{"seven_day":{"utilization":99}}}}}`))
+	before := first.Len()
+	a.readClaudeQuota()
+	if first.Len() != before || recorded(a, "usage", "get_usage") != 1 {
+		t.Fatal("first session polled early or picked up the second session's quota")
 	}
 }
 
