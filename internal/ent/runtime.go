@@ -4,6 +4,7 @@ package ent
 
 import (
 	"github.com/lesomnus/cxz/internal/ent/access"
+	"github.com/lesomnus/cxz/internal/ent/account"
 	"github.com/lesomnus/cxz/internal/ent/audit"
 	"github.com/lesomnus/cxz/internal/ent/project"
 	"github.com/lesomnus/cxz/internal/ent/schema"
@@ -23,6 +24,12 @@ func init() {
 	accessDescDomain := accessFields[10].Descriptor()
 	// access.DefaultDomain holds the default value on creation for the domain field.
 	access.DefaultDomain = accessDescDomain.Default.(uint32)
+	accountFields := schema.Account{}.Fields()
+	_ = accountFields
+	// accountDescLoginIdentity is the schema descriptor for login_identity field.
+	accountDescLoginIdentity := accountFields[6].Descriptor()
+	// account.DefaultLoginIdentity holds the default value on creation for the login_identity field.
+	account.DefaultLoginIdentity = accountDescLoginIdentity.Default.(string)
 	auditFields := schema.Audit{}.Fields()
 	_ = auditFields
 	// auditDescDomain is the schema descriptor for domain field.

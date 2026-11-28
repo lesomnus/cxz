@@ -260,16 +260,16 @@ var File_cxz_account_proto protoreflect.FileDescriptor
 
 const file_cxz_account_proto_rawDesc = "" +
 	"\n" +
-	"\x11cxz/account.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf0\x03\n" +
+	"\x11cxz/account.proto\x12\x03cxz\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf9\x03\n" +
 	"\aAccount\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12\x1c\n" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xea\x82\x16\x020\x01R\x05alias\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\tR\x04desc\x12\x1c\n" +
 	"\x05agent\x18\b \x01(\tB\x06\xea\x82\x16\x02@\x01R\x05agent\x12)\n" +
-	"\fauth_backend\x18\t \x01(\tB\x06\xea\x82\x16\x02@\x01R\vauthBackend\x12%\n" +
+	"\fauth_backend\x18\t \x01(\tB\x06\xea\x82\x16\x02@\x01R\vauthBackend\x12.\n" +
 	"\x0elogin_identity\x18\n" +
-	" \x01(\tR\rloginIdentity\x12F\n" +
+	" \x01(\tB\a\xea\x82\x16\x03\x82\x01\x00R\rloginIdentity\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

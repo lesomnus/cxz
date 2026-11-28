@@ -61,7 +61,7 @@ var (
 		{Name: "desc", Type: field.TypeString},
 		{Name: "agent", Type: field.TypeString},
 		{Name: "auth_backend", Type: field.TypeString},
-		{Name: "login_identity", Type: field.TypeString},
+		{Name: "login_identity", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},

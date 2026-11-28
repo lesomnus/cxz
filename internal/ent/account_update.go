@@ -85,6 +85,12 @@ func (_u *AccountUpdate) SetNillableLoginIdentity(v *string) *AccountUpdate {
 	return _u
 }
 
+// ClearLoginIdentity clears the value of the "login_identity" field.
+func (_u *AccountUpdate) ClearLoginIdentity() *AccountUpdate {
+	_u.mutation.ClearLoginIdentity()
+	return _u
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_u *AccountUpdate) SetDateUpdated(v time.Time) *AccountUpdate {
 	_u.mutation.SetDateUpdated(v)
@@ -190,6 +196,9 @@ func (_u *AccountUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if e, ok := _u.mutation.FieldExpr(account.FieldLoginIdentity); ok {
 		_spec.SetField(account.FieldLoginIdentity, field.TypeString, e)
 	}
+	if _u.mutation.LoginIdentityCleared() {
+		_spec.ClearField(account.FieldLoginIdentity, field.TypeString)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(account.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -283,6 +292,12 @@ func (_u *AccountUpdateOne) SetNillableLoginIdentity(v *string) *AccountUpdateOn
 	if v != nil {
 		_u.SetLoginIdentity(*v)
 	}
+	return _u
+}
+
+// ClearLoginIdentity clears the value of the "login_identity" field.
+func (_u *AccountUpdateOne) ClearLoginIdentity() *AccountUpdateOne {
+	_u.mutation.ClearLoginIdentity()
 	return _u
 }
 
@@ -420,6 +435,9 @@ func (_u *AccountUpdateOne) sqlSave(ctx context.Context) (_node *Account, err er
 	}
 	if e, ok := _u.mutation.FieldExpr(account.FieldLoginIdentity); ok {
 		_spec.SetField(account.FieldLoginIdentity, field.TypeString, e)
+	}
+	if _u.mutation.LoginIdentityCleared() {
+		_spec.ClearField(account.FieldLoginIdentity, field.TypeString)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(account.FieldDateUpdated, field.TypeTime, value)
