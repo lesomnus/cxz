@@ -831,6 +831,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
     : undefined;
   const forkRequest = useRef<ForkRequest | undefined>(undefined);
   async function forkConversation() {
+    const sourcePath = router.state.location.pathname;
     return action(async (session) => {
       const run = session.status?.runId ?? "";
       const previous = forkRequest.current;
@@ -848,7 +849,8 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         { timeoutMs: 120000 },
       );
       c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
-      await navigate(sessionLocation(child));
+      if (mounted.current && router.state.location.pathname === sourcePath)
+        await navigate(sessionLocation(child));
       forkRequest.current = undefined;
     }, forkFailure);
   }
@@ -1349,7 +1351,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               toggle: () => showTerminal(!terminalVisibleRef.current),
             }}
             busy={busy}
-            fork={() => forkConversation()}
+            fork={forkConversation}
             tools={[
               {
                 label: "Insert secret",

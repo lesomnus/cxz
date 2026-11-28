@@ -46,7 +46,7 @@ function loginDetail(sessionKey = "original-creation", account = "work1") {
 }
 async function fixture(
   page,
-  { state = "idle", authFailure = true, forkError, resumeError } = {},
+  { state = "idle", authFailure = true, forkError, forkReady, resumeError } = {},
 ) {
   const id = (v) => Buffer.from(v.padEnd(16, "0")).toString("base64");
   const project = {
@@ -219,6 +219,7 @@ async function fixture(
       return send(session());
     }
     if (path === "/cxz.SessionService/Fork") {
+      await forkReady;
       if (forkError) return route.fulfill({ status: 400, json: forkError });
       child ??= {
         ...session(),
@@ -314,8 +315,8 @@ test("the inline composer Resume slides out after Claude login", async ({
   });
   await expect(resume).toBeEnabled();
   await expect(slot.locator(":scope > div")).toHaveAttribute("inert", "");
-  const width = await slot.evaluate((el) => el.getBoundingClientRect().width);
-  expect((await resume.boundingBox()).width).toBe(width);
+  const width = await slot.evaluate((el) => el.offsetWidth);
+  expect(await resume.evaluate((el) => el.offsetWidth)).toBe(width);
   await resume.click();
   const panel = page.getByRole("region", { name: "Provider login" });
   await expect(panel).toBeVisible();
@@ -339,9 +340,7 @@ test("the inline composer Resume slides out after Claude login", async ({
   await expect(resume).toHaveCount(0);
   await expect(stop).toBeVisible();
   await expect(slot).toHaveCSS("overflow", "visible");
-  expect(await slot.evaluate((el) => el.getBoundingClientRect().width)).toBe(
-    width,
-  );
+  expect(await slot.evaluate((el) => el.offsetWidth)).toBe(width);
 });
 
 async function changeAccount(page, confirmLabel) {
@@ -419,21 +418,34 @@ test("a failed automatic start reports the account change separately", async ({
   ).toEqual(["Stop", "SwitchAccount", "Resume"]);
 });
 
-test("Fork saves the conversation before OAuth and only starts the child after login", async ({
+test("Fork waits for the new session, opens it, and only starts it after login", async ({
   page,
 }) => {
-  const f = await fixture(page, { authFailure: false });
+  const forkResponse = Promise.withResolvers();
+  const f = await fixture(page, {
+    authFailure: false,
+    forkReady: forkResponse.promise,
+  });
   const choose = async (name) => {
     await page.getByRole("button", { name: "Session menu" }).click();
     await page.getByRole("menuitem", { name, exact: true }).click();
   };
-  await choose("Fork");
+  const forks = () => f.requests.filter((r) => r.path.endsWith("/Fork"));
+  try {
+    await choose("Fork");
+    await expect(
+      page.getByRole("menuitem", { name: "Fork", exact: true }),
+    ).toHaveAttribute("aria-busy", "true");
+    await expect.poll(() => forks().length).toBe(1);
+    await expect(page).toHaveURL(/\/c\/@local\/session\/seal$/);
+  } finally {
+    forkResponse.resolve();
+  }
   await expect(page).toHaveURL(/\/c\/@local\/session\/forked-seal$/);
   await expect(page.locator("article.input .message-body").last()).toHaveText(
     "Please continue",
   );
   const panel = page.getByRole("region", { name: "Provider login" });
-  const forks = () => f.requests.filter((r) => r.path.endsWith("/Fork"));
   const starts = () => f.requests.filter((r) => r.path.endsWith("/Start"));
   expect(forks()).toHaveLength(1);
   expect(starts()).toHaveLength(0);

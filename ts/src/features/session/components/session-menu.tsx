@@ -85,6 +85,7 @@ export function SessionMenu({
         scrollbarOffset={-8}
         motion={{ from: "bottom-right", effect: "reveal" }}
         disabled={!session}
+        awaitAction={!!fork}
         footer={<EditorOptions scope="session" />}
         groups={[
           {
@@ -118,7 +119,7 @@ export function SessionMenu({
                         ) ||
                         !!session?.status?.pending.length ||
                         !!session?.status?.queued,
-                      run: () => void fork(),
+                      run: fork,
                     },
                   ]
                 : []),
