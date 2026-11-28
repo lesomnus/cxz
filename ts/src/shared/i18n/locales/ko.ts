@@ -969,12 +969,23 @@ export const messages = {
   "Update the connected manager to report its project runtime.":
     "프로젝트 런타임 정보를 확인하려면 연결된 매니저를 업데이트하세요.",
   "Workspace path": "워크스페이스 경로",
-  "Project name": "프로젝트 이름",
   "Display name": "표시 이름",
   "Devcontainer configuration": "Devcontainer 설정",
-  "Image or Kubernetes settings (JSON)": "이미지 또는 Kubernetes 설정(JSON)",
-  "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.":
-    "영문 소문자, 숫자, 하이픈을 1~40자로 입력하세요. 처음과 끝은 영문 소문자 또는 숫자여야 합니다.",
+  "Kubernetes settings": "Kubernetes 설정",
+  "Kubernetes project YAML": "Kubernetes 프로젝트 YAML",
+  Form: "폼",
+  Edit: "편집",
+  "Container image": "컨테이너 이미지",
+  "Container user": "컨테이너 사용자",
+  "Storage capacity": "저장 공간 용량",
+  "CPU request": "CPU 요청량",
+  "Memory request": "메모리 요청량",
+  "CPU limit": "CPU 한도",
+  "Memory limit": "메모리 한도",
+  "Dockerfile path": "Dockerfile 경로",
+  "Build context": "빌드 컨텍스트",
+  "Invalid Kubernetes settings. Edit the YAML to continue.":
+    "Kubernetes 설정이 올바르지 않습니다. YAML을 수정한 뒤 계속하세요.",
   "Request ID": "요청 ID",
   Code: "코드",
   Method: "메서드",
@@ -1014,8 +1025,10 @@ export const messages = {
     "계정을 바꾸지 못했습니다. 다시 시도하기 전에 세션 상태를 확인하세요.",
   "The conversation, its history and its settings stay with this session. The new account may ask you to log in before the session runs again.":
     "대화와 기록, 설정은 이 세션에 그대로 남습니다. 세션을 다시 실행하기 전에 새 계정으로 로그인해야 할 수 있습니다.",
-  "The session is stopped first. Active work stops.":
-    "먼저 세션을 중지합니다. 진행 중인 작업이 멈춥니다.",
+  "Any work in progress stops. The session starts again after the account changes.":
+    "진행 중인 작업은 중단됩니다. 계정을 바꾼 뒤 세션을 다시 시작합니다.",
+  "Account changed. Could not start the session. {error}":
+    "계정을 바꿨습니다. 세션을 다시 시작하지 못했습니다. {error}",
   "No other account is registered for this agent.":
     "이 에이전트에 등록된 다른 계정이 없습니다.",
   "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.":

@@ -9,6 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableSection,
 } from "@lesomnus/nox";
 import type { Connection } from "#src/shared/api/connection.ts";
 import {
@@ -18,7 +19,7 @@ import {
 import { ConnectionScope } from "#src/shared/navigation/resource-route.ts";
 import { useRouteConnections } from "#src/app/router.tsx";
 import { InstallationFileMenu } from "./installation-files";
-import { ResourceTableSection } from "#src/shared/components/resource-layout.tsx";
+import { ConnectionIcon } from "#src/shared/components/connection-icon.tsx";
 import resourceTableStyles from "#src/shared/components/resource-table.module.css";
 import styles from "./connections-settings.module.css";
 
@@ -85,7 +86,7 @@ export function ConnectionsSettings({
           </small>
         </div>
       </header>
-      <ResourceTableSection>
+      <TableSection>
         {error && <ErrorNotice className={styles.error} error={error} />}
         <Table
           className={`connection-list ${resourceTableStyles.panelTable} ${resourceTableStyles.layout}`}
@@ -113,18 +114,33 @@ export function ConnectionsSettings({
                 data-read-only={item.readOnly}
               >
                 <TableHead scope="row">
-                  <span
-                    className={resourceTableStyles.identity}
-                    title={item.name}
-                  >
-                    <span className={resourceTableStyles.identityTitle}>
-                      {item.name}
-                    </span>
-                    {item.isDefault && (
-                      <span className={resourceTableStyles.identityDetail}>
-                        {t("default")}
+                  <span className={styles.name} title={item.name}>
+                    <ConnectionIcon
+                      c={c}
+                      baseUrl={
+                        catalog.find(
+                          ({ entry }) =>
+                            entry?.name === item.name &&
+                            entry.target === item.target &&
+                            entry.transport === item.transport,
+                        )?.baseUrl ??
+                        (item.transport === "origin" &&
+                        item.target === c.baseUrl
+                          ? c.baseUrl
+                          : undefined)
+                      }
+                      transport={item.transport}
+                    />
+                    <span className={resourceTableStyles.identity}>
+                      <span className={resourceTableStyles.identityTitle}>
+                        {item.name}
                       </span>
-                    )}
+                      {item.isDefault && (
+                        <span className={resourceTableStyles.identityDetail}>
+                          {t("default")}
+                        </span>
+                      )}
+                    </span>
                   </span>
                 </TableHead>
                 <TableCell>
@@ -163,7 +179,7 @@ export function ConnectionsSettings({
             ))}
           </TableBody>
         </Table>
-      </ResourceTableSection>
+      </TableSection>
     </section>
   );
 }

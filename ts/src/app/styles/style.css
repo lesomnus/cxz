@@ -2048,12 +2048,6 @@ pre {
   position: relative;
   display: inline-flex;
 }
-.turn-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--control-inset);
-  margin-right: auto;
-}
 .stop-control {
   position: relative;
   display: inline-flex;
@@ -2118,14 +2112,14 @@ pre {
   flex-wrap: wrap;
 }
 .model-info {
-  display: grid;
-  grid-template-columns: max-content max-content;
-  gap: 8px;
+  column-gap: 8px;
   flex: 0 0 auto;
   min-width: 0;
+  max-width: 100%;
 }
 .model-info > .setting-field {
   display: flex;
+  flex: none;
   gap: 6px;
   min-width: 0;
   white-space: nowrap;

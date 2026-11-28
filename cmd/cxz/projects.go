@@ -388,7 +388,7 @@ func projectContainerCommand(ctx context.Context, client api.SessionsClient, c *
 func projectMetadataCommands() *xli.Command {
 	parent := &xli.Command{Name: "project", Brief: "Register projects and set their display names/aliases", Handler: onRun(func(_ context.Context, c *xli.Command) error { return c.PrintHelp(c.Writer) })}
 	for _, op := range []string{"add", "set"} {
-		c := &xli.Command{Name: op, Brief: map[string]string{"add": "Register a workspace without starting a container", "set": "Change project display name or alias"}[op], Args: arg.Args{stringArg("PROJECT", false)}, Flags: flg.Flags{&flg.String{Name: "name", Brief: "Display name"}, &flg.String{Name: "alias", Brief: "Unique short handle"}}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
+		c := &xli.Command{Name: op, Brief: map[string]string{"add": "Register a workspace without starting a container", "set": "Change project display name or alias"}[op], Args: arg.Args{stringArg("PROJECT", op == "add")}, Flags: flg.Flags{&flg.String{Name: "name", Brief: "Display name"}, &flg.String{Name: "alias", Brief: "Unique short handle"}}, Handler: withClient(func(ctx context.Context, client api.SessionsClient, c *xli.Command) error {
 			target := arg.MustGet[string](c, "PROJECT")
 			if st, err := os.Stat(target); err == nil && st.IsDir() {
 				target, err = dockerx.EnginePath(target)
@@ -405,6 +405,16 @@ func projectMetadataCommands() *xli.Command {
 			var p *api.Project
 			var err error
 			if c.Name == "add" {
+				if target == "" {
+					v, err := resources.GetInstallationVersion(ctx, &api.Empty{})
+					if err != nil {
+						return err
+					}
+					if v.ProjectBackend != "kubernetes" {
+						return fmt.Errorf("workspace required")
+					}
+					target = workspace.KubernetesWorkspace
+				}
 				config, _ := flg.Get[string](c, "config")
 				p, err = resources.AddProject(ctx, target, name, alias, config)
 			} else {
@@ -426,7 +436,7 @@ func projectMetadataCommands() *xli.Command {
 			return writeOutput(c, p)
 		})}
 		if op == "add" {
-			c.Flags = append(c.Flags, &flg.String{Name: "config", Brief: "Devcontainer configuration; on Kubernetes, the project's settings as JSON or an image"})
+			c.Flags = append(c.Flags, &flg.String{Name: "config", Brief: "Devcontainer configuration; on Kubernetes, project settings as YAML, JSON, or an image reference"})
 		}
 		parent.Commands = append(parent.Commands, c)
 	}

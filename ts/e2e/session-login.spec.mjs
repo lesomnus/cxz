@@ -21,14 +21,14 @@ function stream(rows) {
     Buffer.from([2, 0, 0, 0, 2, 123, 125]),
   ]);
 }
-function loginDetail(sessionKey = "original-creation") {
+function loginDetail(sessionKey = "original-creation", account = "work1") {
   const w = new BinaryWriter()
     .tag(1, WireType.LengthDelimited)
     .string("PROJECT_LOGIN_REQUIRED")
     .tag(2, WireType.LengthDelimited)
     .string("cxz.auth");
   for (const [key, value] of [
-    ["account", "work1"],
+    ["account", account],
     ["session_key", sessionKey],
   ])
     w.tag(3, WireType.LengthDelimited).bytes(
@@ -46,7 +46,7 @@ function loginDetail(sessionKey = "original-creation") {
 }
 async function fixture(
   page,
-  { state = "idle", authFailure = true, forkError } = {},
+  { state = "idle", authFailure = true, forkError, forkReady, resumeError } = {},
 ) {
   const id = (v) => Buffer.from(v.padEnd(16, "0")).toString("base64");
   const project = {
@@ -56,13 +56,20 @@ async function fixture(
     workspace: "/workspace",
     status: { containerState: "CONTAINER_STATE_RUNNING" },
   };
-  const account = {
+  const initialAccount = {
     id: id("account"),
     alias: "work1",
     name: "Claude account",
     agent: "claude",
     authBackend: "project-local-oauth",
   };
+  const nextAccount = {
+    ...initialAccount,
+    id: id("account2"),
+    alias: "work2",
+    name: "Second Claude account",
+  };
+  let account = initialAccount;
   let run = "original-run";
   let authenticated = false;
   let child;
@@ -147,8 +154,8 @@ async function fixture(
         status: 400,
         json: {
           code: "failed_precondition",
-          message: "account work1 needs Claude subscription login",
-          details: [loginDetail(key)],
+          message: `account ${account.alias} needs Claude subscription login`,
+          details: [loginDetail(key, account.alias)],
         },
       });
     for (const [service, value] of [
@@ -157,7 +164,12 @@ async function fixture(
       ["Session", session()],
     ]) {
       const isSession = service === "Session";
-      const items = isSession && child ? [value, child] : [value];
+      const items =
+        service === "Account"
+          ? [initialAccount, nextAccount]
+          : isSession && child
+            ? [value, child]
+            : [value];
       if (path === `/cxz.${service}Service/Get`)
         return send(
           (isSession &&
@@ -190,13 +202,24 @@ async function fixture(
       state = "stopped";
       return send(session());
     }
+    if (path === "/cxz.SessionService/SwitchAccount") {
+      if (state !== "stopped" || q.account?.alias !== nextAccount.alias)
+        return route.fulfill({
+          status: 400,
+          json: { code: "failed_precondition" },
+        });
+      account = nextAccount;
+      return send(session());
+    }
     if (path === "/cxz.SessionService/Resume") {
+      if (resumeError) return route.fulfill({ status: 400, json: resumeError });
       if (!authenticated) return needsLogin();
       run = "resumed-run";
       state = "idle";
       return send(session());
     }
     if (path === "/cxz.SessionService/Fork") {
+      await forkReady;
       if (forkError) return route.fulfill({ status: 400, json: forkError });
       child ??= {
         ...session(),
@@ -276,40 +299,161 @@ test("expired Claude OAuth offers session login and resumes without replaying th
   expect(f.requests.some((r) => r.path.endsWith("/Send"))).toBe(false);
 });
 
-test("Resume's structured credential failure opens Claude login automatically", async ({
+test("the inline composer Resume slides out after Claude login", async ({
   page,
 }) => {
   const f = await fixture(page, { state: "stopped", authFailure: false });
   await expect(
     page.getByRole("button", { name: "Log in again", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Session menu" }).click();
-  await page.getByRole("menuitem", { name: "Resume", exact: true }).click();
+  const toolbar = page.locator(".composer-toolbar");
+  const slot = toolbar.locator("[data-resumable]");
+  const resume = toolbar.getByRole("button", { name: "Resume", exact: true });
+  const stop = toolbar.getByRole("button", {
+    name: "Stop response",
+    exact: true,
+  });
+  await expect(resume).toBeEnabled();
+  await expect(slot.locator(":scope > div")).toHaveAttribute("inert", "");
+  const width = await slot.evaluate((el) => el.offsetWidth);
+  expect(await resume.evaluate((el) => el.offsetWidth)).toBe(width);
+  await resume.click();
   const panel = page.getByRole("region", { name: "Provider login" });
   await expect(panel).toBeVisible();
   expect(f.requests.filter((r) => r.path.endsWith("/Stop"))).toHaveLength(0);
+  await slot.evaluate((el) => {
+    el.addEventListener("transitionrun", (event) => {
+      if (
+        event.propertyName === "translate" &&
+        event.target === el.lastElementChild &&
+        el.dataset.resumable === "false"
+      )
+        el.dataset.slideOverflow = getComputedStyle(el).overflow;
+    });
+  });
   f.complete();
   await expect
     .poll(() => f.requests.filter((r) => r.path.endsWith("/Resume")).length)
     .toBe(2);
   await expect(panel).toBeHidden();
+  await expect(slot).toHaveAttribute("data-slide-overflow", "clip");
+  await expect(resume).toHaveCount(0);
+  await expect(stop).toBeVisible();
+  await expect(slot).toHaveCSS("overflow", "visible");
+  expect(await slot.evaluate((el) => el.offsetWidth)).toBe(width);
 });
 
-test("Fork saves the conversation before OAuth and only starts the child after login", async ({
+async function changeAccount(page, confirmLabel) {
+  await page.getByRole("button", { name: "Session menu" }).click();
+  const change = page.getByRole("menuitem", { name: "Change account" });
+  await expect(change.locator('[data-icon="switch-account"]')).toBeVisible();
+  await change.click();
+  const dialog = page.getByRole("dialog", { name: "Change account" });
+  await dialog.getByRole("combobox", { name: "Account" }).click();
+  await page.getByRole("option", { name: /Second Claude account/ }).click();
+  await dialog.getByRole("button", { name: confirmLabel, exact: true }).click();
+  await expect(dialog).toBeHidden();
+}
+
+function accountSwitchRequests(requests) {
+  return requests
+    .filter(({ path }) =>
+      /^\/cxz\.SessionService\/(Stop|SwitchAccount|Start|Resume|Send)$/.test(
+        path,
+      ),
+    )
+    .map(({ path, q }) => ({ operation: path.split("/").at(-1), ...q }));
+}
+
+test("changing a running session's account resumes with the new account", async ({
   page,
 }) => {
-  const f = await fixture(page, { authFailure: false });
+  const f = await fixture(page, { state: "working", authFailure: false });
+  await changeAccount(page, "Stop and change");
+  const panel = page.getByRole("region", { name: "Provider login" });
+  await expect(panel).toBeVisible();
+  expect(accountSwitchRequests(f.requests)).toMatchObject([
+    { operation: "Stop", runId: "original-run" },
+    { operation: "SwitchAccount", account: { alias: "work2" } },
+    { operation: "Resume", runId: "original-run" },
+  ]);
+  expect(f.sockets[0].url.searchParams.get("account")).toBe("work2");
+  f.complete();
+  await expect(panel).toBeHidden();
+  await expect
+    .poll(() =>
+      accountSwitchRequests(f.requests).map(({ operation }) => operation),
+    )
+    .toEqual(["Stop", "SwitchAccount", "Resume", "Resume"]);
+});
+
+test("changing a stopped session's account leaves it stopped", async ({
+  page,
+}) => {
+  const f = await fixture(page, { state: "stopped", authFailure: false });
+  const account = page
+    .locator(".composer-meta")
+    .getByRole("group", { name: "Account", exact: true });
+  await expect(account).toHaveText("Claude account");
+  await expect(account.getByRole("img", { name: "Claude" })).toBeVisible();
+  const width = await account.evaluate((el) => el.offsetWidth);
+  await changeAccount(page, "Change");
+  await expect(account).toHaveText("Second Claude account");
+  expect(await account.evaluate((el) => el.offsetWidth)).toBe(width);
+  expect(accountSwitchRequests(f.requests)).toMatchObject([
+    { operation: "SwitchAccount", account: { alias: "work2" } },
+  ]);
+});
+
+test("a failed automatic start reports the account change separately", async ({
+  page,
+}) => {
+  const f = await fixture(page, {
+    authFailure: false,
+    resumeError: { code: "unavailable", message: "runtime unreachable" },
+  });
+  await changeAccount(page, "Stop and change");
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({
+        hasText:
+          "Account changed. Could not start the session. runtime unreachable",
+      }),
+  ).toBeVisible();
+  expect(
+    accountSwitchRequests(f.requests).map(({ operation }) => operation),
+  ).toEqual(["Stop", "SwitchAccount", "Resume"]);
+});
+
+test("Fork waits for the new session, opens it, and only starts it after login", async ({
+  page,
+}) => {
+  const forkResponse = Promise.withResolvers();
+  const f = await fixture(page, {
+    authFailure: false,
+    forkReady: forkResponse.promise,
+  });
   const choose = async (name) => {
     await page.getByRole("button", { name: "Session menu" }).click();
     await page.getByRole("menuitem", { name, exact: true }).click();
   };
-  await choose("Fork");
+  const forks = () => f.requests.filter((r) => r.path.endsWith("/Fork"));
+  try {
+    await choose("Fork");
+    await expect(
+      page.getByRole("menuitem", { name: "Fork", exact: true }),
+    ).toHaveAttribute("aria-busy", "true");
+    await expect.poll(() => forks().length).toBe(1);
+    await expect(page).toHaveURL(/\/c\/@local\/session\/seal$/);
+  } finally {
+    forkResponse.resolve();
+  }
   await expect(page).toHaveURL(/\/c\/@local\/session\/forked-seal$/);
   await expect(page.locator("article.input .message-body").last()).toHaveText(
     "Please continue",
   );
   const panel = page.getByRole("region", { name: "Provider login" });
-  const forks = () => f.requests.filter((r) => r.path.endsWith("/Fork"));
   const starts = () => f.requests.filter((r) => r.path.endsWith("/Start"));
   expect(forks()).toHaveLength(1);
   expect(starts()).toHaveLength(0);
@@ -317,8 +461,12 @@ test("Fork saves the conversation before OAuth and only starts the child after l
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("Continue in the fork");
   const send = page.getByRole("button", { name: "Send", exact: true });
+  const start = page
+    .locator(".composer-toolbar")
+    .getByRole("button", { name: "Start", exact: true });
   await expect(send).toBeDisabled();
-  await choose("Start");
+  await expect(start).toBeEnabled();
+  await start.click();
   await expect(panel).toBeVisible();
   await expect.poll(() => f.sockets.length).toBe(1);
   expect(f.sockets[0].url.searchParams.get("account")).toBe("work1");
@@ -337,6 +485,7 @@ test("Fork saves the conversation before OAuth and only starts the child after l
   f.complete();
   await expect(panel).toBeHidden();
   await expect(send).toBeEnabled();
+  await expect(start).toHaveCount(0);
   expect(forks()).toHaveLength(1);
   expect(starts()).toHaveLength(3);
   for (const { q } of starts()) expect(q.ref).toEqual({ runtimeId: "child" });

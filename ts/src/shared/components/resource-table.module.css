@@ -12,17 +12,6 @@
   );
 }
 
-.section.section {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: var(--ui-section-group-gap) 0 var(--ui-section-padding);
-}
-
-.section.section[data-fill-height] {
-  height: 100%;
-}
-
 .table,
 .panelTable {
   --ui-table-row-height: var(--resource-table-control-size);
@@ -45,10 +34,6 @@
 
 .panelTable {
   --ui-table-selected-background: var(--ui-shade-51);
-}
-
-.panelTable thead th {
-  background: var(--ui-section-background);
 }
 
 .panelTable tbody :is(td, th) {
@@ -77,19 +62,6 @@
   height: var(--resource-table-control-height);
   min-height: 0;
   padding: var(--ui-control-inset);
-}
-
-.tile.tile {
-  --resource-link-radius: var(--ui-space);
-  box-sizing: border-box;
-  display: flex;
-  width: 100%;
-  height: var(--resource-table-control-height);
-  min-height: 0;
-  padding: 0 var(--ui-control-inline-inset);
-  border-radius: var(--resource-link-radius);
-  text-align: left;
-  font: inherit;
 }
 
 .identity {

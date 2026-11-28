@@ -1,14 +1,4 @@
 .link {
-  max-width: var(--resource-table-button-width);
-}
-.link > :global(.button-content) {
   width: 100%;
-  min-width: 0;
-  justify-content: space-between;
-  gap: var(--ui-space);
-}
-.arrow {
-  flex: none;
-  width: var(--ui-icon-size-small);
-  height: var(--ui-icon-size-small);
+  max-width: var(--resource-table-button-width);
 }

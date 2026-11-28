@@ -1,18 +1,28 @@
 .form {
   height: min(
-    480px,
+    540px,
     calc(100dvh - 4 * var(--ui-space) - 2 * var(--card-border-width))
   );
 }
-.form .body.body {
-  display: flex;
+.body {
   flex: 1;
-  flex-direction: column;
-  overflow: hidden;
-}
-.scroll {
-  --ui-scroll-area-background: transparent;
 }
 .error {
   overflow-wrap: anywhere;
+}
+.connection {
+  --ui-icon-size-small: var(--ui-icon-size);
+}
+.form .projectNames {
+  margin: 0;
+}
+.settingsMode :global(.segmented-control) {
+  width: calc(100% + 2 * var(--ui-form-control-radius));
+  margin-inline: calc(-1 * var(--ui-form-control-radius));
+}
+.yaml {
+  height: 200px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--ui-form-control-radius);
 }

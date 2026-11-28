@@ -14,14 +14,14 @@ import (
 
 // Register records workspace intent only. Docker operations belong to Up.
 func (m *Manager) Register(ctx context.Context, path, config string) (*api.Project, error) {
-	if p, err := m.resolve(ctx, path); err == nil {
-		return projectView(p), nil
-	}
 	if m.kube != nil {
 		p, err := m.kubeRegister(ctx, path, config)
 		if err != nil {
 			return nil, err
 		}
+		return projectView(p), nil
+	}
+	if p, err := m.resolve(ctx, path); err == nil {
 		return projectView(p), nil
 	}
 	path, err := filepath.Abs(path)

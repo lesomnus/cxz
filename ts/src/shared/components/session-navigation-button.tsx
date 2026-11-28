@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import type { ButtonAnchorProps } from "@lesomnus/nox";
+import type { TableLinkButtonProps } from "@lesomnus/nox";
 import type { IconName } from "#src/shared/icons/icon.tsx";
 import type { Session } from "#gen/cxz/session_pb";
 import { useResourceRoutes } from "#src/shared/navigation/resource-route.ts";
@@ -11,7 +11,10 @@ import styles from "./session-navigation-button.module.css";
 /** Session resource cards share their identity, logo spacing and navigation. */
 export const SessionNavigationButton = forwardRef<
   HTMLAnchorElement,
-  Omit<ButtonAnchorProps, "children" | "href"> & {
+  Omit<
+    TableLinkButtonProps,
+    "variant" | "children" | "href" | "leading" | "detail" | "trailing"
+  > & {
     session: Session;
     annotation?: string;
     unread?: boolean;

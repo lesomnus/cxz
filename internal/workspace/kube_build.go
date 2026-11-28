@@ -21,8 +21,7 @@ import (
 type KubeBuild struct {
 	// BuildKit is the builder's address, as buildctl takes it: tcp://host:port.
 	BuildKit string `json:"buildkit"`
-	// Registry is where images are pushed: host[:port]/path. Each project's
-	// image is Registry/NAME.
+	// Registry is where images are pushed: host[:port]/path.
 	Registry string `json:"registry"`
 	// PullRegistry is how the nodes name the same registry, when that differs
 	// from how the builder reaches it. Empty is Registry.
@@ -35,6 +34,14 @@ type KubeBuild struct {
 }
 
 func (b KubeBuild) enabled() bool { return b.BuildKit != "" && b.Registry != "" }
+
+func (p *Project) kubeImageRepository(registry string) string {
+	name := p.Name
+	if p.Workspace == p.ID {
+		name = p.ID
+	}
+	return strings.TrimRight(registry, "/") + "/" + name
+}
 
 // ProjectBuild is what a project's image is built from, in its workspace.
 type ProjectBuild struct {
@@ -98,7 +105,7 @@ func (m *Manager) BuildProject(ctx context.Context, r *api.BuildProjectInput) (*
 	if _, err = m.containerRun(ctx, p.ContainerID, "test", "-x", buildctlPath); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, "this project's pod has no buildctl; restart it with a manager image that carries one")
 	}
-	repository := strings.TrimRight(settings.Registry, "/") + "/" + p.Name
+	repository := p.kubeImageRepository(settings.Registry)
 	tag := time.Now().UTC().Format("20060102-150405")
 	output := "type=image,name=" + repository + ":" + tag + ",push=true"
 	if settings.Insecure {
@@ -144,7 +151,7 @@ func (m *Manager) BuildProject(ctx context.Context, r *api.BuildProjectInput) (*
 	}
 	// By digest: the image the build made, whatever the tag points to later.
 	p.Kube.Build = &build
-	p.Kube.Built = strings.TrimRight(pull, "/") + "/" + p.Name + "@" + result.Digest
+	p.Kube.Built = p.kubeImageRepository(pull) + "@" + result.Digest
 	if err = m.save(ctx, p); err != nil {
 		return nil, err
 	}

@@ -265,7 +265,7 @@ for (const width of [390, 1280]) {
     await expect(
       page
         .getByRole("region", { name: "Session list", exact: true })
-        .locator(".panel-scroll-content"),
+        .locator('[data-scroll-area="viewport"]'),
     ).toHaveCount(0);
     const viewport = page.locator(
       "[data-resource-page] > .panel-scroll-region > .panel-scroll-content",

@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   Button,
   Dialog,
@@ -14,18 +21,30 @@ import {
 import { parseAlias } from "@lesomnus/payday/slug";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Connection } from "#src/shared/api/connection.ts";
-import { useRemote } from "#src/shared/api/use-remote.ts";
+import { useProjectConnection } from "#src/shared/api/project-connection.ts";
+import { kubernetesWorkspace } from "#src/shared/api/project-id.ts";
+import { ConnectionIcon } from "#src/shared/components/connection-icon.tsx";
 import { useDialogClose } from "#src/shared/components/dialog-close.ts";
 import { ErrorNotice } from "#src/shared/errors/error-notice.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { useRouteConnections } from "#src/app/router.tsx";
-import { projectAddClient } from "./project-add-target";
+import { KubernetesProjectFields } from "./kubernetes-project-fields";
+import {
+  defaultKubernetesProjectSettings,
+  readKubernetesProjectSettings,
+} from "./kubernetes-project-settings";
 import { validateProjectField } from "./project-edit";
 import styles from "./project-add.module.css";
 
-const emptyDraft = { workspace: "", config: "", name: "", alias: "" };
-const kubeName = /^[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?$/;
+type ProjectDraft = {
+  workspace: string;
+  name: string;
+  alias: string;
+  config?: string;
+};
+
+const emptyDraft: ProjectDraft = { workspace: "", name: "", alias: "" };
 
 export function ProjectAdd({
   c,
@@ -51,11 +70,7 @@ export function ProjectAdd({
     connections.find((item) => item.baseUrl === c.baseUrl) ??
     connections[0];
   const target = entry && { ...entry, baseUrl: entry.baseUrl || c.baseUrl };
-  const runtime = useRemote(
-    (signal) => projectAddClient(c, target!, signal),
-    [c, target?.baseUrl],
-    { enabled: !!target },
-  );
+  const runtime = useProjectConnection(c, target?.baseUrl);
   const active =
     target && runtime.data?.baseUrl === target.baseUrl
       ? runtime.data
@@ -63,23 +78,21 @@ export function ProjectAdd({
   const backend = active?.backend;
   const docker = backend === "docker";
   const kubernetes = backend === "kubernetes";
-  const workspace = draft.workspace.trim();
-  const valid = !!active && !!workspace && (docker || kubernetes);
-  const set = (field: keyof typeof emptyDraft, value: string) =>
+  const config =
+    draft.config ?? (kubernetes ? defaultKubernetesProjectSettings : "");
+  const kubeSettings = useMemo(
+    () => (kubernetes ? readKubernetesProjectSettings(config) : undefined),
+    [config, kubernetes],
+  );
+  const workspace = kubernetes ? kubernetesWorkspace : draft.workspace.trim();
+  const valid = !!active && (docker ? !!workspace : !!kubeSettings?.value);
+  const set = (field: keyof ProjectDraft, value: string) =>
     setDraft((old) => ({ ...old, [field]: value }));
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!valid || !active || !target || request.current || !dialog.open) return;
     setError("");
-    if (kubernetes && !kubeName.test(workspace)) {
-      setError(
-        t(
-          "Use 1–40 lowercase letters, digits or hyphens, starting and ending with a letter or digit.",
-        ),
-      );
-      return;
-    }
     const name = draft.name.trim();
     const alias = draft.alias.trim();
     const invalid =
@@ -98,7 +111,10 @@ export function ProjectAdd({
           workspace,
           name,
           alias: alias ? parseAlias(alias) : "",
-          config: draft.config.trim(),
+          // Older managers also accept the JSON representation of these settings.
+          config: kubeSettings
+            ? JSON.stringify(kubeSettings.value)
+            : config.trim(),
         },
         { signal: controller.signal, timeoutMs: 30000 },
       );
@@ -116,6 +132,7 @@ export function ProjectAdd({
 
   return (
     <Dialog
+      className="dialog-outside-scrollbar"
       open={dialog.open}
       onClose={dialog.dismiss}
       onClosed={dialog.onClosed}
@@ -128,7 +145,7 @@ export function ProjectAdd({
         </DialogHeader>
         <DialogBody className={styles.body}>
           <ScrollArea
-            className={styles.scroll}
+            scrollbarOffset={-8}
             scrollbarLabel={t("Project details")}
           >
             <Form
@@ -137,14 +154,29 @@ export function ProjectAdd({
               disabled={busy}
               aria-label={t("Project details")}
             >
-              <FormField label={t("Connection")}>
+              <FormField label={t("Connection")} className={styles.connection}>
                 <ValueMenu
                   label={t("Connection")}
+                  menuClassName={styles.connection}
                   value={target?.handle ?? ""}
                   disabled={busy || !connections.length}
                   options={connections.map((item) => ({
                     value: item.handle,
                     label: item.alias,
+                    icon: (
+                      <ConnectionIcon
+                        c={c}
+                        transport={item.entry?.transport}
+                        backend={
+                          item.handle === target?.handle ? backend : undefined
+                        }
+                        baseUrl={
+                          item.handle === target?.handle
+                            ? undefined
+                            : item.baseUrl
+                        }
+                      />
+                    ),
                   }))}
                   choose={(value) => {
                     if (target?.handle === value) return;
@@ -176,61 +208,66 @@ export function ProjectAdd({
               )}
               {(docker || kubernetes) && active && (
                 <>
-                  <FormField
-                    label={t(docker ? "Workspace path" : "Project name")}
-                    htmlFor={`${id}-workspace`}
+                  {docker && (
+                    <FormField
+                      label={t("Workspace path")}
+                      htmlFor={`${id}-workspace`}
+                    >
+                      <input
+                        id={`${id}-workspace`}
+                        required
+                        autoComplete="off"
+                        value={draft.workspace}
+                        placeholder="/workspace/my-project"
+                        onChange={(event) =>
+                          set("workspace", event.target.value)
+                        }
+                      />
+                    </FormField>
+                  )}
+                  <Form
+                    as="fieldset"
+                    columns={2}
+                    className={styles.projectNames}
                   >
-                    <input
-                      id={`${id}-workspace`}
-                      required
-                      autoComplete="off"
-                      value={draft.workspace}
-                      placeholder={
-                        docker ? "/workspace/my-project" : "my-project"
-                      }
-                      onChange={(event) => set("workspace", event.target.value)}
-                    />
-                  </FormField>
-                  <FormField label={t("Display name")} htmlFor={`${id}-name`}>
-                    <input
-                      id={`${id}-name`}
-                      value={draft.name}
-                      onChange={(event) => set("name", event.target.value)}
-                    />
-                  </FormField>
-                  <FormField label={t("Alias")} htmlFor={`${id}-alias`}>
-                    <input
-                      id={`${id}-alias`}
-                      autoComplete="off"
-                      value={draft.alias}
-                      onChange={(event) => set("alias", event.target.value)}
-                    />
-                  </FormField>
-                  <FormField
-                    label={t(
-                      docker
-                        ? "Devcontainer configuration"
-                        : "Image or Kubernetes settings (JSON)",
-                    )}
-                    htmlFor={`${id}-config`}
-                  >
-                    {docker ? (
+                    <FormField label={t("Display name")} htmlFor={`${id}-name`}>
+                      <input
+                        id={`${id}-name`}
+                        value={draft.name}
+                        onChange={(event) => set("name", event.target.value)}
+                      />
+                    </FormField>
+                    <FormField label={t("Alias")} htmlFor={`${id}-alias`}>
+                      <input
+                        id={`${id}-alias`}
+                        autoComplete="off"
+                        value={draft.alias}
+                        onChange={(event) => set("alias", event.target.value)}
+                      />
+                    </FormField>
+                  </Form>
+                  {docker ? (
+                    <FormField
+                      label={t("Devcontainer configuration")}
+                      htmlFor={`${id}-config`}
+                    >
                       <input
                         id={`${id}-config`}
                         placeholder=".devcontainer/devcontainer.json"
-                        value={draft.config}
+                        value={config}
                         onChange={(event) => set("config", event.target.value)}
                       />
-                    ) : (
-                      <textarea
-                        id={`${id}-config`}
-                        rows={3}
-                        placeholder="node:24"
-                        value={draft.config}
-                        onChange={(event) => set("config", event.target.value)}
+                    </FormField>
+                  ) : (
+                    kubeSettings && (
+                      <KubernetesProjectFields
+                        source={config}
+                        settings={kubeSettings}
+                        onChange={(value) => set("config", value)}
+                        disabled={busy}
                       />
-                    )}
-                  </FormField>
+                    )
+                  )}
                 </>
               )}
               {error && <ErrorNotice error={error} local />}

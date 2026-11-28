@@ -1,0 +1,68 @@
+$schema: http://json-schema.org/draft-07/schema#
+title: cxz Kubernetes project settings
+type: object
+additionalProperties: false
+properties:
+  image:
+    type: string
+    description: Container image for the project.
+    examples: ["ghcr.io/lesomnus/dev-golang:1.27"]
+  user:
+    type: string
+    description: Container user that runs cxz and the agent sessions.
+    examples: [hypnos]
+  storage:
+    type: string
+    description: Capacity of the project's persistent volume.
+    examples: ["20Gi"]
+  requests:
+    $ref: "#/definitions/resources"
+    description: Resources requested for the project container.
+  limits:
+    $ref: "#/definitions/resources"
+    description: Resource limits for the project container.
+  build:
+    type: object
+    description: Dockerfile build settings. Paths are relative to the workspace.
+    additionalProperties: false
+    properties:
+      dockerfile:
+        type: string
+        examples: [Dockerfile]
+      context:
+        type: string
+        examples: ["."]
+  built:
+    type: string
+    description: Image digest recorded by cxz after an image build.
+    readOnly: true
+  pod_templates:
+    type: array
+    description: Names of Kubernetes PodTemplate resources in the manager's namespace.
+    items:
+      type: string
+  pod_template:
+    type: object
+    description: Inline PodTemplate applied after the named templates.
+    additionalProperties: false
+    properties:
+      metadata:
+        type: object
+        description: Metadata to merge into the project's pod.
+      spec:
+        type: object
+        description: Pod spec fields to merge into the project's pod.
+definitions:
+  resources:
+    type: object
+    additionalProperties:
+      type: string
+    properties:
+      cpu:
+        type: string
+        description: Kubernetes CPU quantity. Quote whole numbers.
+        examples: ["500m", "1"]
+      memory:
+        type: string
+        description: Kubernetes memory quantity.
+        examples: ["2Gi"]

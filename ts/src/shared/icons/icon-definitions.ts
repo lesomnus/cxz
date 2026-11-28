@@ -184,6 +184,16 @@ export const iconDefinitions = {
   "error-resolved": solid([circle(8, 8, 3.5)]),
   details: info,
   terminal: line([path("m3 4 4 4-4 4m6 0h4")], "0 0 16 16"),
+  "connection-docker": line([
+    rect(3, 6, 18, 12, 1.5),
+    path("M7 9v6m5-6v6m5-6v6"),
+  ]),
+  "connection-gateway": line([
+    rect(3, 4, 18, 7, 1.5),
+    rect(3, 13, 18, 7, 1.5),
+    path("M7 7.5h.01M7 16.5h.01"),
+  ]),
+  "connection-local": line([rect(3, 4, 18, 12, 1.5), path("M12 16v4m-4 0h8")]),
   upload: line([
     path("M12 15V3m-4 4 4-4 4 4M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"),
   ]),
@@ -310,6 +320,7 @@ export const iconDefinitions = {
     }),
   ]),
   accounts: line([circle(12, 8, 4), path("M4 21v-3a8 8 0 0 1 16 0v3")]),
+  "switch-account": line([path("M4 14 14 4M8 4h6v6M20 10 10 20m0-6v6h6")]),
   memory: solid(
     [
       rect(3, 3, 4, 18, 0.75),

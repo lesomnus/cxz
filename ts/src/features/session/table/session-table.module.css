@@ -14,29 +14,17 @@
   min-width: 0;
   min-height: 0;
 }
-.skeletonFrame.fillHeight {
+:global([data-table-section="fill"]) .skeletonFrame {
   flex: 1;
 }
 .scroll {
-  --ui-scroll-area-background: var(--ui-shade-24);
-  flex: none;
-  height: calc(
+  --ui-table-viewport-height: calc(
     var(--session-header-height) + var(--session-visible-rows) *
       var(--session-row-height) + 7 * var(--session-row-gap)
   );
 }
-.scroll :global(.panel-scroll-content) {
+.scroll > :global([data-scroll-area="viewport"]) {
   overscroll-behavior: none;
-}
-.scroll :global(.panel-scroll-inner) {
-  --ui-scroll-area-content-inset: 0px;
-}
-.scroll.fillHeight {
-  flex: 1;
-  height: 100%;
-}
-.scroll :global(.panel-scroll-fade-top) {
-  top: var(--session-header-height);
 }
 .table {
   --session-project-column-space: 0px;

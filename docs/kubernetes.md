@@ -126,15 +126,22 @@ Restart the manager after changing it (`kubectl rollout restart
 deploy/cxz-manager`); projects take it on their next start.
 
 A project may override `image`, `user`, `storage`, `requests` and `limits`, and
-add [pod templates](#pod-templates), when it is added, as JSON or just an image reference:
+add [pod templates](#pod-templates), when it is added. In the web dialog, edit
+these settings in the form or switch to the schema-aware YAML editor. The CLI
+accepts YAML, JSON, or an image reference.
 
 ```sh
-cxz project add web --config '{"image": "node:24", "limits": {"memory": "8Gi"}}'
-cxz project add api --config golang:1.27
+cxz project add --name 'Web' --alias web --config 'image: node:24
+limits:
+  memory: 8Gi'
+cxz project add --name 'API' --alias api --config golang:1.27
 ```
 
-A project's name is its identity in the cluster: 1–40 lowercase letters, digits
-or hyphens. Its workspace is `/workspaces/NAME`.
+Each new project mounts its own volume at `/workspace`. The container, agent
+sessions and terminals start there. Use a project alias or UUID to select a
+project, since this path is shared by every project. The API reports the
+container path in `status.remote_workspace`. Existing projects keep the
+workspace path saved with their sessions.
 
 ## Pod templates
 
@@ -151,7 +158,7 @@ GPU, a sidecar, a CA bundle -- is added to project pods with the cluster's own
 ```
 
 ```sh
-cxz project add --config '{"pod_templates": ["gpu"], "pod_template": {"spec": {"containers": [{"name": "runtime", "env": [{"name": "NODE_ENV", "value": "test"}]}]}}}' ml
+cxz project add --name 'ML' --alias ml --config '{"pod_templates": ["gpu"], "pod_template": {"spec": {"containers": [{"name": "runtime", "env": [{"name": "NODE_ENV", "value": "test"}]}]}}}'
 ```
 
 A template's `runtime` container is merged into the project's own container;
@@ -288,7 +295,8 @@ in the settings and a project can be built from its own workspace:
 ```
 
 - `buildkit` is a BuildKit daemon's address, as `buildctl --addr` takes it.
-- `registry` is where images are pushed; a project's image is `REGISTRY/NAME`.
+- `registry` is where images are pushed. New projects use `REGISTRY/PROJECT_UUID`.
+  Existing projects keep their name-based repository.
 - `pull_registry` is how the nodes name that registry, when it differs from how
   the builder reaches it — for example a registry the builder reaches as
   `registry:5000` and the nodes pull as `localhost:30500`. Empty is `registry`.
@@ -332,7 +340,7 @@ not published on any node.
 
 | Path | From |
 |---|---|
-| `/workspaces/NAME` | the project volume, `workspace/` |
+| `/workspace` | the project volume, `workspace/` |
 | `/cxz/state` | the project volume, `state/` — the runtime's databases, sessions, logins |
 | `/cxz/tools` | the project volume, `tools/` — cxz and the agent CLIs |
 | `/cxz/secrets` | an in-memory emptyDir |

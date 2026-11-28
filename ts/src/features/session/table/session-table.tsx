@@ -10,6 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableScrollArea,
   SkeletonGroup,
   useRangeSelection,
 } from "@lesomnus/nox";
@@ -18,7 +19,6 @@ import type { Project } from "#gen/cxz/project_pb";
 import type { Session } from "#gen/cxz/session_pb";
 import { AgentBrand } from "#src/shared/components/agent-brand.tsx";
 import { SessionIndicator } from "#src/features/session/components/session-indicator.tsx";
-import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { Checkbox } from "#src/shared/components/checkbox.tsx";
 import { t } from "#src/shared/i18n/i18n.ts";
 import {
@@ -61,7 +61,6 @@ export function SessionTable({
   showToolbar = true,
   title = t("Sessions"),
   horizontalScrollbar = false,
-  fillHeight = false,
   scroll = "bounded",
   variant = "default",
 }: {
@@ -80,7 +79,6 @@ export function SessionTable({
   showToolbar?: boolean;
   title?: string;
   horizontalScrollbar?: boolean;
-  fillHeight?: boolean;
   /** Page lists use their existing scroll area; dashboards own bounded scrolling. */
   scroll?: "bounded" | "page";
   variant?: "default" | "compact" | "overview";
@@ -89,7 +87,7 @@ export function SessionTable({
   const compact = variant !== "default";
   const overview = variant === "overview";
   const pageScroll = scroll === "page";
-  const Frame = pageScroll ? "div" : PanelScroll;
+  const Frame = pageScroll ? "div" : TableScrollArea;
   const scrollProps = pageScroll
     ? {}
     : {
@@ -172,12 +170,12 @@ export function SessionTable({
         </div>
       )}
       <SkeletonGroup
-        className={`${styles.skeletonFrame} ${fillHeight ? styles.fillHeight : ""}`}
+        className={styles.skeletonFrame}
         animated={showAccount && sessions.some(accountPending)}
       >
         <Frame
           {...scrollProps}
-          className={`${styles.frame} ${resourceTableStyles.layout} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? styles.overview : ""} ${fillHeight ? styles.fillHeight : ""}`}
+          className={`${styles.frame} ${resourceTableStyles.layout} ${pageScroll ? "" : styles.scroll} ${compact ? styles.compact : ""} ${overview ? styles.overview : ""}`}
           role="region"
           aria-label={t("Session list")}
         >
@@ -260,6 +258,7 @@ export function SessionTable({
                   s.account?.alias ||
                   "—";
                 const checked = selected.has(s.runtimeId);
+                const inactive = resumableStates.has(s.status?.state ?? "");
                 const projectResource =
                   s.project &&
                   (projectsById.get(key(s.project.id)) || s.project);
@@ -274,6 +273,7 @@ export function SessionTable({
                         {...projectLocation(project)}
                         name={projectName || project}
                         alias={projectResource?.alias}
+                        inactive={inactive}
                       />
                     ) : (
                       "—"
@@ -294,11 +294,8 @@ export function SessionTable({
                 return (
                   <TableRow
                     key={s.runtimeId}
-                    className={resourceTableStyles.row}
                     selected={checked}
-                    data-inactive={
-                      resumableStates.has(s.status?.state ?? "") || undefined
-                    }
+                    data-inactive={inactive || undefined}
                   >
                     <TableCell className={styles.selectionCell}>
                       <Checkbox
@@ -322,6 +319,7 @@ export function SessionTable({
                           session={s}
                           navigationIcon={navigationIcon}
                           unread={completed.has(s.runtimeId)}
+                          inactive={inactive}
                         />
                       </TableCell>
                     ) : (
@@ -366,6 +364,7 @@ export function SessionTable({
                             {...accountLocation(accountAlias)}
                             name={accountName}
                             alias={accountAlias}
+                            inactive={inactive}
                           />
                         ) : (
                           accountName

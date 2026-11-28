@@ -1,17 +1,16 @@
-import { forwardRef, type ReactNode } from "react";
+import { forwardRef } from "react";
 import { createLink } from "@tanstack/react-router";
-import { ButtonAnchor, Skeleton, type ButtonAnchorProps } from "@lesomnus/nox";
+import { LinkButton, Skeleton, type TableLinkButtonProps } from "@lesomnus/nox";
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
 import styles from "./resource-navigation-button.module.css";
 import tableStyles from "./resource-table.module.css";
 
 const ResourceNavigationAnchor = forwardRef<
   HTMLAnchorElement,
-  Omit<ButtonAnchorProps, "children"> & {
+  Omit<TableLinkButtonProps, "variant" | "children" | "detail" | "trailing"> & {
     name: string;
     alias?: string;
     annotation?: string;
-    leading?: ReactNode;
     navigationIcon?: IconName;
   }
 >(function ResourceNavigationAnchor(
@@ -19,35 +18,32 @@ const ResourceNavigationAnchor = forwardRef<
     name,
     alias,
     annotation,
-    leading,
     navigationIcon = "open-external",
     className = "",
-    rowAware = true,
     ...props
   },
   ref,
 ) {
   return (
-    <ButtonAnchor
+    <LinkButton
       {...props}
-      rowAware={rowAware}
+      variant="table"
       ref={ref}
       title={props.title ?? name}
-      className={`route-link ${tableStyles.layout} ${tableStyles.tile} ${styles.link} ${className}`}
-    >
-      {leading}
-      <span className={tableStyles.identity}>
-        <span className={tableStyles.identityTitle}>{name}</span>
-        {(alias || annotation) && (
-          <span className={tableStyles.identityDetail}>
+      className={`route-link ${tableStyles.layout} ${styles.link} ${className}`}
+      detail={
+        alias || annotation ? (
+          <>
             {alias}
             {alias && annotation && " · "}
             {annotation && <span>{annotation}</span>}
-          </span>
-        )}
-      </span>
-      <Icon name={navigationIcon} className={styles.arrow} />
-    </ButtonAnchor>
+          </>
+        ) : undefined
+      }
+      trailing={<Icon name={navigationIcon} />}
+    >
+      {name}
+    </LinkButton>
   );
 });
 
@@ -58,7 +54,7 @@ export function ResourceNavigationPlaceholder() {
     <Skeleton
       variant="rect"
       height="var(--resource-table-control-height)"
-      className={`${tableStyles.layout} ${tableStyles.tile} ${styles.link}`}
+      className={`${tableStyles.layout} ${styles.link}`}
     />
   );
 }

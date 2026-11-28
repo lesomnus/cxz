@@ -35,10 +35,11 @@ import { Button } from "@lesomnus/nox";
 import { Code, ConnectError } from "@connectrpc/connect";
 import { authenticationRequired } from "#src/features/session/model/session-auth.ts";
 import {
+  isSessionRunning,
   manageSession,
   prepareSessionLogin,
-  resumableStates,
   sessionLoginSnapshot,
+  sessionStartLabel,
   type SessionOperation,
 } from "#src/features/session/model/session-actions.ts";
 import { performSessionControl } from "#src/features/session/model/session-control-batch.ts";
@@ -58,6 +59,7 @@ import React, {
 } from "react";
 import { useQuery } from "@lesomnus/payday/react";
 import { SessionService, SessionRefSchema } from "#gen/cxz/session_svc_pb";
+import type { Account } from "#gen/cxz/account_pb";
 import type { Project } from "#gen/cxz/project_pb";
 import type { Session, SessionEvent } from "#gen/cxz/session_pb";
 import { Connection, ref } from "#src/shared/api/connection.ts";
@@ -520,6 +522,22 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const transcript = useMemo(() => transcriptRows(events), [events]);
   const aux = useSessionAux(c, id);
   const s = current.data;
+  const accountId = key(s?.account?.id);
+  const subscribeAccount = useCallback(
+    (changed: () => void) =>
+      c.store.subscribe(
+        accountId ? [c.store.rowKey("cxz.Account", accountId)] : [],
+        changed,
+      ),
+    [c, accountId],
+  );
+  const accountRow = useSyncExternalStore(subscribeAccount, () =>
+    c.store.row("cxz.Account", accountId),
+  );
+  const account = useMemo(
+    () => accountRow && c.store.message<Account>("cxz.Account", accountRow),
+    [c, accountRow],
+  );
   const sessionProject =
     s?.project?.id &&
     projects.find((project) => key(project.id) === key(s.project!.id));
@@ -776,39 +794,40 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       ),
     });
   }
+  async function applySessionOperation(
+    session: Session,
+    operation: SessionOperation,
+    run: string,
+  ) {
+    const sessionRef = create(SessionRefSchema, ref(id));
+    try {
+      const updated = await manageSession(
+        c.sessions,
+        sessionRef,
+        operation,
+        run,
+      );
+      c.store.apply("cxz.Session", [{ id: updated.id, value: updated }]);
+    } catch (error) {
+      if (
+        !mounted.current ||
+        operation === "stop" ||
+        session.agent !== "claude" ||
+        !(error instanceof ConnectError) ||
+        error.code !== Code.FailedPrecondition
+      )
+        throw error;
+      const bound = await sessionLoginSnapshot(c.sessions, sessionRef, run);
+      if (
+        !requiredSessionLogin(error, bound.account?.alias ?? "", bound.clientId)
+      )
+        throw error;
+      await openSessionLogin(run);
+    }
+  }
   function manage(operation: SessionOperation, run: string) {
     return action(
-      async (session) => {
-        const sessionRef = create(SessionRefSchema, ref(id));
-        try {
-          const updated = await manageSession(
-            c.sessions,
-            sessionRef,
-            operation,
-            run,
-          );
-          c.store.apply("cxz.Session", [{ id: updated.id, value: updated }]);
-        } catch (error) {
-          if (
-            !mounted.current ||
-            operation === "stop" ||
-            session.agent !== "claude" ||
-            !(error instanceof ConnectError) ||
-            error.code !== Code.FailedPrecondition
-          )
-            throw error;
-          const bound = await sessionLoginSnapshot(c.sessions, sessionRef, run);
-          if (
-            !requiredSessionLogin(
-              error,
-              bound.account?.alias ?? "",
-              bound.clientId,
-            )
-          )
-            throw error;
-          await openSessionLogin(run);
-        }
-      },
+      (session) => applySessionOperation(session, operation, run),
       operation === "resume" && !run ? String : undefined,
     );
   }
@@ -824,8 +843,10 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
   const needsLogin =
     s?.agent === "claude" &&
     authenticationRequired(metadata, s.status?.runId ?? "");
+  const startLabel = sessionStartLabel(s);
   const forkRequest = useRef<ForkRequest | undefined>(undefined);
   async function forkConversation() {
+    const sourcePath = router.state.location.pathname;
     return action(async (session) => {
       const run = session.status?.runId ?? "";
       const previous = forkRequest.current;
@@ -843,29 +864,44 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         { timeoutMs: 120000 },
       );
       c.store.apply("cxz.Session", [{ id: child.id, value: child }]);
-      await navigate(sessionLocation(child));
+      if (mounted.current && router.state.location.pathname === sourcePath)
+        await navigate(sessionLocation(child));
       forkRequest.current = undefined;
     }, forkFailure);
   }
-  // Stopping is part of the switch: a running agent keeps the old account's
-  // configuration as its home, so the server refuses to move it underneath.
   async function switchAccount(alias: string) {
     return action(async (session) => {
       const sessionRef = create(SessionRefSchema, ref(id));
-      if (!resumableStates.has(session.status?.state ?? "")) {
-        const stopped = await manageSession(
-          c.sessions,
-          sessionRef,
+      const restart = isSessionRunning(session);
+      if (restart)
+        await applySessionOperation(
+          session,
           "stop",
           session.status?.runId ?? "",
         );
-        c.store.apply("cxz.Session", [{ id: stopped.id, value: stopped }]);
-      }
       const updated = await c.sessions.switchAccount(
         { ref: sessionRef, account: accountRef(alias) },
         { timeoutMs: 60000 },
       );
       c.store.apply("cxz.Session", [{ id: updated.id, value: updated }]);
+      if (restart) {
+        try {
+          await applySessionOperation(
+            updated,
+            "resume",
+            updated.status?.runId ?? "",
+          );
+        } catch (error) {
+          setError(
+            t("Account changed. Could not start the session. {error}", {
+              error:
+                error instanceof ConnectError
+                  ? error.rawMessage
+                  : String(error),
+            }),
+          );
+        }
+      }
     });
   }
   function control(s: Session) {
@@ -1264,6 +1300,12 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
         lookupPaths={projectId ? lookupPaths : undefined}
         workspace={sessionProject?.status?.remoteWorkspace}
         canSend={!busy && !!s?.status?.runId && !!draft.trim()}
+        start={
+          startLabel && {
+            label: startLabel,
+            run: () => manage("resume", s?.status?.runId ?? ""),
+          }
+        }
         queued={
           <QueuedMessage
             text={queued}
@@ -1329,7 +1371,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               toggle: () => showTerminal(!terminalVisibleRef.current),
             }}
             busy={busy}
-            fork={() => forkConversation()}
+            fork={forkConversation}
             tools={[
               {
                 label: "Insert secret",
@@ -1349,7 +1391,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
               },
               {
                 label: t("Change account"),
-                icon: <Icon name="accounts" />,
+                icon: <Icon name="switch-account" />,
                 disabled:
                   busy ||
                   !s?.account ||
@@ -1390,6 +1432,7 @@ function ConversationContent({ c, id, projects }: ConversationProps) {
       >
         <ModelSettings
           session={s}
+          account={account}
           info={info}
           catalog={catalog}
           busy={busy}

@@ -37,6 +37,11 @@ is subject to Anthropic approval; download availability is not approval.
 https://anthropic.com/press-kit
 https://www.anthropic.com/legal/trademark-guidelines
 
+Kubernetes and the Kubernetes logo are trademarks of The Linux Foundation.
+The official black and white Kubernetes icons are used to identify the Kubernetes runtime.
+https://github.com/cncf/artwork/tree/921aef4681c989a5dc5a026ef3e5ab56169a0820/projects/kubernetes/icon
+https://www.linuxfoundation.org/legal/trademark-usage
+
 
 Monaco Editor 0.55.1
 https://github.com/microsoft/monaco-editor

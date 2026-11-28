@@ -14,7 +14,7 @@ import { useLocale } from "#src/shared/i18n/i18n-react.tsx";
 import { AudioWaveform, Button, InkSparkle } from "@lesomnus/nox";
 import { useTheme } from "#src/shared/theme/theme.tsx";
 import { ComposerAurora } from "./composer-aurora";
-import { TurnControls } from "./turn-controls";
+import { TurnControls, type TurnStartAction } from "./turn-controls";
 import { BackgroundJobsIndicator } from "./background-jobs-indicator";
 import type { TurnProgress } from "#src/features/session/model/turn-progress.ts";
 import { ComposerEditor, type ComposerEditorHandle } from "./composer-editor";
@@ -64,6 +64,7 @@ export function ConversationComposer({
   downloadAttachment,
   onDraftAssetsChange,
   queued,
+  start,
   children,
   autoFocus = false,
   initialSelection,
@@ -98,6 +99,7 @@ export function ConversationComposer({
   downloadAttachment?: DownloadAttachment;
   onDraftAssetsChange?: () => void;
   queued?: ReactNode;
+  start?: TurnStartAction;
   children?: ReactNode;
   autoFocus?: boolean;
   initialSelection?: EditorSelection;
@@ -197,6 +199,7 @@ export function ConversationComposer({
               busy={busy}
               working={working}
               interrupt={interrupt}
+              start={start}
             >
               <BackgroundJobsIndicator
                 count={backgroundJobs}

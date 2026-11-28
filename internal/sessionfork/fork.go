@@ -60,10 +60,20 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 		return result, err
 	}
 	dir := core.Dir(root, target.ID)
+	profile := accounts.SessionRoot(root, target.CreateID)
+	// An attempt that died before writing session.json leaves this directory
+	// and whatever it had copied into the child's profile. Both are this fork's
+	// own debris rather than another's: the child's identity is derived from the
+	// source and the client id, and the caller answers from session.json when
+	// there is one, so a directory without it belongs to an attempt that did not
+	// finish. Left alone it makes every retry fail on a name already taken,
+	// which a person then has to go and delete by hand.
+	if err = clearAbandoned(dir, profile, target.Account, target.Kind); err != nil {
+		return result, err
+	}
 	if err = os.Mkdir(dir, 0700); err != nil {
 		return result, err
 	}
-	profile := accounts.SessionRoot(root, target.CreateID)
 	copiedHistory := ""
 	profileCreated := true
 	if err = os.Mkdir(profile, 0700); os.IsExist(err) {
@@ -193,7 +203,7 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 	if err != nil {
 		return result, err
 	}
-	if _, err = store.Fill(ctx, child, 0); err != nil {
+	if _, err = store.BulkFill(ctx, child, 0); err != nil {
 		store.Close()
 		return result, err
 	}
@@ -211,6 +221,41 @@ func Prepare(ctx context.Context, root string, source core.Session, snapshot cor
 		return result, err
 	}
 	return target, core.SyncDir(filepath.Join(root, "sessions"))
+}
+
+// clearAbandoned removes what an unfinished attempt at this same child left
+// behind. It is deliberately narrow: a child directory that already names
+// itself in session.json is a finished fork and is never touched here -- the
+// caller returns that one instead of forking again.
+func clearAbandoned(dir, profile, account, kind string) error {
+	if _, err := os.Stat(filepath.Join(dir, "session.json")); err == nil {
+		return nil
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	if err := remove(dir); err != nil {
+		return fmt.Errorf("clear unfinished fork: %w", err)
+	}
+	// And the provider history it may have half-copied, which copyHistory
+	// refuses to write over. The profile is keyed by the child's creation id,
+	// so this is the child's own copy and no one else's.
+	folder := "projects"
+	if kind == "codex" {
+		folder = "sessions"
+	}
+	if err := remove(filepath.Join(accounts.Config(profile, account), folder)); err != nil {
+		return fmt.Errorf("clear unfinished fork history: %w", err)
+	}
+	return nil
+}
+
+func remove(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return os.RemoveAll(path)
 }
 
 func copyHistory(ctx context.Context, source, target, vendor string) (string, error) {

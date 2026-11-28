@@ -1,0 +1,6 @@
+.brand {
+  display: block;
+  width: var(--ui-icon-size-small);
+  height: var(--ui-icon-size-small);
+  object-fit: contain;
+}
