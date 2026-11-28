@@ -25,6 +25,7 @@ import { PanelScroll } from "#src/shared/components/panel-scroll.tsx";
 import { ProjectPicker } from "#src/shared/components/project-picker.tsx";
 import { ToolbarIconButton } from "#src/shared/components/toolbar-icon-button.tsx";
 import { useRemote } from "#src/shared/api/use-remote.ts";
+import { loadSessionSizes } from "#src/features/session/model/session-storage.ts";
 import {
   ACCOUNT_INFO_TTL,
   ACCOUNT_LIST_KEY,
@@ -242,6 +243,14 @@ function ProjectDashboard({
   sessions: Session[];
   sessionsLoading?: boolean;
 }) {
+  // Measured by walking files, so it is read once for the sessions on screen
+  // rather than watched: a size that changes while it is being looked at is not
+  // what this is for. The identity below is the list, so recreating a session
+  // or adding one re-reads it.
+  const sizes = useRemote(
+    (signal) => loadSessionSizes(c.sessions, sessions, { signal }),
+    [c, sessions.map((s) => s.runtimeId).join(" ")],
+  );
   async function save(field: ProjectField, value: string) {
     const updated = await editProject(c.projects, p, field, value);
     c.store.apply("cxz.Project", [{ id: updated.id, value: updated }]);
@@ -383,6 +392,7 @@ function ProjectDashboard({
             variant="overview"
             showToolbar={false}
             horizontalScrollbar
+            sizes={sizes.data}
             addSession={() => setAddingSession(true)}
           />
           {addingSession && (

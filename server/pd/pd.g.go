@@ -8474,6 +8474,11 @@ func (s interceptSession) Logs(ctx context.Context, req *resource.SessionLogsReq
 		resource.SessionService_Logs_FullMethodName, req, s.SessionServiceServer.Logs)
 }
 
+func (s interceptSession) Storage(ctx context.Context, req *resource.SessionRef) (*resource.SessionStorageReply, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
+		resource.SessionService_Storage_FullMethodName, req, s.SessionServiceServer.Storage)
+}
+
 func (s interceptSession) Permission(ctx context.Context, req *resource.SessionPermissionRequest) (*resource.SessionReceipt, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SessionServiceServer,
 		resource.SessionService_Permission_FullMethodName, req, s.SessionServiceServer.Permission)
@@ -11264,6 +11269,8 @@ func unpack(op *pdpb.Op) (proto.Message, error) {
 		v = &resource.SessionReadAgentDataRequest{}
 	case resource.SessionService_Logs_FullMethodName:
 		v = &resource.SessionLogsRequest{}
+	case resource.SessionService_Storage_FullMethodName:
+		v = &resource.SessionRef{}
 	case resource.SessionService_Permission_FullMethodName:
 		v = &resource.SessionPermissionRequest{}
 	case resource.SessionService_Send_FullMethodName:
@@ -11522,6 +11529,8 @@ func dispatch(ctx context.Context, s resource.Server, m string, v proto.Message)
 		res, err = s.Session().ReadAgentData(ctx, v.(*resource.SessionReadAgentDataRequest))
 	case resource.SessionService_Logs_FullMethodName:
 		res, err = s.Session().Logs(ctx, v.(*resource.SessionLogsRequest))
+	case resource.SessionService_Storage_FullMethodName:
+		res, err = s.Session().Storage(ctx, v.(*resource.SessionRef))
 	case resource.SessionService_Permission_FullMethodName:
 		res, err = s.Session().Permission(ctx, v.(*resource.SessionPermissionRequest))
 	case resource.SessionService_Send_FullMethodName:

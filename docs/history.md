@@ -270,3 +270,32 @@ A client that rebuilt them by reading the journal would pay for the conversation
 to find a record, and over a remote link that cost is the conversation's size,
 not the record's. `cxz session get`, the background overlay, the model selector
 and `cxz conversation search` all read reduced state for this reason.
+
+## What a session takes up
+
+`cxz.SessionService/Storage` answers for one session, by walking its files when
+asked rather than keeping a running total something has to remember to correct.
+Three numbers, told apart by who decides that they grow:
+
+| | what it is | who prunes it |
+|---|---|---|
+| `journal_bytes` | the session's own directory: its conversation database, that database's write-ahead log, the logs beside them | cxz, through the retention policy above |
+| `provider_bytes` | the provider's transcripts for this session, inside its profile | nobody |
+| `profile_bytes` | the rest of the profile: the agent's home, caches, temporary files | nobody |
+
+`provider_bytes` is the one that grows without cxz deciding that it should, and
+it is the number to look at before concluding that a session has to be started
+over. It is the provider's own file in the provider's own shape: measured on one
+installation, a single Codex rollout had reached 888.3MB for one conversation,
+of which 355.2MB was every item written a second time as an `item_completed`
+event beside the `response_item` that already held it, and 134.5MB was 154
+compaction snapshots averaging 852KB.
+
+The Manager reads these directly, since project state lives in its own volume.
+A Kubernetes project, or an installation that still keeps state in project
+volumes, is asked through its runtime instead.
+
+This is disk usage and nothing else. For what a conversation *contains* — event
+counts, text bytes, tokens, cost — see
+[conversation statistics](conversation-stats.md), which is a different question
+and a different number.

@@ -1043,4 +1043,8 @@ export const messages = {
   "Could not unpin this account.": "이 계정의 고정을 해제하지 못했습니다.",
   "A provider account can only be unpinned, not chosen by hand.":
     "공급자 계정은 손으로 지정할 수 없고 고정 해제만 할 수 있습니다.",
+  Size: "크기",
+  "Conversation: {value}": "대화: {value}",
+  "Provider transcripts: {value}": "공급자 전사: {value}",
+  "Agent files: {value}": "에이전트 파일: {value}",
 } satisfies LanguagePack;

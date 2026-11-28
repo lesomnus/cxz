@@ -32,6 +32,8 @@ service SessionService {
   rpc CopyAgentData(SessionCopyAgentDataRequest) returns (SessionReceipt);
   rpc ReadAgentData(SessionReadAgentDataRequest) returns (SessionReadAgentDataReply);
   rpc Logs(SessionLogsRequest) returns (SessionLogsReply);
+  // What this session takes up on disk, measured when asked.
+  rpc Storage(SessionRef) returns (SessionStorageReply);
   rpc Permission(SessionPermissionRequest) returns (SessionReceipt);
   rpc Send(SessionSendRequest) returns (SessionReceipt);
   rpc Attach(SessionAttachRequest) returns (SessionAttachment);
@@ -220,6 +222,19 @@ message SessionPermissionRequest { SessionRef ref = 1; string run_id = 2; string
 
 message SessionLogsRequest { SessionRef ref = 1; bool project = 2; }
 message SessionLogsReply { string text = 1; }
+
+// Told apart by who decides that it grows. The journal is cxz's own, and a
+// retention policy can reach it. The provider's transcripts are the agent's,
+// grow with every turn, and nothing in cxz prunes them -- which is the number
+// to look at before deciding a session has to be started over. The rest of the
+// profile is the agent's home, caches and temporary files, worth seeing when it
+// is unexpectedly the large part.
+message SessionStorageReply {
+  int64 journal_bytes = 1;
+  int64 provider_bytes = 2;
+  int64 profile_bytes = 3;
+  int64 total_bytes = 4;
+}
 
 message SessionReadAgentDataRequest { SessionRef ref = 1; string path = 2; }
 message SessionReadAgentDataReply { bytes data = 1; }

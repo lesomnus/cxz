@@ -28,6 +28,7 @@ service Sessions {
   rpc CopyMemory(CopyMemoryRequest) returns (Receipt);
   rpc Memory(MemoryRequest) returns (MemoryReply);
   rpc Logs(LogsRequest) returns (LogsReply);
+  rpc SessionStorage(SessionRef) returns (StorageUsage);
   rpc Permission(PermissionInput) returns (Receipt);
   rpc Send(Input) returns (Receipt);
   rpc Attach(AttachmentInput) returns (Attachment);
@@ -258,6 +259,21 @@ message PermissionInput { string session_id = 1; string run_id = 2; string clien
 
 message LogsRequest { string session_id = 1; bool project = 2; }
 message LogsReply { string text = 1; }
+
+// What one session takes up where it actually lives. Measured by walking, so it
+// is what the filesystem says rather than a running total something has to
+// remember to keep correct, and it is a moment rather than a subscription.
+message StorageUsage {
+  // The session's own directory: its conversation database, that database's
+  // write-ahead log, and the logs beside them.
+  int64 journal_bytes = 1;
+  // The provider's transcripts for this session, inside its profile. This is
+  // the part that grows without anything in cxz deciding that it should.
+  int64 provider_bytes = 2;
+  // The rest of the profile: the agent's home, its caches, its temporary files.
+  int64 profile_bytes = 3;
+  int64 total_bytes = 4;
+}
 
 message FileMappingsInput { bytes bundle = 1; }
 

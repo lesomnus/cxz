@@ -612,11 +612,14 @@ test("project sessions use the index column layout with bounded resource links a
 }) => {
   await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
   const table = page.getByRole("table", { name: "Sessions", exact: true });
+  // Size reads last before the controls: it is what a long-running session is
+  // judged on, and it arrives after a measurement rather than with the row.
   await expect(table.getByRole("columnheader")).toHaveText([
     "",
     "",
     "Name",
     "Account",
+    "Size",
     "",
   ]);
   await expect(
@@ -1443,4 +1446,25 @@ test("the project icon uses the shared searchable value menu with a named icon g
   await info.screenshot({
     path: testInfo.outputPath("project-information.png"),
   });
+});
+
+test("the project's session list reports what each session takes up", async ({
+  page,
+}) => {
+  await page.goto("/iframe.html?id=pages-projects--default&viewMode=story");
+  const sessions = page.getByRole("region", { name: "Project sessions" });
+  const size = sessions.getByRole("columnheader", {
+    name: "Size",
+    exact: true,
+  });
+  await expect(size).toBeVisible();
+  const cells = sessions.locator("tbody tr td.size, tbody tr td[class*=size]");
+  const values = await cells.allTextContents();
+  expect(values.length).toBeGreaterThan(0);
+  // Binary units, and the total rather than one of the parts.
+  for (const value of values)
+    expect(value).toMatch(/^\d+(\.\d)? (B|KiB|MiB|GiB)$/);
+  // The parts are in reach without leaving the row.
+  const title = await cells.first().getAttribute("title");
+  expect(title).toContain("Provider transcripts:");
 });

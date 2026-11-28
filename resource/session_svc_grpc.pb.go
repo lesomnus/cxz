@@ -38,6 +38,7 @@ const (
 	SessionService_CopyAgentData_FullMethodName     = "/cxz.SessionService/CopyAgentData"
 	SessionService_ReadAgentData_FullMethodName     = "/cxz.SessionService/ReadAgentData"
 	SessionService_Logs_FullMethodName              = "/cxz.SessionService/Logs"
+	SessionService_Storage_FullMethodName           = "/cxz.SessionService/Storage"
 	SessionService_Permission_FullMethodName        = "/cxz.SessionService/Permission"
 	SessionService_Send_FullMethodName              = "/cxz.SessionService/Send"
 	SessionService_Attach_FullMethodName            = "/cxz.SessionService/Attach"
@@ -110,6 +111,8 @@ type SessionServiceClient interface {
 	CopyAgentData(ctx context.Context, in *SessionCopyAgentDataRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	ReadAgentData(ctx context.Context, in *SessionReadAgentDataRequest, opts ...grpc.CallOption) (*SessionReadAgentDataReply, error)
 	Logs(ctx context.Context, in *SessionLogsRequest, opts ...grpc.CallOption) (*SessionLogsReply, error)
+	// What this session takes up on disk, measured when asked.
+	Storage(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*SessionStorageReply, error)
 	Permission(ctx context.Context, in *SessionPermissionRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Send(ctx context.Context, in *SessionSendRequest, opts ...grpc.CallOption) (*SessionReceipt, error)
 	Attach(ctx context.Context, in *SessionAttachRequest, opts ...grpc.CallOption) (*SessionAttachment, error)
@@ -355,6 +358,16 @@ func (c *sessionServiceClient) Logs(ctx context.Context, in *SessionLogsRequest,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SessionLogsReply)
 	err := c.cc.Invoke(ctx, SessionService_Logs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sessionServiceClient) Storage(ctx context.Context, in *SessionRef, opts ...grpc.CallOption) (*SessionStorageReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SessionStorageReply)
+	err := c.cc.Invoke(ctx, SessionService_Storage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -665,6 +678,8 @@ type SessionServiceServer interface {
 	CopyAgentData(context.Context, *SessionCopyAgentDataRequest) (*SessionReceipt, error)
 	ReadAgentData(context.Context, *SessionReadAgentDataRequest) (*SessionReadAgentDataReply, error)
 	Logs(context.Context, *SessionLogsRequest) (*SessionLogsReply, error)
+	// What this session takes up on disk, measured when asked.
+	Storage(context.Context, *SessionRef) (*SessionStorageReply, error)
 	Permission(context.Context, *SessionPermissionRequest) (*SessionReceipt, error)
 	Send(context.Context, *SessionSendRequest) (*SessionReceipt, error)
 	Attach(context.Context, *SessionAttachRequest) (*SessionAttachment, error)
@@ -773,6 +788,9 @@ func (UnimplementedSessionServiceServer) ReadAgentData(context.Context, *Session
 }
 func (UnimplementedSessionServiceServer) Logs(context.Context, *SessionLogsRequest) (*SessionLogsReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method Logs not implemented")
+}
+func (UnimplementedSessionServiceServer) Storage(context.Context, *SessionRef) (*SessionStorageReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method Storage not implemented")
 }
 func (UnimplementedSessionServiceServer) Permission(context.Context, *SessionPermissionRequest) (*SessionReceipt, error) {
 	return nil, status.Error(codes.Unimplemented, "method Permission not implemented")
@@ -1192,6 +1210,24 @@ func _SessionService_Logs_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SessionServiceServer).Logs(ctx, req.(*SessionLogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SessionService_Storage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SessionRef)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SessionServiceServer).Storage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SessionService_Storage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SessionServiceServer).Storage(ctx, req.(*SessionRef))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1642,6 +1678,10 @@ var SessionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Logs",
 			Handler:    _SessionService_Logs_Handler,
+		},
+		{
+			MethodName: "Storage",
+			Handler:    _SessionService_Storage_Handler,
 		},
 		{
 			MethodName: "Permission",

@@ -294,6 +294,19 @@ func (c *Client) Logs(ctx context.Context, r *api.LogsRequest, opts ...grpc.Call
 	return &api.LogsReply{Text: v.GetText()}, nil
 }
 
+func (c *Client) SessionStorage(ctx context.Context, r *api.SessionRef, opts ...grpc.CallOption) (*api.StorageUsage, error) {
+	v, err := c.sessions.Storage(ctx, sr(r.Id), opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &api.StorageUsage{
+		JournalBytes:  v.GetJournalBytes(),
+		ProviderBytes: v.GetProviderBytes(),
+		ProfileBytes:  v.GetProfileBytes(),
+		TotalBytes:    v.GetTotalBytes(),
+	}, nil
+}
+
 func (c *Client) FileMappings(ctx context.Context, r *api.FileMappingsInput, opts ...grpc.CallOption) (*api.Receipt, error) {
 	out, err := c.installation.SaveSharedFiles(ctx, resource.SaveSharedFilesRequest_builder{Bundle: r.Bundle}.Build(), opts...)
 	if err != nil {

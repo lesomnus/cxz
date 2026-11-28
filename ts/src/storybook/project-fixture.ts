@@ -18,6 +18,7 @@ import {
   SessionService,
   SessionPatchRequestSchema,
   SessionNotificationSchema,
+  SessionStorageReplySchema,
 } from "#gen/cxz/session_svc_pb";
 import { NotificationService } from "#gen/cxz/payday/notification_pb";
 
@@ -573,6 +574,19 @@ export function projectFixture(
         if (!session)
           throw new ConnectError("Session not found", Code.NotFound);
         return clone(SessionSchema, session);
+      },
+      // Sizes are what the project's session list compares, so they differ per
+      // session and one of them is large enough to be worth acting on.
+      storage: (request) => {
+        const id = String(request.key.value);
+        const found = sessions.findIndex((s) => s.runtimeId === id);
+        const scale = BigInt(Math.max(0, found) + 1);
+        return create(SessionStorageReplySchema, {
+          journalBytes: 4_194_304n * scale,
+          providerBytes: 268_435_456n * scale,
+          profileBytes: 1_048_576n * scale,
+          totalBytes: (4_194_304n + 268_435_456n + 1_048_576n) * scale,
+        });
       },
       stop: (request, context) => control("stop", request, context.signal),
       start: (request, context) => control("start", request, context.signal),
