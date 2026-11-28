@@ -1044,5 +1044,9 @@ export const messages = {
   "Could not unpin this account.": "Could not unpin this account.",
   "A provider account can only be unpinned, not chosen by hand.":
     "A provider account can only be unpinned, not chosen by hand.",
+  Size: "Size",
+  "Conversation: {value}": "Conversation: {value}",
+  "Provider transcripts: {value}": "Provider transcripts: {value}",
+  "Agent files: {value}": "Agent files: {value}",
 } as const;
 export type Message = keyof typeof messages;

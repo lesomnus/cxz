@@ -1,4 +1,8 @@
 import { Icon, type IconName } from "#src/shared/icons/icon.tsx";
+import {
+  formatBytes,
+  type SessionSize,
+} from "#src/features/session/model/session-storage.ts";
 import { EditableValue } from "#src/shared/components/editable-value.tsx";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { key } from "@lesomnus/payday/store";
@@ -55,6 +59,7 @@ export function SessionTable({
   loading,
   addSession,
   showAccount = true,
+  sizes,
   showProject = false,
   projectFirst = false,
   navigationIcon,
@@ -72,6 +77,8 @@ export function SessionTable({
   loading?: boolean;
   addSession?: () => void;
   showAccount?: boolean;
+  /** Measured sizes by runtime id; absent while they are still being read. */
+  sizes?: Map<string, SessionSize>;
   showProject?: boolean;
   /** Put project identity before the session name in the all-sessions list. */
   projectFirst?: boolean;
@@ -85,6 +92,10 @@ export function SessionTable({
 }) {
   const { projectLocation, accountLocation } = useResourceRoutes();
   const compact = variant !== "default";
+  // Shown once something has been measured. A connection that cannot answer --
+  // an older Manager, a project whose runtime is unreachable -- leaves the
+  // column out rather than leaving an empty one in.
+  const showSize = !!sizes?.size;
   const overview = variant === "overview";
   const pageScroll = scroll === "page";
   const Frame = pageScroll ? "div" : TableScrollArea;
@@ -201,6 +212,7 @@ export function SessionTable({
                 <col className={styles.projectColumn} />
               )}
               {!overview && <col className={styles.stateColumn} />}
+              {showSize && <col className={styles.sizeColumn} />}
               <col className={styles.actionsColumn} />
             </colgroup>
             <TableHeader>
@@ -226,6 +238,11 @@ export function SessionTable({
                   <TableHead scope="col">{t("Project")}</TableHead>
                 )}
                 {!overview && stateHeading}
+                {showSize && (
+                  <TableHead scope="col" className={styles.size}>
+                    {t("Size")}
+                  </TableHead>
+                )}
                 <TableHead
                   scope="col"
                   className={styles.actions}
@@ -373,6 +390,17 @@ export function SessionTable({
                     )}
                     {showProject && !projectFirst && projectCell}
                     {!overview && state}
+                    {showSize && (
+                      <TableCell
+                        className={styles.size}
+                        aria-busy={!sizes!.has(s.runtimeId) || undefined}
+                        title={sizeBreakdown(sizes!.get(s.runtimeId))}
+                      >
+                        {sizes!.has(s.runtimeId)
+                          ? formatBytes(sizes!.get(s.runtimeId)!.total)
+                          : "—"}
+                      </TableCell>
+                    )}
                     <TableCell className={resourceTableStyles.rowActionCell}>
                       <SessionTableMenu
                         sessions={[s]}
@@ -426,4 +454,15 @@ function stateLabel(s: Session) {
     default:
       return t("Unknown");
   }
+}
+
+// The total is what the column compares; the parts are what a person acts on,
+// and only the provider's transcripts are beyond any retention policy here.
+function sizeBreakdown(size?: SessionSize) {
+  if (!size) return undefined;
+  return [
+    t("Conversation: {value}", { value: formatBytes(size.journal) }),
+    t("Provider transcripts: {value}", { value: formatBytes(size.provider) }),
+    t("Agent files: {value}", { value: formatBytes(size.profile) }),
+  ].join("\n");
 }

@@ -52,6 +52,17 @@
 .accountColumn {
   width: var(--session-account-column-width);
 }
+/* Sizes are read down the column to compare them, so they are aligned on their
+   last digit and given a fixed width: a cell that still says nothing must not
+   move the ones that already do. */
+.sizeColumn {
+  width: 7ch;
+}
+.size {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .projectColumn {
   width: var(--session-project-column-width);
 }
