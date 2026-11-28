@@ -57,6 +57,11 @@ func ValidColumn(column string) bool {
 	return false
 }
 
+var (
+	// DefaultLoginIdentity holds the default value on creation for the "login_identity" field.
+	DefaultLoginIdentity string
+)
+
 // OrderOption defines the ordering options for the Account queries.
 type OrderOption func(*sql.Selector)
 

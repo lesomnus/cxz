@@ -480,6 +480,16 @@ func LoginIdentityHasSuffix(v string) predicate.Account {
 	return predicate.Account(sql.FieldHasSuffix(FieldLoginIdentity, v))
 }
 
+// LoginIdentityIsNil applies the IsNil predicate on the "login_identity" field.
+func LoginIdentityIsNil() predicate.Account {
+	return predicate.Account(sql.FieldIsNull(FieldLoginIdentity))
+}
+
+// LoginIdentityNotNil applies the NotNil predicate on the "login_identity" field.
+func LoginIdentityNotNil() predicate.Account {
+	return predicate.Account(sql.FieldNotNull(FieldLoginIdentity))
+}
+
 // LoginIdentityEqualFold applies the EqualFold predicate on the "login_identity" field.
 func LoginIdentityEqualFold(v string) predicate.Account {
 	return predicate.Account(sql.FieldEqualFold(FieldLoginIdentity, v))

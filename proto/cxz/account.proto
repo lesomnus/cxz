@@ -27,7 +27,7 @@ message Account {
   // Empty where cxz cannot tell: a brokered Codex account pins its subject
   // centrally instead (internal/accounts/broker.go), and a Claude credential
   // that carries no account of its own leaves the pin as it was.
-  string login_identity = 10;
+  string login_identity = 10 [(orm.field) = {default: ""}];
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];
