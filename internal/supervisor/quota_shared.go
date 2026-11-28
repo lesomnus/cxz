@@ -36,7 +36,7 @@ func (s *Supervisor) claimClaudeQuota() bool {
 	out, err := s.exchangeQuota("", nil)
 	if err != nil {
 		// An older manager may not provide the coordinator yet.
-		return time.Since(s.quotaFallbackAt) >= time.Minute
+		return time.Since(s.quotaPolledAt) >= time.Minute
 	}
 	if out.Snapshot.Observed > s.quotaObserved && len(out.Snapshot.Payload) > 0 {
 		s.recordSharedQuota(out.Snapshot.Payload, out.Snapshot.Observed)
@@ -101,7 +101,7 @@ func (s *Supervisor) readRemoteClaudeQuota() {
 			return
 		}
 		if err != nil {
-			if time.Since(s.quotaFallbackAt) >= time.Minute {
+			if time.Since(s.quotaPolledAt) >= time.Minute {
 				s.sendClaudeQuota()
 			}
 			return

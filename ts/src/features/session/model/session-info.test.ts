@@ -81,6 +81,22 @@ describe("composer session information", () => {
     expect(info.remaining).toBeUndefined();
     expect(info.quotas).toEqual([]);
   });
+  it("keeps Claude quota local to the current run and excludes inherited fork history", () => {
+    const previous = event(
+      "usage",
+      "get_usage",
+      { rate_limits: { seven_day: { utilization: 99 } } },
+      "previous",
+    );
+    const current = event("usage", "get_usage", {
+      rate_limits: { seven_day: { utilization: 1 } },
+    });
+    const active = session("claude");
+    expect(sessionInfo(active, [previous]).remaining).toBeUndefined();
+    expect(sessionInfo(active, [current, previous]).remaining).toBe(99);
+    active.status!.runId = "";
+    expect(sessionInfo(active, [previous]).remaining).toBeUndefined();
+  });
   it("keeps every Codex bucket for the popover while selecting only the current model's quota", () => {
     const usage = event("usage", "account/rateLimits/updated", {
       rateLimitsByLimitId: {
