@@ -16,6 +16,7 @@ func (e *Account) Proto() *resource.Account {
 	x.SetDesc(e.Desc)
 	x.SetAgent(e.Agent)
 	x.SetAuthBackend(e.AuthBackend)
+	x.SetLoginIdentity(e.LoginIdentity)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

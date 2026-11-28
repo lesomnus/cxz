@@ -15,6 +15,19 @@ message Account {
   string desc = 6;
   string agent = 8 [(orm.field) = {immutable: true}];
   string auth_backend = 9 [(orm.field) = {immutable: true}];
+  // Which provider account the first login landed on, as an opaque equality
+  // token -- never a readable subject, so it stays as unrevealing here as
+  // everything else in this message. An alias is a label the person chose; it
+  // is this that decides whether a later login is the same account. A login
+  // that computes a different token is refused, because the usual way to get
+  // one is that the provider's consent page silently approved whoever the
+  // browser was already signed in as. Clearing it is how a person says the
+  // change is deliberate; the next login then pins whatever it reaches.
+  //
+  // Empty where cxz cannot tell: a brokered Codex account pins its subject
+  // centrally instead (internal/accounts/broker.go), and a Claude credential
+  // that carries no account of its own leaves the pin as it was.
+  string login_identity = 10;
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {immutable: true, default: ""}];

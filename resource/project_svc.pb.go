@@ -2382,15 +2382,16 @@ func (b0 ProjectTerminalReply_builder) Build() *ProjectTerminalReply {
 }
 
 type ProjectLoginRequest struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *ProjectRef            `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Account     *AccountRef            `protobuf:"bytes,2,opt,name=account"`
-	xxx_hidden_SessionKey  *string                `protobuf:"bytes,3,opt,name=session_key,json=sessionKey"`
-	xxx_hidden_Input       []byte                 `protobuf:"bytes,4,opt,name=input"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Ref           *ProjectRef            `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Account       *AccountRef            `protobuf:"bytes,2,opt,name=account"`
+	xxx_hidden_SessionKey    *string                `protobuf:"bytes,3,opt,name=session_key,json=sessionKey"`
+	xxx_hidden_Input         []byte                 `protobuf:"bytes,4,opt,name=input"`
+	xxx_hidden_LoginIdentity *string                `protobuf:"bytes,5,opt,name=login_identity,json=loginIdentity"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *ProjectLoginRequest) Reset() {
@@ -2449,6 +2450,16 @@ func (x *ProjectLoginRequest) GetInput() []byte {
 	return nil
 }
 
+func (x *ProjectLoginRequest) GetLoginIdentity() string {
+	if x != nil {
+		if x.xxx_hidden_LoginIdentity != nil {
+			return *x.xxx_hidden_LoginIdentity
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ProjectLoginRequest) SetRef(v *ProjectRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -2459,7 +2470,7 @@ func (x *ProjectLoginRequest) SetAccount(v *AccountRef) {
 
 func (x *ProjectLoginRequest) SetSessionKey(v string) {
 	x.xxx_hidden_SessionKey = &v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 5)
 }
 
 func (x *ProjectLoginRequest) SetInput(v []byte) {
@@ -2467,7 +2478,12 @@ func (x *ProjectLoginRequest) SetInput(v []byte) {
 		v = []byte{}
 	}
 	x.xxx_hidden_Input = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 4)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 5)
+}
+
+func (x *ProjectLoginRequest) SetLoginIdentity(v string) {
+	x.xxx_hidden_LoginIdentity = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 5)
 }
 
 func (x *ProjectLoginRequest) HasRef() bool {
@@ -2498,6 +2514,13 @@ func (x *ProjectLoginRequest) HasInput() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
+func (x *ProjectLoginRequest) HasLoginIdentity() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
+}
+
 func (x *ProjectLoginRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -2516,6 +2539,11 @@ func (x *ProjectLoginRequest) ClearInput() {
 	x.xxx_hidden_Input = nil
 }
 
+func (x *ProjectLoginRequest) ClearLoginIdentity() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_LoginIdentity = nil
+}
+
 type ProjectLoginRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -2523,6 +2551,13 @@ type ProjectLoginRequest_builder struct {
 	Account    *AccountRef
 	SessionKey *string
 	Input      []byte
+	// The account's pinned login identity, as the Manager reads it from the
+	// Account resource when it opens this stream against a project runtime. The
+	// runtime keeps its own replica of that row, but a person who clears the pin
+	// expects the very next login to be accepted, so the authoritative value
+	// travels with the request instead of being looked up again. A Manager never
+	// forwards what a client put here: it builds this frame itself.
+	LoginIdentity *string
 }
 
 func (b0 ProjectLoginRequest_builder) Build() *ProjectLoginRequest {
@@ -2532,23 +2567,28 @@ func (b0 ProjectLoginRequest_builder) Build() *ProjectLoginRequest {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Account = b.Account
 	if b.SessionKey != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 5)
 		x.xxx_hidden_SessionKey = b.SessionKey
 	}
 	if b.Input != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 4)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
 		x.xxx_hidden_Input = b.Input
+	}
+	if b.LoginIdentity != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 5)
+		x.xxx_hidden_LoginIdentity = b.LoginIdentity
 	}
 	return m0
 }
 
 type ProjectLoginOutput struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Output      []byte                 `protobuf:"bytes,1,opt,name=output"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Output        []byte                 `protobuf:"bytes,1,opt,name=output"`
+	xxx_hidden_LoginIdentity *string                `protobuf:"bytes,2,opt,name=login_identity,json=loginIdentity"`
+	XXX_raceDetectHookData   protoimpl.RaceDetectHookData
+	XXX_presence             [1]uint32
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *ProjectLoginOutput) Reset() {
@@ -2583,12 +2623,27 @@ func (x *ProjectLoginOutput) GetOutput() []byte {
 	return nil
 }
 
+func (x *ProjectLoginOutput) GetLoginIdentity() string {
+	if x != nil {
+		if x.xxx_hidden_LoginIdentity != nil {
+			return *x.xxx_hidden_LoginIdentity
+		}
+		return ""
+	}
+	return ""
+}
+
 func (x *ProjectLoginOutput) SetOutput(v []byte) {
 	if v == nil {
 		v = []byte{}
 	}
 	x.xxx_hidden_Output = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 1)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 2)
+}
+
+func (x *ProjectLoginOutput) SetLoginIdentity(v string) {
+	x.xxx_hidden_LoginIdentity = &v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 2)
 }
 
 func (x *ProjectLoginOutput) HasOutput() bool {
@@ -2598,15 +2653,31 @@ func (x *ProjectLoginOutput) HasOutput() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 0)
 }
 
+func (x *ProjectLoginOutput) HasLoginIdentity() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
+}
+
 func (x *ProjectLoginOutput) ClearOutput() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 0)
 	x.xxx_hidden_Output = nil
+}
+
+func (x *ProjectLoginOutput) ClearLoginIdentity() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 1)
+	x.xxx_hidden_LoginIdentity = nil
 }
 
 type ProjectLoginOutput_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Output []byte
+	// Reported once, by a project runtime, after a login it accepted. The Manager
+	// writes it to the Account resource when nothing was pinned yet, and does not
+	// pass it on to the client that asked for the login.
+	LoginIdentity *string
 }
 
 func (b0 ProjectLoginOutput_builder) Build() *ProjectLoginOutput {
@@ -2614,8 +2685,12 @@ func (b0 ProjectLoginOutput_builder) Build() *ProjectLoginOutput {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.Output != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 1)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 2)
 		x.xxx_hidden_Output = b.Output
+	}
+	if b.LoginIdentity != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 2)
+		x.xxx_hidden_LoginIdentity = b.LoginIdentity
 	}
 	return m0
 }
@@ -4572,15 +4647,17 @@ const file_cxz_project_svc_g_proto_rawDesc = "" +
 	"\x05ready\x18\x01 \x01(\bR\x05ready\x12\x16\n" +
 	"\x06output\x18\x02 \x01(\fR\x06output\x12\x16\n" +
 	"\x06exited\x18\x03 \x01(\bR\x06exited\x12\x14\n" +
-	"\x05error\x18\x04 \x01(\tR\x05error\"\x9a\x01\n" +
+	"\x05error\x18\x04 \x01(\tR\x05error\"\xc1\x01\n" +
 	"\x13ProjectLoginRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12)\n" +
 	"\aaccount\x18\x02 \x01(\v2\x0f.cxz.AccountRefR\aaccount\x12\x1f\n" +
 	"\vsession_key\x18\x03 \x01(\tR\n" +
 	"sessionKey\x12\x14\n" +
-	"\x05input\x18\x04 \x01(\fR\x05input\",\n" +
+	"\x05input\x18\x04 \x01(\fR\x05input\x12%\n" +
+	"\x0elogin_identity\x18\x05 \x01(\tR\rloginIdentity\"S\n" +
 	"\x12ProjectLoginOutput\x12\x16\n" +
-	"\x06output\x18\x01 \x01(\fR\x06output\"L\n" +
+	"\x06output\x18\x01 \x01(\fR\x06output\x12%\n" +
+	"\x0elogin_identity\x18\x02 \x01(\tR\rloginIdentity\"L\n" +
 	"\x13ProjectPathsRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.cxz.ProjectRefR\x03ref\x12\x12\n" +
 	"\x04path\x18\x02 \x01(\tR\x04path\"b\n" +

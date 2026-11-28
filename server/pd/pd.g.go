@@ -11782,6 +11782,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard batch.Guard) reso
 				{Number: 6, Name: entAccount.FieldDesc, Type: 9, Nullable: false, Key: 0},
 				{Number: 8, Name: entAccount.FieldAgent, Type: 9, Nullable: false, Key: 0},
 				{Number: 9, Name: entAccount.FieldAuthBackend, Type: 9, Nullable: false, Key: 0},
+				{Number: 10, Name: entAccount.FieldLoginIdentity, Type: 9, Nullable: false, Key: 0},
 				{Number: 13, Name: entAccount.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entAccount.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entAccount.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

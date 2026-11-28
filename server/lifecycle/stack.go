@@ -52,6 +52,7 @@ type shared struct {
 	initialMu      sync.Mutex
 	initialized    bool
 	retainedMemory bool
+	manager        bool
 	observedMu     sync.Mutex
 	observedAt     time.Time
 	watchers       atomic.Int64
@@ -83,6 +84,11 @@ type Options struct {
 	Notifications bool
 	// RetainedMemory seeds missing identities without overwriting live runtime status.
 	RetainedMemory bool
+	// Manager marks the installation-wide role. The same handlers also run in
+	// a project runtime, against a replica of these rows that only the Manager
+	// writes, so anything that has to be decided from the authoritative copy
+	// has to know which of the two it is answering as.
+	Manager bool
 }
 
 func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options ...Options) (resource.Server, error) {
@@ -116,6 +122,7 @@ func Build(ctx context.Context, db *sql.DB, r Runtime, o *observe.Log, options .
 	shared := &shared{runtime: r, db: db, resources: client, watch: w, observe: o}
 	if len(options) > 0 {
 		shared.retainedMemory = options[0].RetainedMemory
+		shared.manager = options[0].Manager
 	}
 	stack, err := resource.Build(sessionNamingSink{sink.WithWatch(w)}, pd.InterceptBuild([]grpc.UnaryServerInterceptor{projectReferencesUnary, taskWatchUnary(w)}, []grpc.StreamServerInterceptor{projectReferencesStream}), builder{shared}, pd.AuditBuild(), pd.GateBuild())
 	if err != nil {

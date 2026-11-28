@@ -609,6 +609,23 @@ func (m *AccountMutation) OldAuthBackend(ctx context.Context) (v string, err err
 	return oldValue.AuthBackend, nil
 }
 
+// OldLoginIdentity returns the old "login_identity" field's value of the Account entity.
+// If the Account object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountMutation) OldLoginIdentity(ctx context.Context) (v string, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldLoginIdentity is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldLoginIdentity requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLoginIdentity: %w", err)
+	}
+	return oldValue.LoginIdentity, nil
+}
+
 // OldDateUpdated returns the old "date_updated" field's value of the Account entity.
 // If the Account object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -675,6 +692,8 @@ func (m *AccountMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldAgent(ctx)
 	case account.FieldAuthBackend:
 		return m.OldAuthBackend(ctx)
+	case account.FieldLoginIdentity:
+		return m.OldLoginIdentity(ctx)
 	case account.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case account.FieldDateErased:

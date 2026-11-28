@@ -69,7 +69,7 @@ printf '%s' '{"claudeAiOauth":{"accessToken":"synthetic"}}' > "$CLAUDE_CONFIG_DI
 		t.Fatal(err)
 	}
 	var output bytes.Buffer
-	if err := s.LoginSession(ctx, "project", "work1", "creation", in, &output); err != nil {
+	if _, err := s.LoginSession(ctx, accounts.SessionLogin{Project: "project", Account: "work1", Key: "creation", Input: in, Output: &output}); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(output.String(), "https://example.invalid/login") || strings.Contains(output.String(), "fixture#state") || strings.Contains(output.String(), "synthetic") {
@@ -81,14 +81,14 @@ printf '%s' '{"claudeAiOauth":{"accessToken":"synthetic"}}' > "$CLAUDE_CONFIG_DI
 	if _, err := accounts.Credential(state, "work1", "claude"); err == nil {
 		t.Fatal("login populated the project-wide profile")
 	}
-	if err := s.LoginSession(ctx, "other-project", "work1", "creation", in, io.Discard); status.Code(err) != codes.PermissionDenied {
+	if _, err := s.LoginSession(ctx, accounts.SessionLogin{Project: "other-project", Account: "work1", Key: "creation", Input: in, Output: io.Discard}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("foreign project accepted", err)
 	}
 	lease, err := core.Lock(filepath.Join(accounts.Dir(accounts.SessionRoot(state, "creation"), "work1"), "login.lock"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.LoginSession(ctx, "project", "work1", "creation", in, io.Discard); err == nil {
+	if _, err := s.LoginSession(ctx, accounts.SessionLogin{Project: "project", Account: "work1", Key: "creation", Input: in, Output: io.Discard}); err == nil {
 		t.Fatal("active profile lock bypassed")
 	}
 	lease.Close()
@@ -96,14 +96,17 @@ printf '%s' '{"claudeAiOauth":{"accessToken":"synthetic"}}' > "$CLAUDE_CONFIG_DI
 	if _, err := db.Exec("INSERT INTO sessions VALUES(?,?,?)", "session", raw, "existing"); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.LoginSession(ctx, "project", "work1", "existing", in, io.Discard); status.Code(err) != codes.PermissionDenied {
+	if _, err := s.LoginSession(ctx, accounts.SessionLogin{Project: "project", Account: "work1", Key: "existing", Input: in, Output: io.Discard}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("existing session account changed", err)
 	}
 	request, abort := context.WithCancel(ctx)
 	defer abort()
 	ready := make(chan struct{}, 1)
 	done := make(chan error, 1)
-	go func() { done <- s.LoginSession(request, "project", "work1", "cancelled", in, loginSignalWriter{ready}) }()
+	go func() {
+		_, err := s.LoginSession(request, accounts.SessionLogin{Project: "project", Account: "work1", Key: "cancelled", Input: in, Output: loginSignalWriter{ready}})
+		done <- err
+	}()
 	select {
 	case <-ready:
 		abort()
