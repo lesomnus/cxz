@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file cxz/account.proto.
  */
 export const file_cxz_account: GenFile = /*@__PURE__*/
-  fileDesc("ChFjeHovYWNjb3VudC5wcm90bxIDY3h6IvgCCgdBY2NvdW50EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIVCgVhZ2VudBgIIAEoCUIG6oIWAkABEhwKDGF1dGhfYmFja2VuZBgJIAEoCUIG6oIWAkABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADo6yvwVBBICEAGKuxYuCAkyJgoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAyKMgBOgAqAEInWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFjeHovYWNjb3VudC5wcm90bxIDY3h6IpADCgdBY2NvdW50EhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIVCgVhbGlhcxgEIAEoCUIG6oIWAjABEgwKBG5hbWUYBSABKAkSDAoEZGVzYxgGIAEoCRIVCgVhZ2VudBgIIAEoCUIG6oIWAkABEhwKDGF1dGhfYmFja2VuZBgJIAEoCUIG6oIWAkABEhYKDmxvZ2luX2lkZW50aXR5GAogASgJEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADo6yvwVBBICEAGKuxYuCAkyJgoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAyKMgBOgAqAEInWiBnaXRodWIuY29tL2xlc29tbnVzL2N4ei9yZXNvdXJjZZIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * An agent authentication profile, not a cxz user or tenant. Secrets never
@@ -53,6 +53,24 @@ export type Account = Message<"cxz.Account"> & {
    * @generated from field: string auth_backend = 9;
    */
   authBackend: string;
+
+  /**
+   * Which provider account the first login landed on, as an opaque equality
+   * token -- never a readable subject, so it stays as unrevealing here as
+   * everything else in this message. An alias is a label the person chose; it
+   * is this that decides whether a later login is the same account. A login
+   * that computes a different token is refused, because the usual way to get
+   * one is that the provider's consent page silently approved whoever the
+   * browser was already signed in as. Clearing it is how a person says the
+   * change is deliberate; the next login then pins whatever it reaches.
+   *
+   * Empty where cxz cannot tell: a brokered Codex account pins its subject
+   * centrally instead (internal/accounts/broker.go), and a Claude credential
+   * that carries no account of its own leaves the pin as it was.
+   *
+   * @generated from field: string login_identity = 10;
+   */
+  loginIdentity: string;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

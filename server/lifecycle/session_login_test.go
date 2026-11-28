@@ -28,31 +28,37 @@ import (
 type loginRuntime struct {
 	*fixture
 	cancelled chan struct{}
+	// reports is the identity an accepted login claims to have reached; pinned
+	// collects what each request was told to require.
+	reports string
+	pinned  []string
 }
 
-func (f *loginRuntime) LoginSession(ctx context.Context, project, account, key string, input io.ReadCloser, output io.Writer) error {
-	if project != projectid.Canonical("project") || account != "work1" {
-		return fmt.Errorf("wrong login target")
+func (f *loginRuntime) LoginSession(ctx context.Context, r accounts.SessionLogin) (accounts.SessionLoginResult, error) {
+	none := accounts.SessionLoginResult{}
+	if r.Project != projectid.Canonical("project") || r.Account != "work1" {
+		return none, fmt.Errorf("wrong login target")
 	}
-	fmt.Fprintln(output, "https://example.invalid/login")
-	switch key {
+	f.pinned = append(f.pinned, r.Identity)
+	fmt.Fprintln(r.Output, "https://example.invalid/login")
+	switch r.Key {
 	case "without-input":
-		return nil
+		return accounts.SessionLoginResult{Identity: f.reports}, nil
 	case "cancel":
 		<-ctx.Done()
 		close(f.cancelled)
-		return ctx.Err()
+		return none, ctx.Err()
 	case "input":
-		code, err := bufio.NewReader(input).ReadString('\n')
+		code, err := bufio.NewReader(r.Input).ReadString('\n')
 		if err != nil || code != "fixture#state\n" {
-			return fmt.Errorf("unexpected login input")
+			return none, fmt.Errorf("unexpected login input")
 		}
-		return nil
+		return accounts.SessionLoginResult{Identity: f.reports}, nil
 	case "invalid-frame":
 		<-ctx.Done()
-		return ctx.Err()
+		return none, ctx.Err()
 	}
-	return fmt.Errorf("unexpected login key")
+	return none, fmt.Errorf("unexpected login key")
 }
 
 type loginTestWriter func([]byte) (int, error)
@@ -106,7 +112,7 @@ func TestSessionLoginRPCInputExitCancellationAndPrivacy(t *testing.T) {
 		}
 		request, abort := context.WithCancel(ctx)
 		seen := false
-		err = c.LoginSession(request, "project", "work1", key, in, loginTestWriter(func(p []byte) (int, error) {
+		_, err = c.LoginSession(request, accounts.SessionLogin{Project: "project", Account: "work1", Key: key, Input: in, Output: loginTestWriter(func(p []byte) (int, error) {
 			seen = strings.Contains(string(p), "https://example.invalid/login")
 			if key == "cancel" {
 				abort()
@@ -116,7 +122,7 @@ func TestSessionLoginRPCInputExitCancellationAndPrivacy(t *testing.T) {
 				}
 			}
 			return len(p), nil
-		}))
+		})})
 		w.Close()
 		abort()
 		if !seen || (key != "cancel" && err != nil) || (key == "cancel" && status.Code(err) != codes.Canceled) {
@@ -130,7 +136,7 @@ func TestSessionLoginRPCInputExitCancellationAndPrivacy(t *testing.T) {
 	}
 	// These requests must fail without starting login or writing any audit data.
 	for _, alias := range []string{"codex", "missing"} {
-		err := c.LoginSession(ctx, "project", alias, "without-input", io.NopCloser(strings.NewReader("")), io.Discard)
+		_, err := c.LoginSession(ctx, accounts.SessionLogin{Project: "project", Account: alias, Key: "without-input", Input: io.NopCloser(strings.NewReader("")), Output: io.Discard})
 		if err == nil {
 			t.Fatal("unsupported/missing account accepted", alias)
 		}

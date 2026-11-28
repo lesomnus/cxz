@@ -9,10 +9,24 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// SessionLoginClient carries ephemeral provider output and code input. Input is
+// SessionLogin carries ephemeral provider output and code input. Input is
 // closed on completion/cancellation, including browser-only login completion.
+type SessionLogin struct {
+	Project, Account, Key string
+	// Identity is the account's pinned provider identity, empty when it has
+	// none. A login that reaches a different one is refused rather than
+	// installed, so this has to arrive before the provider is run.
+	Identity string
+	Input    io.ReadCloser
+	Output   io.Writer
+}
+
+// SessionLoginResult reports the identity the accepted login reached, and is
+// empty when the credential did not say or nothing was logged in.
+type SessionLoginResult struct{ Identity string }
+
 type SessionLoginClient interface {
-	LoginSession(ctx context.Context, project, account, key string, input io.ReadCloser, output io.Writer) error
+	LoginSession(ctx context.Context, r SessionLogin) (SessionLoginResult, error)
 }
 
 // RequiredProjectLogin recognizes only the runtime's structured missing-login

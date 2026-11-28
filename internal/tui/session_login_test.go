@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/lesomnus/cxz/api"
+	"github.com/lesomnus/cxz/internal/accounts"
 	"github.com/lesomnus/cxz/internal/transport"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
@@ -45,21 +45,22 @@ func (c *sessionLoginClient) Open(_ context.Context, r *api.ProjectRequest, _ ..
 	return nil, s.Err()
 }
 
-func (c *sessionLoginClient) LoginSession(ctx context.Context, project, account, key string, input io.ReadCloser, output io.Writer) error {
+func (c *sessionLoginClient) LoginSession(ctx context.Context, r accounts.SessionLogin) (accounts.SessionLoginResult, error) {
+	none := accounts.SessionLoginResult{}
 	c.logins++
-	if project != c.request.Workspace || account != c.request.Account || key != c.request.ClientId {
-		return fmt.Errorf("login targeted a different profile")
+	if r.Project != c.request.Workspace || r.Account != c.request.Account || r.Key != c.request.ClientId {
+		return none, fmt.Errorf("login targeted a different profile")
 	}
-	fmt.Fprintln(output, "Visit https://example.invalid/login")
+	fmt.Fprintln(r.Output, "Visit https://example.invalid/login")
 	if c.cancel {
 		<-ctx.Done()
-		return ctx.Err()
+		return none, ctx.Err()
 	}
-	code, err := bufio.NewReader(input).ReadString('\n')
+	code, err := bufio.NewReader(r.Input).ReadString('\n')
 	if err != nil || code != "fixture#state\n" {
-		return fmt.Errorf("incorrect login input")
+		return none, fmt.Errorf("incorrect login input")
 	}
-	return nil
+	return none, nil
 }
 
 func TestDefaultSessionCreationLogsInAndRetries(t *testing.T) {

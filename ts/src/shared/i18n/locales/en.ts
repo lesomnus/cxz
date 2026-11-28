@@ -1034,5 +1034,15 @@ export const messages = {
     "No other account is registered for this agent.",
   "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.":
     "Shared accounts are preserved. A workspace folder on the host is kept; a Kubernetes project's workspace is on its own volume and is deleted with it.",
+  "Pinned by its first login": "Pinned by its first login",
+  "Pinned by the next login": "Pinned by the next login",
+  Unpin: "Unpin",
+  "A login that reaches a different provider account is refused. Unpin first to change which account this one uses.":
+    "A login that reaches a different provider account is refused. Unpin first to change which account this one uses.",
+  "Which provider account a login reaches is decided by the provider. The next one is remembered, and later logins have to match it.":
+    "Which provider account a login reaches is decided by the provider. The next one is remembered, and later logins have to match it.",
+  "Could not unpin this account.": "Could not unpin this account.",
+  "A provider account can only be unpinned, not chosen by hand.":
+    "A provider account can only be unpinned, not chosen by hand.",
 } as const;
 export type Message = keyof typeof messages;
